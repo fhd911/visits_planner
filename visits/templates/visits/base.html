@@ -1,0 +1,294 @@
+{% load static %}
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}منصة الزيارات{% endblock %}</title>
+
+  <!-- Cairo -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* =========================
+       Tokens
+    ========================= */
+    :root{
+      --green-950:#053b2b;
+      --green-900:#064e3b;
+
+      --bg:#eef5ff;
+      --text:#0f172a;
+      --mut:#64748b;
+
+      --line: rgba(226,232,240,.85);
+      --shadow: 0 18px 40px rgba(2,6,23,.10);
+
+      --blue:#2563eb;
+      --ok:#16a34a;
+      --warn:#f59e0b;
+      --danger:#ef4444;
+
+      --r-lg:26px;
+      --r-md:22px;
+      --r-sm:14px;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+
+    body{
+      margin:0;
+      font-family:"Cairo", system-ui, -apple-system, Segoe UI, Arial;
+      color:var(--text);
+      background:
+        radial-gradient(900px 500px at 10% 0%, rgba(96,165,250,.18), transparent 55%),
+        radial-gradient(800px 500px at 90% 10%, rgba(34,197,94,.16), transparent 60%),
+        linear-gradient(180deg, var(--bg), #f6f8fc 35%, #f1f5f9);
+    }
+
+    a{ text-decoration:none; color:inherit; }
+    b,strong{ font-weight:800; }
+
+    /* =========================
+       Header
+    ========================= */
+    .topbar{
+      position:sticky;
+      top:0;
+      z-index:50;
+      background: linear-gradient(180deg, rgba(5,59,43,.96), rgba(5,59,43,.92));
+      border-bottom:1px solid rgba(255,255,255,.10);
+      box-shadow: 0 10px 22px rgba(2,6,23,.18);
+      backdrop-filter: blur(8px);
+    }
+
+    .topbar .inner{
+      max-width:1280px;
+      margin:0 auto;
+      padding:14px 18px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      color:#fff;
+      min-width: 240px;
+    }
+
+    .brand .logo{
+      width:44px; height:44px;
+      border-radius:14px;
+      background: rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.18);
+      display:grid; place-items:center;
+      font-weight:900;
+      letter-spacing:.5px;
+      user-select:none;
+    }
+
+    .brand .meta{ display:flex; flex-direction:column; line-height:1.2; }
+    .brand .title{ font-weight:800; font-size:15px; }
+    .brand .sub{ font-weight:400; opacity:.85; font-size:12px; margin-top:2px; }
+
+    .user-chip{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      color:#fff;
+      min-width:240px;
+      justify-content:flex-end;
+    }
+    .user-chip .avatar{
+      width:40px; height:40px;
+      border-radius:14px;
+      background: rgba(255,255,255,.14);
+      border:1px solid rgba(255,255,255,.22);
+      display:grid; place-items:center;
+      font-weight:900;
+      user-select:none;
+    }
+    .user-chip .who{ display:flex; flex-direction:column; line-height:1.2; text-align:right; }
+    .user-chip .who b{ font-size:13px; font-weight:800; }
+    .user-chip .who small{ opacity:.85; font-size:12px; font-weight:400; }
+
+    /* =========================
+       Layout
+    ========================= */
+    .page{
+      max-width:1280px;
+      margin:18px auto 0;
+      padding:0 18px 28px;
+    }
+
+    .shell{
+      background: rgba(255,255,255,.72);
+      border:1px solid rgba(148,163,184,.26);
+      border-radius: var(--r-lg);
+      padding:18px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero{
+      padding:18px 18px 16px;
+      border-radius: var(--r-md);
+      background: linear-gradient(135deg, rgba(96,165,250,.14), rgba(34,197,94,.10));
+      border:1px solid rgba(148,163,184,.22);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+    }
+
+    .hero h1{ margin:0; font-size:18px; font-weight:900; }
+    .hero p{ margin:6px 0 0; color:var(--mut); font-size:13px; line-height:1.8; }
+
+    .pill-row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-start; }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:8px 12px;
+      border-radius:999px;
+      background: rgba(255,255,255,.86);
+      border:1px solid var(--line);
+      box-shadow: 0 10px 22px rgba(2,6,23,.06);
+      font-size:12.5px;
+      color: var(--text);
+      white-space:nowrap;
+    }
+    .dot{
+      width:10px; height:10px; border-radius:999px;
+      background:#22c55e;
+      box-shadow: 0 0 0 4px rgba(34,197,94,.18);
+    }
+    .dot.blue{ background:#3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,.18); }
+    .dot.orange{ background:#f59e0b; box-shadow: 0 0 0 4px rgba(245,158,11,.18); }
+
+    /* =========================
+       Messages
+    ========================= */
+    .msgs{ margin:14px 0 0; display:grid; gap:8px; }
+    .msg{
+      border-radius: var(--r-sm);
+      padding:10px 12px;
+      font-size:13px;
+      border:1px solid rgba(226,232,240,.9);
+      background:#fff;
+      box-shadow: 0 10px 22px rgba(2,6,23,.06);
+      font-weight:800;
+    }
+    .msg.success{ border-color: rgba(34,197,94,.25); background: rgba(34,197,94,.08); }
+    .msg.warning{ border-color: rgba(245,158,11,.25); background: rgba(245,158,11,.10); }
+    .msg.error{ border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.08); }
+    .msg.info{ border-color: rgba(59,130,246,.25); background: rgba(59,130,246,.08); }
+
+    /* =========================
+       Footer
+    ========================= */
+    footer{
+      margin:18px auto 22px;
+      max-width:1280px;
+      padding:0 18px;
+      color:#64748b;
+      font-size:12.5px;
+    }
+    .foot{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:12px 14px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.72);
+      border:1px solid rgba(226,232,240,.85);
+      box-shadow: 0 10px 22px rgba(2,6,23,.06);
+      flex-wrap:wrap;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px){
+      .brand, .user-chip{ min-width:auto; }
+    }
+
+    {% block extra_css %}{% endblock %}
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="inner">
+
+      <div class="brand">
+        <div class="logo">ز</div>
+        <div class="meta">
+          <div class="title">نظام زيارات المشرفين</div>
+          <div class="sub">قسم الإدارة المدرسية — تعليم عسير</div>
+        </div>
+      </div>
+
+      {# ✅ تم حذف زر "الخطة" بالكامل (لا يوجد nav نهائيًا) #}
+
+      <div class="user-chip">
+        <div class="who">
+          <b>{% if sup %}المشرف: {{ sup.full_name }}{% else %}منصة الزيارات{% endif %}</b>
+          <small>{% block subtitle %}إدارة خطط المشرفين الأسبوعية{% endblock %}</small>
+        </div>
+        <div class="avatar">
+          {% if sup %}{{ sup.full_name|slice:":1" }}{% else %}VP{% endif %}
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="shell">
+
+      {% block hero %}
+      <div class="hero">
+        <div>
+          <h1>{% block hero_title %}خطة الأسبوع{% endblock %}</h1>
+          <p>{% block hero_desc %}إدارة خطة الزيارات الأسبوعية بشكل واضح ومنظم.{% endblock %}</p>
+        </div>
+        <div class="pill-row">
+          <div class="pill"><span class="dot blue"></span> النظام يعمل</div>
+          <div class="pill"><span class="dot orange"></span> اليوم: {% now "d-m-Y" %}</div>
+        </div>
+      </div>
+      {% endblock %}
+
+      {% block page_messages %}
+        {% if messages %}
+          <div class="msgs">
+            {% for message in messages %}
+              <div class="msg {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endblock %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <footer>
+    <div class="foot">
+      <div>© منصة خطة الزيارات — جميع الحقوق محفوظة</div>
+      <div>الإصدار: 2026</div>
+    </div>
+  </footer>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

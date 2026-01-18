@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <style>
+    body{ font-family: DejaVu Sans, Arial; font-size: 13px; direction: rtl; }
+    .box{ border:1px solid #cbd5e1; padding:10px; border-radius:10px; margin-bottom:10px; }
+    .mut{ color:#64748b; font-size:12px; }
+    table{ width:100%; border-collapse:collapse; }
+    th,td{ border:1px solid #cbd5e1; padding:8px; }
+    th{ background:#f1f5f9; }
+  </style>
+</head>
+<body>
+
+  <div class="box">
+    <b>خطة الأسبوع رقم {{ plan.week_no }}</b><br>
+    <span class="mut">المشرف: {{ sup.full_name }} — الهوية: {{ sup.national_id }}</span>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>اليوم</th>
+        <th>المدرسة</th>
+        <th>نوع الزيارة</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for wd,name in weekdays %}
+        {% with d=day_map|get_item:wd %}
+        <tr>
+          <td>{{ name }}</td>
+          <td>{% if d and d.school %}{{ d.school.name }}{% else %}—{% endif %}</td>
+          <td>{% if d %}{{ d.get_visit_type_display }}{% else %}—{% endif %}</td>
+        </tr>
+        {% endwith %}
+      {% endfor %}
+    </tbody>
+  </table>
+
+</body>
+</html>

@@ -1,0 +1,822 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}لوحة الإدارة — خطط الزيارات{% endblock %}
+{% block page_messages %}{% endblock %}
+
+{% block content %}
+<style>
+  /* =========================================================
+     Admin Dashboard (Unified Fonts FINAL)
+     ✅ Typography system موحّد
+     ✅ بدون سماكات مزعجة
+  ========================================================= */
+  .admin-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+
+    /* Typography (Unified) */
+    --fw-hero: 650;
+    --fw-title: 650;
+    --fw-strong: 600;
+    --fw-normal: 500;
+    --fw-muted: 450;
+
+    --bg1:#f6f9ff;
+    --bg2:#fbfdff;
+
+    --card: rgba(255,255,255,.96);
+    --soft: rgba(248,250,252,.92);
+
+    --txt:#0f172a;
+    --mut:#64748b;
+    --mut2:#94a3b8;
+
+    --line: rgba(148,163,184,.22);
+    --line2: rgba(148,163,184,.14);
+
+    --b1:#2563eb;
+    --b2:#60a5fa;
+
+    --ok:#16a34a;
+    --warn:#f59e0b;
+
+    --shadow: 0 18px 46px rgba(15,23,42,.10);
+    --shadow2: 0 10px 28px rgba(15,23,42,.08);
+
+    font-family: var(--ff);
+    direction: rtl;
+    color: var(--txt);
+  }
+
+  /* ✅ قاعدة عامة: كل العناصر داخل الصفحة على نفس الفونت */
+  .admin-page *{
+    font-family: var(--ff) !important;
+    letter-spacing: .1px;
+  }
+
+  .admin-page .shell{
+    min-height: calc(100vh - 80px);
+    padding: 14px 12px 24px;
+    background:
+      radial-gradient(1050px 430px at 12% 0%, rgba(37,99,235,.08), transparent 58%),
+      radial-gradient(1050px 430px at 88% 0%, rgba(16,185,129,.08), transparent 58%),
+      linear-gradient(180deg, var(--bg1), var(--bg2));
+  }
+
+  .admin-page .wrap{
+    max-width: 1320px;
+    margin: 0 auto;
+    display: grid;
+    gap: 12px;
+  }
+
+  /* ===== Header ===== */
+  .admin-page .head{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    padding: 14px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 12px;
+    flex-wrap:wrap;
+  }
+
+  .admin-page .head .title{
+    display:grid;
+    gap: 3px;
+    min-width: 260px;
+  }
+
+  .admin-page .head h1{
+    margin:0;
+    font-size: 16px;
+    font-weight: var(--fw-hero);
+    color: var(--txt);
+  }
+
+  .admin-page .head p{
+    margin:0;
+    font-size: 12.6px;
+    font-weight: var(--fw-normal);
+    color: var(--mut);
+    line-height: 1.6;
+  }
+
+  .admin-page .head .right{
+    display:flex;
+    gap: 8px;
+    align-items:center;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+
+  .admin-page .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--soft);
+    color: var(--mut);
+    font-size: 12px;
+    font-weight: var(--fw-strong);
+  }
+
+  .admin-page .dot{
+    width:9px;height:9px;border-radius:50%;
+    background: rgba(37,99,235,.95);
+    box-shadow: 0 0 0 4px rgba(37,99,235,.10);
+  }
+  .admin-page .dot.ok{
+    background: rgba(16,185,129,.95);
+    box-shadow: 0 0 0 4px rgba(16,185,129,.12);
+  }
+
+  .admin-page .btn{
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background:#fff;
+    color: var(--txt);
+    font-weight: var(--fw-strong);
+    font-size: 12.5px;
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    box-shadow: 0 10px 18px rgba(15,23,42,.06);
+    transition: transform .12s ease, box-shadow .12s ease;
+    user-select:none;
+  }
+  .admin-page .btn:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 14px 26px rgba(15,23,42,.10);
+  }
+  .admin-page .btn.primary{
+    background: linear-gradient(135deg, rgba(37,99,235,.95), rgba(96,165,250,.95));
+    border-color: rgba(37,99,235,.18);
+    color:#fff;
+  }
+  .admin-page .btn.soft{
+    background: rgba(14,165,164,.10);
+    border-color: rgba(14,165,164,.18);
+    color: var(--txt);
+  }
+
+  /* ===== KPI ===== */
+  .admin-page .kpis{
+    display:grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+  }
+  .admin-page .kpi{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    box-shadow: var(--shadow2);
+    padding: 12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    min-height: 62px;
+  }
+  .admin-page .kpi .meta{ display:grid; gap:3px; }
+  .admin-page .kpi .label{
+    font-size:12px;
+    font-weight: var(--fw-normal);
+    color: var(--mut);
+  }
+  .admin-page .kpi .value{
+    font-size:18px;
+    font-weight: var(--fw-title);
+    color: var(--txt);
+  }
+  .admin-page .kpi .icon{
+    width: 36px; height: 36px; border-radius: 14px;
+    display:grid; place-items:center;
+    border: 1px solid var(--line);
+    background: var(--soft);
+    font-size: 16px;
+  }
+
+  /* ===== Filters ===== */
+  .admin-page .filters{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: var(--shadow2);
+    padding: 12px;
+    display:grid;
+    gap: 10px;
+  }
+  .admin-page .filters-grid{
+    display:grid;
+    grid-template-columns: 1.05fr 1fr 1fr 1fr auto;
+    gap: 10px;
+    align-items:end;
+  }
+  .admin-page .field label{
+    display:block;
+    font-size:12px;
+    font-weight: var(--fw-normal);
+    color: var(--mut);
+    margin-bottom: 6px;
+  }
+  .admin-page .input,
+  .admin-page .select{
+    width:100%;
+    height: 38px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: rgba(248,250,252,.92);
+    padding: 0 12px;
+    outline: none;
+    font-weight: var(--fw-strong);
+    color: var(--txt);
+  }
+  .admin-page .select{ cursor:pointer; }
+
+  .admin-page .filters-actions{
+    display:flex;
+    gap: 8px;
+    justify-content:flex-end;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+
+  /* ===== Table Card ===== */
+  .admin-page .table-card{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 26px;
+    box-shadow: var(--shadow);
+    overflow:hidden;
+  }
+
+  .admin-page .table-head{
+    padding: 12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(248,250,252,.94), rgba(255,255,255,.90));
+  }
+  .admin-page .hint{
+    font-size:12px;
+    font-weight: var(--fw-normal);
+    color: var(--mut);
+    display:flex;
+    align-items:center;
+    gap: 8px;
+  }
+  .admin-page .mini{
+    width: 18px; height: 18px;
+    border-radius: 7px;
+    display:grid;
+    place-items:center;
+    border: 1px solid rgba(16,185,129,.22);
+    background: rgba(16,185,129,.10);
+    color: #166534;
+    font-weight: var(--fw-title);
+    font-size: 12px;
+  }
+
+  .admin-page table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+  }
+
+  .admin-page thead th{
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: rgba(248,250,252,.98);
+    border-bottom: 1px solid var(--line);
+    padding: 12px 12px;
+    font-size: 12px;
+    font-weight: var(--fw-strong);
+    color: var(--mut);
+    text-align:right;
+    white-space:nowrap;
+  }
+
+  .admin-page tbody td{
+    border-bottom: 1px solid var(--line2);
+    padding: 12px 12px;
+    font-size: 13px;
+    font-weight: var(--fw-strong);
+    color: var(--txt);
+    vertical-align:middle;
+  }
+
+  .admin-page tbody tr:nth-child(even){ background: rgba(2,6,23,.012); }
+  .admin-page tbody tr:hover{ background: rgba(37,99,235,.04); }
+
+  /* ✅ اسم المشرف كرابط للتفاصيل */
+  .admin-page .sup-link{
+    color: var(--txt);
+    font-weight: var(--fw-title);
+    text-decoration: none;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+  }
+  .admin-page .sup-link:hover{
+    text-decoration: underline;
+  }
+  .admin-page .sup-sub{
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: var(--fw-muted);
+    color: var(--mut2);
+  }
+
+  .admin-page .pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-weight: var(--fw-strong);
+    font-size: 12px;
+    border: 1px solid transparent;
+    white-space:nowrap;
+  }
+  .admin-page .pill.approved{
+    background: rgba(22,163,74,.10);
+    border-color: rgba(22,163,74,.22);
+    color:#166534;
+  }
+  .admin-page .pill.draft{
+    background: rgba(37,99,235,.10);
+    border-color: rgba(37,99,235,.18);
+    color:#0c4a6e;
+  }
+  .admin-page .pill.unlock{
+    background: rgba(245,158,11,.12);
+    border-color: rgba(245,158,11,.22);
+    color:#7c2d12;
+  }
+
+  .admin-page .count{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding: 7px 10px;
+    border-radius:999px;
+    font-weight: var(--fw-strong);
+    font-size:12px;
+    border:1px solid var(--line);
+    background: rgba(248,250,252,.92);
+  }
+  .admin-page .count.ok{
+    border-color: rgba(22,163,74,.25);
+    background: rgba(22,163,74,.10);
+    color:#166534;
+  }
+  .admin-page .count.bad{
+    border-color: rgba(245,158,11,.30);
+    background: rgba(245,158,11,.10);
+    color:#7c2d12;
+  }
+
+  .admin-page .actions{
+    display:flex;
+    gap: 8px;
+    justify-content:flex-end;
+    flex-wrap:wrap;
+  }
+
+  .admin-page .a-btn{
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background:#fff;
+    font-weight: var(--fw-strong);
+    font-size: 12px;
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    gap: 6px;
+    transition: transform .12s ease, box-shadow .12s ease;
+    user-select:none;
+    box-shadow: 0 8px 14px rgba(15,23,42,.05);
+  }
+  .admin-page .a-btn:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 12px 20px rgba(15,23,42,.09);
+  }
+  .admin-page .a-btn.ghost{
+    background: rgba(37,99,235,.08);
+    border-color: rgba(37,99,235,.15);
+    color:#0c4a6e;
+  }
+  .admin-page .a-btn.approve{
+    background: rgba(22,163,74,.12);
+    border-color: rgba(22,163,74,.24);
+    color:#166534;
+  }
+  .admin-page .a-btn.draft{
+    background: rgba(245,158,11,.12);
+    border-color: rgba(245,158,11,.24);
+    color:#7c2d12;
+  }
+  .admin-page .a-btn:disabled{
+    opacity: .55;
+    cursor: not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+
+  /* ===== Pager ===== */
+  .admin-page .pager{
+    padding: 12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    flex-wrap:wrap;
+    background: rgba(248,250,252,.78);
+    border-top: 1px solid var(--line);
+    color: var(--mut);
+    font-size: 12px;
+    font-weight: var(--fw-normal);
+  }
+  .admin-page .pbtn{
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background:#fff;
+    text-decoration:none;
+    color: var(--txt);
+    font-weight: var(--fw-strong);
+    font-size: 12px;
+    display:inline-flex;
+    align-items:center;
+    box-shadow: 0 8px 14px rgba(15,23,42,.05);
+  }
+  .admin-page .pbtn.disabled{
+    opacity:.5;
+    pointer-events:none;
+  }
+
+  /* ===== Toast ===== */
+  .admin-page .toast-wrap{
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    z-index: 10000;
+    display:grid;
+    gap:8px;
+  }
+  .admin-page .toast{
+    min-width: 240px;
+    max-width: 360px;
+    background: rgba(15,23,42,.92);
+    color:#fff;
+    padding: 10px 12px;
+    border-radius: 16px;
+    box-shadow: 0 18px 50px rgba(15,23,42,.24);
+    font-weight: var(--fw-strong);
+    font-size: 12.5px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+  }
+  .admin-page .toast .x{
+    border:0;
+    background: transparent;
+    color:#fff;
+    cursor:pointer;
+    font-weight: 900;
+    opacity: .85;
+  }
+
+  @media (max-width: 1050px){
+    .admin-page .kpis{ grid-template-columns: repeat(3, 1fr); }
+    .admin-page .filters-grid{ grid-template-columns: 1fr 1fr; }
+    .admin-page .filters-actions{ justify-content:flex-start; }
+  }
+  @media (max-width: 560px){
+    .admin-page .kpis{ grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+
+<section class="admin-page">
+  <div class="shell">
+    <div class="wrap">
+
+      <!-- ===== Header ===== -->
+      <div class="head">
+        <div class="title">
+          <h1>لوحة الإدارة — خطط الزيارات</h1>
+          <p>إدارة خطط المشرفين حسب الأسبوع — افتح تفاصيل الخطة بالنقر على اسم المشرف + اعتماد/مسودة + تصدير Excel.</p>
+        </div>
+
+        <div class="right">
+          <span class="chip"><span class="dot ok"></span> النظام يعمل</span>
+          <span class="chip"><span class="dot"></span> الأسبوع: <b style="color:var(--txt);font-weight:var(--fw-title)">{{ week }}</b></span>
+          <span class="chip">النتائج: <b style="color:var(--txt);font-weight:var(--fw-title)">{{ kpi_total }}</b></span>
+
+          <a class="btn primary" href="{% url 'visits:admin_export_week' %}?week={{ week }}">⬇ Excel للأسبوع</a>
+          <a class="btn soft" href="{% url 'visits:admin_import' %}">⬆ استيراد البيانات</a>
+        </div>
+      </div>
+
+      <!-- ===== KPI ===== -->
+      <div class="kpis">
+        <div class="kpi"><div class="meta"><div class="label">الإجمالي</div><div class="value">{{ kpi_total }}</div></div><div class="icon">📌</div></div>
+        <div class="kpi"><div class="meta"><div class="label">المعتمدة</div><div class="value">{{ kpi_approved }}</div></div><div class="icon">✅</div></div>
+        <div class="kpi"><div class="meta"><div class="label">المسودات</div><div class="value">{{ kpi_drafts }}</div></div><div class="icon">📝</div></div>
+        <div class="kpi"><div class="meta"><div class="label">طلبات فك اعتماد</div><div class="value">{{ kpi_unlock }}</div></div><div class="icon">🔓</div></div>
+        <div class="kpi"><div class="meta"><div class="label">مكتملة</div><div class="value">{{ kpi_filled }}</div></div><div class="icon">🟢</div></div>
+        <div class="kpi"><div class="meta"><div class="label">غير مكتملة</div><div class="value">{{ kpi_not_filled }}</div></div><div class="icon">🟠</div></div>
+      </div>
+
+      <!-- ===== Filters ===== -->
+      <form class="filters" method="get" action="{% url 'visits:admin_dashboard' %}">
+        <div class="filters-grid">
+
+          <div class="field">
+            <label>الأسبوع</label>
+            <select class="select" name="week">
+              {% for w,label in week_choices %}
+                <option value="{{ w }}" {% if week == w %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="field">
+            <label>بحث</label>
+            <input class="input" type="text" name="q" value="{{ q }}" placeholder="اسم المشرف أو رقم الهوية">
+          </div>
+
+          <div class="field">
+            <label>فلتر الحالة</label>
+            <select class="select" name="status">
+              <option value="all" {% if status == "all" %}selected{% endif %}>الكل</option>
+              <option value="approved" {% if status == "approved" %}selected{% endif %}>المعتمدة</option>
+              <option value="draft" {% if status == "draft" %}selected{% endif %}>المسودات</option>
+              <option value="unlock" {% if status == "unlock" %}selected{% endif %}>طلبات فك اعتماد</option>
+              <option value="not_full" {% if status == "not_full" %}selected{% endif %}>غير مكتملة</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>حجم الصفحة</label>
+            <select class="select" name="ps">
+              <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+              <option value="20" {% if page_size == 20 %}selected{% endif %}>20</option>
+              <option value="30" {% if page_size == 30 %}selected{% endif %}>30</option>
+              <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+            </select>
+          </div>
+
+          <div class="filters-actions">
+            <button class="btn primary" type="submit">تطبيق</button>
+            <a class="btn" href="{% url 'visits:admin_dashboard' %}?week={{ week }}">إعادة ضبط</a>
+          </div>
+
+        </div>
+      </form>
+
+      <!-- ===== Table ===== -->
+      <div class="table-card">
+        <div class="table-head">
+          <div class="hint"><span class="mini">✓</span> افتح التفاصيل بالنقر على اسم المشرف</div>
+          <div class="hint">الأسبوع <b style="color:var(--txt);font-weight:var(--fw-title)">#{{ week }}</b> — النتائج <b style="color:var(--txt);font-weight:var(--fw-title)">{{ page_obj.paginator.count }}</b></div>
+        </div>
+
+        <div style="overflow:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th style="min-width:260px">المشرف</th>
+                <th style="min-width:120px">الحالة</th>
+                <th style="min-width:90px">الامتلاء</th>
+                <th style="min-width:160px">آخر حفظ</th>
+                <th style="min-width:240px;text-align:left">إجراءات</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for r in rows %}
+                {% with p=r.plan %}
+                <tr id="row-{{ p.id }}" data-plan-id="{{ p.id }}" data-filled="{{ r.filled }}">
+
+                  <td>
+                    <a class="sup-link" href="{% url 'visits:admin_plan_detail' p.id %}">
+                      {{ r.sup.full_name }} <span style="color:var(--mut2);font-weight:var(--fw-muted)">↩</span>
+                    </a>
+
+                    <div class="sup-sub">
+                      هوية: {{ r.sup.national_id }} — الأسبوع: {{ p.week.week_no }}
+                    </div>
+                  </td>
+
+                  <td>
+                    {% if p.status == p.STATUS_APPROVED %}
+                      <span class="pill approved" id="pill-{{ p.id }}">معتمدة</span>
+                    {% elif p.status == p.STATUS_UNLOCK_REQUESTED %}
+                      <span class="pill unlock" id="pill-{{ p.id }}">طلب فك اعتماد</span>
+                    {% else %}
+                      <span class="pill draft" id="pill-{{ p.id }}">مسودة</span>
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    {% if r.filled == 5 %}
+                      <span class="count ok" id="filled-{{ p.id }}">5/5</span>
+                    {% else %}
+                      <span class="count bad" id="filled-{{ p.id }}">{{ r.filled }}/5</span>
+                    {% endif %}
+                  </td>
+
+                  <td style="color:var(--mut);font-weight:var(--fw-muted)">
+                    {% if p.saved_at %}
+                      {{ p.saved_at|date:"Y-m-d" }} — {{ p.saved_at|time:"H:i" }}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    <div class="actions">
+                      <a class="a-btn ghost" href="{% url 'visits:admin_plan_export_excel' p.id %}">⬇ Excel</a>
+
+                      <button
+                        class="a-btn approve"
+                        data-action="approve"
+                        data-url="{% url 'visits:admin_plan_approve' p.id %}"
+                        {% if p.status == p.STATUS_APPROVED %}disabled{% endif %}
+                        {% if r.filled != 5 %}disabled{% endif %}
+                      >✅ اعتماد</button>
+
+                      <button
+                        class="a-btn draft"
+                        data-action="draft"
+                        data-url="{% url 'visits:admin_plan_back_to_draft' p.id %}"
+                        {% if p.status == p.STATUS_DRAFT %}disabled{% endif %}
+                      >↩ مسودة</button>
+                    </div>
+                  </td>
+
+                </tr>
+                {% endwith %}
+              {% empty %}
+                <tr>
+                  <td colspan="5" style="padding:18px;color:var(--mut);font-weight:var(--fw-normal)">
+                    لا توجد نتائج مطابقة.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+
+          </table>
+        </div>
+
+        <!-- ===== Pager ===== -->
+        <div class="pager">
+          <div>صفحة {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            {% if page_obj.has_previous %}
+              <a class="pbtn" href="?week={{ week }}&q={{ q }}&status={{ status }}&ps={{ page_size }}&page={{ page_obj.previous_page_number }}">السابق</a>
+            {% else %}
+              <span class="pbtn disabled">السابق</span>
+            {% endif %}
+
+            {% if page_obj.has_next %}
+              <a class="pbtn" href="?week={{ week }}&q={{ q }}&status={{ status }}&ps={{ page_size }}&page={{ page_obj.next_page_number }}">التالي</a>
+            {% else %}
+              <span class="pbtn disabled">التالي</span>
+            {% endif %}
+          </div>
+
+          <div>عرض {{ page_obj.object_list|length }} من {{ page_obj.paginator.count }}</div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== Toast ===== -->
+  <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+</section>
+
+<script>
+  function showToast(msg){
+    const wrap = document.getElementById("toastWrap");
+    const el = document.createElement("div");
+    el.className = "toast";
+    el.innerHTML = `<span>${msg}</span><button class="x" type="button">✕</button>`;
+    wrap.appendChild(el);
+    el.querySelector(".x").addEventListener("click", ()=> el.remove());
+    setTimeout(()=>{ if(el.parentNode) el.remove(); }, 2500);
+  }
+
+  function getCookie(name){
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if(parts.length === 2) return parts.pop().split(';').shift();
+    return "";
+  }
+
+  async function postAction(url){
+    const csrf = getCookie("csrftoken");
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrf,
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    });
+
+    const data = await res.json().catch(()=> ({}));
+    if(!res.ok){
+      throw new Error((data && data.message) ? data.message : "حدث خطأ أثناء التنفيذ.");
+    }
+    return data;
+  }
+
+  function updateRowFromJson(data){
+    const planId = data.plan_id;
+
+    const pill = document.getElementById(`pill-${planId}`);
+    if(pill){
+      pill.textContent = data.status_label || "—";
+      pill.classList.remove("approved","draft","unlock");
+      pill.classList.add(data.status_css || "draft");
+    }
+
+    const filledEl = document.getElementById(`filled-${planId}`);
+    if(filledEl && typeof data.filled !== "undefined"){
+      const filled = parseInt(data.filled || 0, 10);
+      filledEl.textContent = `${filled}/5`;
+      filledEl.classList.remove("ok","bad");
+      filledEl.classList.add((filled === 5) ? "ok" : "bad");
+    }
+
+    const row = document.getElementById(`row-${planId}`);
+    if(!row) return;
+
+    if(typeof data.filled !== "undefined"){
+      row.setAttribute("data-filled", String(data.filled));
+    }
+
+    const filledNow = parseInt(row.getAttribute("data-filled") || "0", 10);
+
+    const approveBtn = row.querySelector("button[data-action='approve']");
+    const draftBtn = row.querySelector("button[data-action='draft']");
+
+    const isApproved = (data.status_code === "approved") || (data.status_css === "approved");
+    const isDraft = (data.status_code === "draft") || (data.status_css === "draft");
+
+    if(approveBtn){
+      approveBtn.disabled = isApproved ? true : !(filledNow === 5);
+    }
+    if(draftBtn){
+      draftBtn.disabled = isDraft ? true : false;
+    }
+  }
+
+  document.addEventListener("click", async (e)=>{
+    const btn = e.target.closest("button[data-action][data-url]");
+    if(!btn) return;
+
+    e.preventDefault();
+    if(btn.disabled) return;
+
+    const url = btn.getAttribute("data-url");
+    const old = btn.textContent;
+
+    btn.disabled = true;
+    btn.textContent = "جارٍ التنفيذ…";
+
+    try{
+      const data = await postAction(url);
+      updateRowFromJson(data);
+      showToast(data.message || "تم ✅");
+    }catch(err){
+      showToast(err.message || "فشل ❌");
+      btn.disabled = false;
+    }finally{
+      btn.textContent = old;
+    }
+  });
+</script>
+{% endblock %}

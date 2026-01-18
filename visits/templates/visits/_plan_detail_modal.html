@@ -1,0 +1,156 @@
+{% load dict_extras %}
+
+<div data-drawer-plan-id="{{ plan.id }}" style="display:grid;gap:10px">
+
+  <!-- ===== Header ===== -->
+  <div style="
+    display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    padding:12px 12px;
+    border:1px solid rgba(226,232,240,.92);
+    border-radius:18px;
+    background: rgba(248,250,252,.92);
+  ">
+    <div style="display:grid;gap:4px;min-width:240px">
+      <div style="font-weight:900;font-size:13.5px;color:#0f172a">
+        {{ sup.full_name }}
+      </div>
+
+      <div style="color:#64748b;font-size:12px;font-weight:800">
+        هوية: {{ sup.national_id }} —
+        الأسبوع: {{ plan.week.week_no }} —
+        رقم الخطة: #{{ plan.id }}
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+
+      {% if plan.status == plan.STATUS_APPROVED %}
+        <span id="drawerStatusPill" class="pill approved" style="display:inline-flex;padding:7px 10px;border-radius:999px;
+          background:rgba(22,163,74,.12);border:1px solid rgba(22,163,74,.22);
+          color:#166534;font-weight:900;font-size:12px">معتمدة</span>
+      {% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}
+        <span id="drawerStatusPill" class="pill unlock" style="display:inline-flex;padding:7px 10px;border-radius:999px;
+          background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.24);
+          color:#7c2d12;font-weight:900;font-size:12px">طلب فك اعتماد</span>
+      {% else %}
+        <span id="drawerStatusPill" class="pill draft" style="display:inline-flex;padding:7px 10px;border-radius:999px;
+          background:rgba(37,99,235,.10);border:1px solid rgba(37,99,235,.18);
+          color:#0c4a6e;font-weight:900;font-size:12px">مسودة</span>
+      {% endif %}
+
+      <!-- ✅ Excel -->
+      <a
+        href="{% url 'visits:admin_plan_export_excel' plan.id %}"
+        style="
+          text-decoration:none;
+          display:inline-flex;align-items:center;justify-content:center;
+          padding:7px 10px;border-radius:14px;
+          border:1px solid rgba(226,232,240,.95);
+          background:#fff;color:#0f172a;
+          font-weight:900;font-size:12px;
+        "
+      >⬇ Excel</a>
+
+      <!-- ✅ PDF (اختياري: فعّله فقط إذا عندك URL اسمه admin_plan_export_pdf) -->
+      {# إذا ما عندك مسار PDF في urls.py احذف هذا الزر نهائيًا #}
+      {% comment %}
+      <a
+        href="{% url 'visits:admin_plan_export_pdf' plan.id %}"
+        style="
+          text-decoration:none;
+          display:inline-flex;align-items:center;justify-content:center;
+          padding:7px 10px;border-radius:14px;
+          border:1px solid rgba(226,232,240,.95);
+          background:#fff;color:#0f172a;
+          font-weight:900;font-size:12px;
+        "
+      >🖨 PDF</a>
+      {% endcomment %}
+
+    </div>
+  </div>
+
+  <!-- ===== Actions (Admin approve/draft) ===== -->
+  <div style="
+    display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;
+    padding:10px 12px;
+    border:1px solid rgba(226,232,240,.92);
+    border-radius:18px;
+    background: rgba(255,255,255,.92);
+  ">
+    <button
+      type="button"
+      data-drawer-action="approve"
+      data-url="{% url 'visits:admin_plan_approve' plan.id %}"
+      style="
+        height:34px;padding:0 12px;border-radius:999px;
+        border:1px solid rgba(22,163,74,.25);
+        background:rgba(22,163,74,.12);
+        color:#166534;font-weight:900;font-size:12px;cursor:pointer;
+      "
+      {% if plan.status == plan.STATUS_APPROVED %}disabled{% endif %}
+      {% if not is_full %}disabled{% endif %}
+    >✅ اعتماد</button>
+
+    <button
+      type="button"
+      data-drawer-action="draft"
+      data-url="{% url 'visits:admin_plan_back_to_draft' plan.id %}"
+      style="
+        height:34px;padding:0 12px;border-radius:999px;
+        border:1px solid rgba(245,158,11,.25);
+        background:rgba(245,158,11,.12);
+        color:#7c2d12;font-weight:900;font-size:12px;cursor:pointer;
+      "
+      {% if plan.status == plan.STATUS_DRAFT %}disabled{% endif %}
+    >↩ إرجاع لمسودة</button>
+
+    <div style="flex:1"></div>
+
+    <div style="color:#64748b;font-size:12px;font-weight:900;align-self:center">
+      {% if plan.saved_at %}
+        آخر حفظ: {{ plan.saved_at|date:"Y-m-d" }} — {{ plan.saved_at|time:"H:i" }}
+      {% else %}
+        آخر حفظ: —
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ===== Days (Compact) ===== -->
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
+    {% for wd,name in weekdays %}
+      {% with d=day_map|get_item:wd %}
+      <div style="
+        border:1px solid rgba(226,232,240,.95);
+        border-radius:18px;
+        background:rgba(248,250,252,.92);
+        padding:10px;
+      ">
+        <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+          <div style="font-weight:900;font-size:13px;color:#0f172a">{{ name }}</div>
+          <div style="color:#64748b;font-size:12px;font-weight:900">
+            {% if d %}{{ d.get_visit_type_display }}{% else %}—{% endif %}
+          </div>
+        </div>
+
+        <div style="margin-top:6px;color:#0f172a;font-size:13px;line-height:1.6;font-weight:800">
+          {% if d and d.school %}
+            {{ d.school.name }}
+          {% else %}
+            <span style="color:#94a3b8;font-weight:900">لا يوجد مدرسة</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endwith %}
+    {% endfor %}
+  </div>
+
+</div>
+
+<style>
+  @media (max-width: 520px){
+    div[style*="grid-template-columns:repeat(2,1fr)"]{
+      grid-template-columns: 1fr !important;
+    }
+  }
+</style>

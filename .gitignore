@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.log
+
+# Django
+db.sqlite3
+*.sqlite3
+media/
+staticfiles/
+
+# env
+.env
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# ✅ ملفات حقيقية حساسة (Excel)
+private_data/
+*.xlsx
+*.xls

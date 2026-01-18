@@ -1,0 +1,150 @@
+{% load dict_extras %}
+
+<div class="pp-wrap">
+
+  <!-- Header -->
+  <div class="pp-head">
+    <div class="pp-title">
+      <div class="pp-name">{{ sup.full_name }}</div>
+      <div class="pp-sub">
+        هوية: {{ sup.national_id }} — الأسبوع: {{ plan.week_no }} — رقم الخطة: #{{ plan.id }}
+      </div>
+    </div>
+
+    <div class="pp-badges">
+      {% if plan.status == plan.STATUS_APPROVED %}
+        <span class="pp-pill approved">معتمدة</span>
+      {% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}
+        <span class="pp-pill unlock">طلب فك اعتماد</span>
+      {% else %}
+        <span class="pp-pill draft">مسودة</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Days -->
+  <div class="pp-days">
+    {% for wd,name in weekdays %}
+      {% with d=day_map|get_item:wd %}
+      <div class="pp-day">
+        <div class="pp-day-top">
+          <div class="pp-day-name">{{ name }}</div>
+          <div class="pp-day-type">{% if d %}{{ d.get_visit_type_display }}{% else %}—{% endif %}</div>
+        </div>
+
+        <div class="pp-school">
+          {% if d and d.school %}
+            {{ d.school.name }}
+          {% else %}
+            <span class="pp-muted">لا يوجد مدرسة</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endwith %}
+    {% endfor %}
+  </div>
+
+  <!-- Actions -->
+  <div class="pp-actions">
+
+    <a class="pp-btn" href="{% url 'visits:admin_plan_export_excel' plan.id %}">⬇ Excel</a>
+    <a class="pp-btn" href="{% url 'visits:admin_plan_export_pdf' plan.id %}">🖨 PDF</a>
+
+    <div class="pp-spacer"></div>
+
+    <!-- ✅ اعتماد / مسودة (AJAX أو عادي حسب JS) -->
+    <form class="pp-form js-ajax-action" method="post" action="{% url 'visits:admin_plan_approve' plan.id %}">
+      {% csrf_token %}
+      <button class="pp-btn ok" type="submit">✅ اعتماد</button>
+    </form>
+
+    <form class="pp-form js-ajax-action" method="post" action="{% url 'visits:admin_plan_back_to_draft' plan.id %}">
+      {% csrf_token %}
+      <button class="pp-btn warn" type="submit">↩ مسودة</button>
+    </form>
+
+  </div>
+
+  <div class="pp-foot">
+    {% if plan.saved_at %}
+      آخر حفظ: {{ plan.saved_at|date:"Y-m-d" }} — {{ plan.saved_at|time:"H:i" }}
+    {% else %}
+      آخر حفظ: —
+    {% endif %}
+  </div>
+
+</div>
+
+<style>
+  .pp-wrap{ direction:rtl; font-family:"Cairo",system-ui; display:grid; gap:10px; }
+  .pp-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .pp-title{ display:grid; gap:4px; }
+  .pp-name{ font-weight:800; font-size:13.5px; color:#0f172a; }
+  .pp-sub{ font-size:12px; color:#64748b; }
+
+  .pp-pill{
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:6px 10px; border-radius:999px;
+    font-weight:800; font-size:12px;
+    border:1px solid rgba(226,232,240,.9);
+    background:#fff;
+    white-space:nowrap;
+  }
+  .pp-pill.approved{ background:rgba(22,163,74,.12); border-color:rgba(22,163,74,.25); color:#166534; }
+  .pp-pill.unlock{ background:rgba(245,158,11,.12); border-color:rgba(245,158,11,.25); color:#7c2d12; }
+  .pp-pill.draft{ background:rgba(2,132,199,.10); border-color:rgba(2,132,199,.22); color:#0c4a6e; }
+
+  .pp-days{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:8px;
+  }
+  .pp-day{
+    border:1px solid rgba(226,232,240,.95);
+    background:rgba(248,250,252,.95);
+    border-radius:14px;
+    padding:9px 10px;
+  }
+  .pp-day-top{ display:flex; justify-content:space-between; gap:10px; align-items:center; }
+  .pp-day-name{ font-weight:800; font-size:12.7px; color:#0f172a; }
+  .pp-day-type{ font-size:11.5px; color:#64748b; font-weight:700; }
+  .pp-school{ margin-top:6px; font-size:12.7px; color:#0f172a; line-height:1.5; }
+  .pp-muted{ color:#94a3b8; font-weight:700; }
+
+  .pp-actions{
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    padding-top:4px;
+  }
+  .pp-spacer{ flex:1; }
+
+  .pp-btn{
+    text-decoration:none;
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:7px 10px;
+    border-radius:12px;
+    border:1px solid rgba(226,232,240,.95);
+    background:#fff;
+    color:#0f172a;
+    font-weight:800; font-size:12px;
+    cursor:pointer;
+  }
+  .pp-btn:hover{ background:rgba(248,250,252,.95); }
+
+  .pp-btn.ok{
+    background:rgba(22,163,74,.10);
+    border-color:rgba(22,163,74,.22);
+    color:#166534;
+  }
+  .pp-btn.warn{
+    background:rgba(245,158,11,.10);
+    border-color:rgba(245,158,11,.22);
+    color:#7c2d12;
+  }
+
+  .pp-form{ margin:0; }
+  .pp-foot{ font-size:11.8px; color:#64748b; padding-top:2px; }
+
+  @media (max-width: 560px){
+    .pp-days{ grid-template-columns: 1fr; }
+  }
+</style>

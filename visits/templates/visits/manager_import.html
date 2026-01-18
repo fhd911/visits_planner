@@ -1,0 +1,626 @@
+<!-- visits/templates/visits/manager_import.html -->
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>استيراد ملفات Excel</title>
+
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --card:rgba(255,255,255,.92);
+      --line:#e7e9f3;
+      --text:#0f172a;
+      --mut:#64748b;
+
+      --pri:#0ea5e9;
+      --pri2:#0284c7;
+
+      --ok:#16a34a;
+      --warn:#f59e0b;
+      --err:#ef4444;
+
+      --shadow: 0 18px 45px rgba(2,6,23,.10);
+      --r: 18px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Tahoma,Arial;
+      background:
+        radial-gradient(1200px 380px at 20% -10%, rgba(14,165,233,.14), transparent 60%),
+        radial-gradient(900px 320px at 90% 0%, rgba(34,197,94,.12), transparent 55%),
+        var(--bg);
+      color:var(--text);
+    }
+
+    .wrap{ max-width:980px; margin:0 auto; padding:22px 16px 36px; display:grid; gap:12px; }
+
+    .topbar{
+      background: rgba(255,255,255,.72);
+      border: 1px solid rgba(231,233,243,.75);
+      border-radius: 22px;
+      padding: 14px 16px;
+      box-shadow: 0 10px 30px rgba(2,6,23,.06);
+      backdrop-filter: blur(10px);
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+    .t-title{ margin:0; font-size:16px; font-weight:900; letter-spacing:.2px;}
+    .t-sub{ margin-top:6px; color:var(--mut); font-size:12.5px; line-height:1.8; }
+    .t-actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px; border-radius:999px;
+      border:1px solid rgba(231,233,243,.9);
+      background: rgba(248,250,252,.9);
+      color: rgba(15,23,42,.80);
+      font-size:12px; font-weight:900;
+      white-space:nowrap;
+    }
+    .dot{ width:8px; height:8px; border-radius:999px; background:#94a3b8; box-shadow:0 0 0 4px rgba(148,163,184,.18); }
+
+    .card{
+      background: var(--card);
+      border: 1px solid rgba(231,233,243,.9);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+    }
+
+    .card-head{
+      padding: 14px 16px 12px;
+      border-bottom:1px solid rgba(231,233,243,.9);
+      background: linear-gradient(180deg, rgba(248,250,252,.92), rgba(255,255,255,.92));
+    }
+    .card-head b{ font-size:14px; }
+    .card-head .hint{ color:var(--mut); font-size:12.5px; margin-top:6px; line-height:1.8; }
+
+    form{ padding: 14px 16px 16px; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media(max-width:820px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .field{
+      display:grid;
+      gap:6px;
+      padding: 12px;
+      border-radius: 16px;
+      border:1px solid rgba(231,233,243,.95);
+      background: rgba(255,255,255,.88);
+      box-shadow: 0 10px 22px rgba(2,6,23,.05);
+    }
+    label{
+      font-weight:900;
+      font-size:13px;
+      color: rgba(15,23,42,.86);
+    }
+    input[type=file]{
+      width:100%;
+      padding: 10px;
+      border-radius: 14px;
+      border:1px solid rgba(231,233,243,.95);
+      background:#fff;
+      font-size:13px;
+      outline:none;
+    }
+    input[type=file]:focus{
+      border-color: rgba(14,165,233,.55);
+      box-shadow: 0 0 0 4px rgba(14,165,233,.12);
+    }
+
+    .actions{
+      margin-top: 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      height: 44px;
+      padding: 0 16px;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      cursor:pointer;
+      font-weight:900;
+      font-size:13.5px;
+      font-family:Tahoma,Arial;
+      transition:.15s ease;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      text-decoration:none;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .btn:active{ transform: translateY(1px); }
+
+    .btn-primary{
+      background: linear-gradient(135deg, var(--pri), var(--pri2));
+      color:#fff;
+      box-shadow: 0 12px 26px rgba(2,132,199,.22);
+    }
+    .btn-primary:hover{ filter: brightness(.98); }
+
+    .btn-ghost{
+      background: rgba(255,255,255,.92);
+      border-color: rgba(231,233,243,.95);
+      color: rgba(15,23,42,.84);
+      box-shadow: 0 10px 22px rgba(2,6,23,.06);
+    }
+    .btn-ghost:hover{ background: rgba(2,6,23,.03); }
+
+    .smallmut{ color:var(--mut); font-size:12.5px; line-height:1.8; }
+
+    /* ===== Results Table ===== */
+    .result{
+      padding: 14px 16px 16px;
+      border-top:1px solid rgba(231,233,243,.9);
+      background: rgba(255,255,255,.86);
+    }
+    .result-title{
+      display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+      margin-bottom:10px;
+    }
+    .result-title b{ font-size:14px; }
+    .table-wrap{
+      border:1px solid rgba(231,233,243,.95);
+      border-radius: 16px;
+      overflow:hidden;
+      background:#fff;
+    }
+    table{ width:100%; border-collapse: collapse; }
+    thead th{
+      position: sticky;
+      top: 0;
+      background: rgba(248,250,252,.98);
+      border-bottom:1px solid rgba(231,233,243,.95);
+      font-size:13px;
+      font-weight:900;
+      padding: 10px 10px;
+      text-align:center;
+    }
+    tbody td{
+      border-bottom:1px solid rgba(231,233,243,.85);
+      padding: 10px 10px;
+      font-size:13px;
+      text-align:center;
+    }
+    tbody tr:nth-child(even) td{ background: rgba(248,250,252,.65); }
+    tbody tr:last-child td{ border-bottom:none; }
+
+    .badge{
+      display:inline-flex; align-items:center; justify-content:center;
+      min-width: 42px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight:900;
+      font-size:12.5px;
+      border:1px solid rgba(231,233,243,.95);
+      background: rgba(248,250,252,.92);
+      color: rgba(15,23,42,.82);
+    }
+    .badge.ok{ background: rgba(22,163,74,.10); border-color: rgba(22,163,74,.25); color:#166534; }
+    .badge.warn{ background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.28); color:#7c2d12; }
+    .badge.err{ background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.28); color:#7f1d1d; }
+
+    /* ==========================
+       ✅ Message Modal (Django messages)
+       ========================== */
+    .mm-backdrop{
+      position: fixed;
+      inset: 0;
+      background: rgba(2,6,23,.45);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+      z-index: 10001;
+    }
+    .mm-backdrop.show{ display:flex; }
+
+    .mm-card{
+      width: min(560px, 100%);
+      border-radius: 20px;
+      background: rgba(255,255,255,.96);
+      border: 1px solid rgba(226,232,240,.95);
+      box-shadow: 0 22px 60px rgba(2,6,23,.22);
+      overflow:hidden;
+      backdrop-filter: blur(10px);
+      transform: translateY(6px);
+      opacity: .98;
+      animation: mmIn .14s ease-out;
+    }
+    @keyframes mmIn{
+      from{ transform: translateY(14px); opacity: .0; }
+      to  { transform: translateY(6px);  opacity: .98; }
+    }
+
+    .mm-head{
+      padding: 14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom: 1px solid rgba(226,232,240,.95);
+      background: linear-gradient(180deg, rgba(248,250,252,.95), rgba(255,255,255,.96));
+    }
+    .mm-title{ margin:0; font-size: 14.5px; font-weight: 950; color: var(--text); }
+
+    .mm-x{
+      width: 38px; height: 38px;
+      border-radius: 12px;
+      border: 1px solid rgba(226,232,240,.95);
+      background: rgba(255,255,255,.92);
+      cursor:pointer;
+      font-weight: 950;
+    }
+    .mm-x:hover{ background: rgba(2,6,23,.04); }
+
+    .mm-body{ padding: 14px 16px 4px; }
+    .mm-body p{
+      margin: 0 0 10px;
+      font-size: 13px;
+      line-height: 1.9;
+      color: rgba(15,23,42,.82);
+      font-weight: 900;
+      white-space: pre-wrap;
+    }
+
+    .mm-note{
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(226,232,240,.95);
+      background: rgba(248,250,252,.92);
+      color: rgba(15,23,42,.82);
+      font-weight: 900;
+      font-size: 12.5px;
+      display:none;
+      white-space: pre-wrap;
+    }
+
+    .mm-actions{
+      padding: 12px 16px 14px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+      border-top: 1px solid rgba(226,232,240,.95);
+      background: rgba(255,255,255,.92);
+    }
+
+    .mm-btn{
+      height: 40px; padding: 0 16px;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      cursor:pointer;
+      font-weight:900;
+      font-size:13.25px;
+      font-family:Tahoma,Arial;
+      transition:.16s ease;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .mm-btn:active{ transform: translateY(1px); }
+
+    .mm-ghost{
+      background: rgba(255,255,255,.92);
+      border-color: rgba(226,232,240,.95);
+      color: rgba(15,23,42,.86);
+    }
+    .mm-ghost:hover{ background: rgba(2,6,23,.04); }
+
+    /* theme on card */
+    .mm-card.mm-ok{ border-color: rgba(22,163,74,.26); background: rgba(22,163,74,.10); }
+    .mm-card.mm-warn{ border-color: rgba(245,158,11,.26); background: rgba(245,158,11,.12); }
+    .mm-card.mm-err{ border-color: rgba(239,68,68,.28); background: rgba(239,68,68,.10); }
+    .mm-card.mm-info{ border-color: rgba(2,132,199,.22); background: rgba(2,132,199,.10); }
+
+    /* theme on button */
+    .mm-btn.mm-ok{ background: rgba(22,163,74,.10); border-color: rgba(22,163,74,.26); color:#14532d; }
+    .mm-btn.mm-warn{ background: rgba(245,158,11,.12); border-color: rgba(245,158,11,.26); color:#7c2d12; }
+    .mm-btn.mm-err{ background: rgba(239,68,68,.10); border-color: rgba(239,68,68,.28); color:#7f1d1d; }
+    .mm-btn.mm-info{ background: rgba(2,132,199,.10); border-color: rgba(2,132,199,.22); color:#0c4a6e; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+
+    <div class="topbar">
+      <div>
+        <h1 class="t-title">استيراد ملفات Excel</h1>
+        <div class="t-sub">ارفع الملفات المطلوبة ثم اضغط <b>استيراد</b>. (يمكن رفع ملف واحد أو أكثر)</div>
+      </div>
+      <div class="t-actions">
+        <span class="pill"><span class="dot"></span> صفحة الإدارة</span>
+        <a class="btn btn-ghost" href="{% url 'admin:index' %}">لوحة الأدمن</a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <b>ملفات الاستيراد</b>
+        <div class="hint">ارفع الملفات، ثم اضغط استيراد. سيتم عرض نتائج الإنشاء/التحديث/التجاهل بالأسفل.</div>
+      </div>
+
+      {# ✅ رسائل Django تمر كـ JSON فقط لتظهر مودال مركزي #}
+      {% if messages %}
+        <script id="djMessages" type="application/json">
+          [
+            {% for m in messages %}
+              {"text":"{{ m|escapejs }}","tags":"{{ m.tags|escapejs }}"}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+          ]
+        </script>
+      {% endif %}
+
+      {# ✅ مهم: بدون action => POST لنفس الصفحة الحالية #}
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="grid">
+          <div class="field">
+            <label>{{ form.schools_boys.label }}</label>
+            {{ form.schools_boys }}
+            <div class="smallmut">مدارس البنين (Excel)</div>
+          </div>
+
+          <div class="field">
+            <label>{{ form.schools_girls.label }}</label>
+            {{ form.schools_girls }}
+            <div class="smallmut">مدارس البنات (Excel)</div>
+          </div>
+
+          <div class="field">
+            <label>{{ form.principals.label }}</label>
+            {{ form.principals }}
+            <div class="smallmut">قائمة القادة/المديرات</div>
+          </div>
+
+          <div class="field">
+            <label>{{ form.supervisors.label }}</label>
+            {{ form.supervisors }}
+            <div class="smallmut">قائمة المشرفين</div>
+          </div>
+
+          <div class="field" style="grid-column: 1 / -1;">
+            <label>{{ form.assignments.label }}</label>
+            {{ form.assignments }}
+            <div class="smallmut">تكليفات/إسناد زيارات (اختياري)</div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <div class="smallmut">
+            ملاحظة: يمكنك رفع ملف أو أكثر، وأي ملف غير مرفوع سيتم تجاهله.
+          </div>
+          <button class="btn btn-primary" type="submit">استيراد</button>
+        </div>
+      </form>
+
+      {% if results %}
+        <div class="result">
+          <div class="result-title">
+            <b>نتائج الاستيراد</b>
+            <span class="smallmut">ملخص سريع لما تم</span>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>الملف</th>
+                  <th>تم إنشاؤه</th>
+                  <th>تم تحديثه</th>
+                  <th>تم تجاهله</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for key, st in results.items %}
+                  <tr>
+                    <td>{{ key }}</td>
+                    <td><span class="badge ok">{{ st.created }}</span></td>
+                    <td><span class="badge warn">{{ st.updated }}</span></td>
+                    <td><span class="badge">{{ st.skipped }}</span></td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- ✅ Message Modal -->
+  <div class="mm-backdrop" id="msgModal" aria-hidden="true">
+    <div class="mm-card" role="dialog" aria-modal="true" aria-labelledby="mmTitle">
+      <div class="mm-head">
+        <h3 class="mm-title" id="mmTitle">رسالة</h3>
+        <button type="button" class="mm-x" id="mmCloseX" aria-label="إغلاق">×</button>
+      </div>
+
+      <div class="mm-body">
+        <p id="mmText"></p>
+        <div class="mm-note" id="mmNote"></div>
+      </div>
+
+      <div class="mm-actions">
+        <button type="button" class="mm-btn mm-ghost" id="mmCloseBtn">حسنًا</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      const msgModal = document.getElementById("msgModal");
+      const mmTitle  = document.getElementById("mmTitle");
+      const mmText   = document.getElementById("mmText");
+      const mmNote   = document.getElementById("mmNote");
+      const mmCloseX = document.getElementById("mmCloseX");
+      const mmCloseB = document.getElementById("mmCloseBtn");
+
+      let autoTimer = null;
+      let lastFocus = null;
+
+      function pickType(tags){
+        const t = (tags || "").toLowerCase();
+        if(t.includes("success")) return "success";
+        if(t.includes("error") || t.includes("danger")) return "error";
+        if(t.includes("warning")) return "warning";
+        return "info";
+      }
+
+      function titleByType(type){
+        if(type === "success") return "تم بنجاح";
+        if(type === "error")   return "حدث خطأ";
+        if(type === "warning") return "تنبيه";
+        return "معلومة";
+      }
+
+      function setTheme(type){
+        const card = msgModal ? msgModal.querySelector(".mm-card") : null;
+        const btn  = mmCloseB;
+
+        if(card){
+          card.classList.remove("mm-ok","mm-warn","mm-err","mm-info");
+          if(type === "success") card.classList.add("mm-ok");
+          else if(type === "warning") card.classList.add("mm-warn");
+          else if(type === "error") card.classList.add("mm-err");
+          else card.classList.add("mm-info");
+        }
+
+        if(btn){
+          btn.classList.remove("mm-ok","mm-warn","mm-err","mm-info","mm-ghost");
+          if(type === "success") btn.classList.add("mm-ok");
+          else if(type === "warning") btn.classList.add("mm-warn");
+          else if(type === "error") btn.classList.add("mm-err");
+          else btn.classList.add("mm-info");
+        }
+      }
+
+      // ملاحظة اختيارية:
+      // 1) لو الرسالة تبدأ بـ "ملاحظة:" / "تنبيه:" / "Note:" -> تتحول ملاحظة
+      // 2) أو لو كتبت: "النص الرئيسي || ملاحظة: ...." -> يقسمها
+      function splitNote(text){
+        const raw = (text || "").trim();
+        const starters = ["ملاحظة:", "تنبيه:", "Note:"];
+
+        for(const s of starters){
+          if(raw.startsWith(s)){
+            return { main: " ", note: raw.slice(s.length).trim() };
+          }
+        }
+
+        const parts = raw.split("||");
+        if(parts.length >= 2){
+          const main = parts[0].trim();
+          const noteRaw = parts.slice(1).join("||").trim();
+          const note = noteRaw
+            .replace(/^ملاحظة:\s*/,"")
+            .replace(/^تنبيه:\s*/,"")
+            .replace(/^Note:\s*/,"")
+            .trim();
+          return { main, note };
+        }
+
+        return { main: raw, note: "" };
+      }
+
+      function openModal(text, tags, ttl){
+        if(!msgModal) return;
+
+        if(autoTimer){ clearTimeout(autoTimer); autoTimer = null; }
+        lastFocus = document.activeElement;
+
+        const type = pickType(tags);
+        setTheme(type);
+
+        const title = titleByType(type);
+        const sp = splitNote(text);
+
+        if(mmTitle) mmTitle.textContent = title;
+        if(mmText)  mmText.textContent  = sp.main ? sp.main : text;
+
+        if(mmNote){
+          if(sp.note){
+            mmNote.style.display = "";
+            mmNote.textContent = "ملاحظة: " + sp.note;
+          }else{
+            mmNote.style.display = "none";
+            mmNote.textContent = "";
+          }
+        }
+
+        msgModal.classList.add("show");
+        msgModal.setAttribute("aria-hidden","false");
+        document.body.style.overflow = "hidden";
+
+        if(mmCloseB) mmCloseB.focus();
+
+        autoTimer = setTimeout(closeModal, (typeof ttl === "number") ? ttl : 2300);
+      }
+
+      function closeModal(){
+        if(!msgModal) return;
+        if(autoTimer){ clearTimeout(autoTimer); autoTimer = null; }
+
+        msgModal.classList.remove("show");
+        msgModal.setAttribute("aria-hidden","true");
+        document.body.style.overflow = "";
+
+        if(lastFocus && typeof lastFocus.focus === "function"){
+          lastFocus.focus();
+        }
+      }
+
+      if(mmCloseX) mmCloseX.addEventListener("click", closeModal);
+      if(mmCloseB) mmCloseB.addEventListener("click", closeModal);
+
+      if(msgModal){
+        msgModal.addEventListener("click", function(e){
+          if(e.target === msgModal) closeModal();
+        });
+      }
+
+      document.addEventListener("keydown", function(e){
+        if(e.key === "Escape" && msgModal && msgModal.classList.contains("show")){
+          e.preventDefault();
+          closeModal();
+        }
+      });
+
+      // اقرأ رسائل Django (آخر رسالة فقط)
+      const msgScript = document.getElementById("djMessages");
+      if(msgScript && msgScript.textContent){
+        try{
+          const arr = JSON.parse(msgScript.textContent.trim() || "[]");
+          const last = arr.length ? arr[arr.length - 1] : null;
+          if(last && last.text){
+            openModal(String(last.text).trim(), last.tags || "", 2300);
+          }
+        }catch(e){}
+        msgScript.remove();
+      }
+    })();
+  </script>
+</body>
+</html>

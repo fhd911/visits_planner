@@ -1,0 +1,1136 @@
+{% extends "visits/base.html" %}
+{% load dict_extras %}
+{% load static %}
+
+{% block title %}تفاصيل خطة الأسبوع{% endblock %}
+{% block page_messages %}{% endblock %}
+
+{% block content %}
+<style>
+  /* =========================================================
+     Admin Plan Detail (FINAL+++):
+     ✅ Timeline
+     ✅ Day Cards color by state
+     ✅ Sticky Admin Decisions
+     ✅ Progress Bar
+     ✅ Days Slider
+     ✅ Badge فوق كل يوم + عداد الأيام الناقصة بالأعلى
+     ✅ Fonts calm (no heavy bold)
+  ========================================================= */
+  .apd{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+
+    --bg1:#f6fbff;
+    --bg2:#fbfdff;
+
+    --card: rgba(255,255,255,.96);
+    --soft: rgba(248,250,252,.92);
+
+    --txt:#0f172a;
+    --mut:#64748b;
+    --mut2:#94a3b8;
+
+    --line: rgba(148,163,184,.22);
+    --line2: rgba(148,163,184,.14);
+
+    --b1:#2563eb;
+    --b2:#60a5fa;
+
+    --ok:#16a34a;
+    --warn:#f59e0b;
+    --bad:#ef4444;
+
+    --shadow: 0 18px 46px rgba(15,23,42,.10);
+    --shadow2: 0 10px 28px rgba(15,23,42,.08);
+
+    /* calm weights */
+    --fw-hero: 700;
+    --fw-title: 650;
+    --fw-strong: 600;
+    --fw-normal: 500;
+    --fw-muted: 450;
+
+    font-family: var(--ff);
+    direction: rtl;
+    color: var(--txt);
+  }
+
+  .apd .shell{
+    min-height: calc(100vh - 80px);
+    padding: 14px 12px 26px;
+    background:
+      radial-gradient(1050px 430px at 12% 0%, rgba(37,99,235,.08), transparent 58%),
+      radial-gradient(1050px 430px at 88% 0%, rgba(16,185,129,.08), transparent 58%),
+      linear-gradient(180deg, var(--bg1), var(--bg2));
+  }
+
+  .apd .wrap{
+    max-width: 1320px;
+    margin: 0 auto;
+    display:grid;
+    gap: 12px;
+  }
+
+  /* ===== Top header ===== */
+  .apd .top{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    padding: 14px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 12px;
+    flex-wrap:wrap;
+  }
+
+  .apd .top .title{
+    display:grid;
+    gap: 4px;
+    min-width: 260px;
+  }
+
+  .apd h1{
+    margin:0;
+    font-size: 16px;
+    font-weight: var(--fw-hero);
+    color: var(--txt);
+    letter-spacing:.2px;
+  }
+
+  .apd .sub{
+    margin:0;
+    font-size: 12.6px;
+    font-weight: var(--fw-normal);
+    color: var(--mut);
+    line-height: 1.7;
+  }
+
+  .apd .top .actions{
+    display:flex;
+    gap: 8px;
+    align-items:center;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+
+  .apd .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--soft);
+    color: var(--mut);
+    font-size: 12px;
+    font-weight: var(--fw-strong);
+  }
+
+  .apd .dot{
+    width:9px;height:9px;border-radius:50%;
+    background: rgba(37,99,235,.95);
+    box-shadow: 0 0 0 4px rgba(37,99,235,.10);
+  }
+  .apd .dot.ok{
+    background: rgba(16,185,129,.95);
+    box-shadow: 0 0 0 4px rgba(16,185,129,.12);
+  }
+  .apd .dot.warn{
+    background: rgba(245,158,11,.95);
+    box-shadow: 0 0 0 4px rgba(245,158,11,.14);
+  }
+
+  .apd .btn{
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background:#fff;
+    color: var(--txt);
+    font-weight: var(--fw-strong);
+    font-size: 12.5px;
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    box-shadow: 0 10px 18px rgba(15,23,42,.06);
+    transition: transform .12s ease, box-shadow .12s ease;
+    user-select:none;
+  }
+  .apd .btn:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 14px 26px rgba(15,23,42,.10);
+  }
+  .apd .btn.primary{
+    background: linear-gradient(135deg, rgba(37,99,235,.95), rgba(96,165,250,.95));
+    border-color: rgba(37,99,235,.18);
+    color:#fff;
+  }
+
+  /* ===== Layout ===== */
+  .apd .grid{
+    display:grid;
+    grid-template-columns: 1.35fr .9fr;
+    gap: 12px;
+    align-items:start;
+  }
+
+  /* ===== Cards ===== */
+  .apd .card{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: var(--shadow2);
+    overflow:hidden;
+  }
+
+  .apd .card-h{
+    padding: 12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(248,250,252,.95), rgba(255,255,255,.92));
+  }
+
+  .apd .card-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size: 13px;
+    font-weight: var(--fw-title);
+    color: var(--txt);
+  }
+
+  .apd .hint{
+    font-size: 12px;
+    font-weight: var(--fw-normal);
+    color: var(--mut);
+    display:flex;
+    align-items:center;
+    gap: 8px;
+    line-height:1.6;
+  }
+
+  .apd .pad{ padding: 12px 14px; }
+
+  /* ===== Status pill ===== */
+  .apd .pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding: 7px 10px;
+    border-radius: 999px;
+    font-weight: var(--fw-strong);
+    font-size: 12px;
+    border: 1px solid transparent;
+    white-space:nowrap;
+  }
+  .apd .pill.approved{
+    background: rgba(22,163,74,.10);
+    border-color: rgba(22,163,74,.22);
+    color:#166534;
+  }
+  .apd .pill.draft{
+    background: rgba(37,99,235,.10);
+    border-color: rgba(37,99,235,.18);
+    color:#0c4a6e;
+  }
+  .apd .pill.unlock{
+    background: rgba(245,158,11,.12);
+    border-color: rgba(245,158,11,.22);
+    color:#7c2d12;
+  }
+
+  /* ===== Right Summary ===== */
+  .apd .summary{
+    display:grid;
+    gap: 10px;
+  }
+
+  .apd .rows{ display:grid; gap: 8px; }
+  .apd .row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: rgba(248,250,252,.92);
+  }
+  .apd .row .k{
+    font-size: 12px;
+    font-weight: var(--fw-normal);
+    color: var(--mut);
+  }
+  .apd .row .v{
+    font-size: 12.8px;
+    font-weight: var(--fw-title);
+    color: var(--txt);
+  }
+
+  /* ===== Progress ===== */
+  .apd .progress{
+    display:grid;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: rgba(248,250,252,.92);
+  }
+  .apd .progress-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    flex-wrap:wrap;
+  }
+  .apd .progress-top .txt{
+    font-size: 12px;
+    font-weight: var(--fw-normal);
+    color: var(--mut);
+  }
+  .apd .progress-top .ratio{
+    font-size: 12.5px;
+    font-weight: var(--fw-title);
+    color: var(--txt);
+  }
+  .apd .bar{
+    height: 10px;
+    border-radius: 999px;
+    background: rgba(2,6,23,.06);
+    overflow:hidden;
+  }
+  .apd .bar > span{
+    display:block;
+    height: 100%;
+    width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(16,185,129,.95), rgba(34,197,94,.95));
+    transition: width .35s ease;
+  }
+  .apd .progress-note{
+    font-size: 12px;
+    font-weight: var(--fw-normal);
+    color: var(--mut);
+    display:flex;
+    align-items:center;
+    gap: 8px;
+  }
+  .apd .mini-ico{
+    width: 18px; height: 18px;
+    border-radius: 7px;
+    display:grid;
+    place-items:center;
+    border: 1px solid rgba(16,185,129,.22);
+    background: rgba(16,185,129,.10);
+    color: #166534;
+    font-weight: var(--fw-title);
+    font-size: 12px;
+  }
+
+  /* ===== Timeline ===== */
+  .apd .timeline{
+    display:grid;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: rgba(248,250,252,.92);
+  }
+  .apd .tl-track{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 10px;
+    position: relative;
+  }
+  .apd .tl-track::before{
+    content:"";
+    position:absolute;
+    top: 14px;
+    right: 16px;
+    left: 16px;
+    height: 2px;
+    background: rgba(148,163,184,.35);
+    border-radius: 999px;
+  }
+  .apd .tl-step{
+    position: relative;
+    width: 33.33%;
+    display:grid;
+    justify-items:center;
+    gap: 6px;
+  }
+  .apd .tl-dot{
+    width: 28px; height: 28px;
+    border-radius: 999px;
+    display:grid;
+    place-items:center;
+    border: 1px solid rgba(148,163,184,.40);
+    background: #fff;
+    z-index: 2;
+    box-shadow: 0 10px 18px rgba(15,23,42,.06);
+    font-size: 13px;
+  }
+  .apd .tl-title{
+    font-size: 12.2px;
+    font-weight: var(--fw-title);
+    color: var(--txt);
+  }
+  .apd .tl-sub{
+    font-size: 12px;
+    font-weight: var(--fw-normal);
+    color: var(--mut);
+    text-align:center;
+    line-height:1.5;
+  }
+
+  /* States */
+  .apd .tl-step.done .tl-dot{
+    border-color: rgba(22,163,74,.35);
+    background: rgba(22,163,74,.12);
+    color:#166534;
+  }
+  .apd .tl-step.wait .tl-dot{
+    border-color: rgba(245,158,11,.35);
+    background: rgba(245,158,11,.12);
+    color:#7c2d12;
+  }
+  .apd .tl-step.off .tl-dot{
+    border-color: rgba(148,163,184,.35);
+    background: rgba(248,250,252,.92);
+    color:#64748b;
+  }
+
+  /* ===== Sticky admin decisions ===== */
+  .apd .sticky{
+    position: sticky;
+    top: 12px;
+    z-index: 3;
+  }
+
+  .apd .decision-box{
+    display:grid;
+    gap: 10px;
+  }
+
+  .apd .d-actions{
+    display:flex;
+    gap: 8px;
+    flex-wrap:wrap;
+  }
+
+  .apd .act{
+    height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background:#fff;
+    color: var(--txt);
+    font-weight: var(--fw-strong);
+    font-size: 12px;
+    cursor:pointer;
+    box-shadow: 0 10px 16px rgba(15,23,42,.06);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .apd .act:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 14px 22px rgba(15,23,42,.10);
+  }
+  .apd .act.approve{
+    background: rgba(22,163,74,.12);
+    border-color: rgba(22,163,74,.25);
+    color:#166534;
+  }
+  .apd .act.draft{
+    background: rgba(245,158,11,.12);
+    border-color: rgba(245,158,11,.25);
+    color:#7c2d12;
+  }
+  .apd .act:disabled{
+    opacity: .55;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+
+  /* ===== Days slider ===== */
+  .apd .days-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+    flex-wrap:wrap;
+  }
+  .apd .nav{
+    display:flex;
+    gap: 8px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+
+  .apd .nav-btn{
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background:#fff;
+    font-weight: var(--fw-strong);
+    font-size: 12px;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap: 6px;
+    box-shadow: 0 8px 14px rgba(15,23,42,.05);
+  }
+
+  .apd .slider{ padding: 12px 14px 14px; }
+
+  .apd .track{
+    display:flex;
+    gap: 10px;
+    overflow:auto;
+    scroll-behavior:smooth;
+    padding-bottom: 8px;
+  }
+  .apd .track::-webkit-scrollbar{ height: 10px; }
+  .apd .track::-webkit-scrollbar-thumb{
+    background: rgba(148,163,184,.35);
+    border-radius: 999px;
+  }
+
+  /* ===== Day card states ===== */
+  .apd .day-card{
+    min-width: 320px;
+    max-width: 360px;
+    flex: 0 0 auto;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: rgba(248,250,252,.92);
+    box-shadow: 0 12px 22px rgba(15,23,42,.06);
+    overflow:hidden;
+    position: relative;
+  }
+
+  /* colored strip (state) */
+  .apd .day-card::before{
+    content:"";
+    position:absolute;
+    top:0; right:0; left:0;
+    height: 4px;
+    background: rgba(148,163,184,.40);
+  }
+
+  .apd .day-card.state-ok{
+    border-color: rgba(22,163,74,.20);
+    background: linear-gradient(180deg, rgba(22,163,74,.05), rgba(248,250,252,.92));
+  }
+  .apd .day-card.state-ok::before{
+    background: linear-gradient(90deg, rgba(22,163,74,.95), rgba(34,197,94,.95));
+  }
+
+  .apd .day-card.state-missing{
+    border-color: rgba(245,158,11,.22);
+    background: linear-gradient(180deg, rgba(245,158,11,.06), rgba(248,250,252,.92));
+  }
+  .apd .day-card.state-missing::before{
+    background: linear-gradient(90deg, rgba(245,158,11,.95), rgba(251,191,36,.95));
+  }
+
+  .apd .day-card.state-remote{
+    border-color: rgba(37,99,235,.22);
+    background: linear-gradient(180deg, rgba(37,99,235,.06), rgba(248,250,252,.92));
+  }
+  .apd .day-card.state-remote::before{
+    background: linear-gradient(90deg, rgba(37,99,235,.95), rgba(96,165,250,.95));
+  }
+
+  .apd .day-top{
+    padding: 12px 12px 10px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap: 10px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(255,255,255,.72);
+  }
+
+  .apd .day-name{ display:grid; gap: 6px; }
+  .apd .day-name .d{
+    font-weight: var(--fw-title);
+    font-size: 13px;
+    color: var(--txt);
+  }
+  .apd .day-name .dt{
+    font-weight: var(--fw-normal);
+    font-size: 12px;
+    color: var(--mut2);
+  }
+
+  .apd .right-tags{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-end;
+    gap: 6px;
+    min-width: 120px;
+  }
+
+  .apd .tag{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: var(--fw-strong);
+    border: 1px solid transparent;
+    white-space:nowrap;
+  }
+  .apd .tag.in{
+    background: rgba(22,163,74,.10);
+    border-color: rgba(22,163,74,.22);
+    color:#166534;
+  }
+  .apd .tag.remote{
+    background: rgba(37,99,235,.10);
+    border-color: rgba(37,99,235,.18);
+    color:#0c4a6e;
+  }
+  .apd .tag.none{
+    background: rgba(148,163,184,.16);
+    border-color: rgba(148,163,184,.22);
+    color:#475569;
+  }
+
+  /* ✅ Badge state فوق كل يوم */
+  .apd .badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 11.7px;
+    font-weight: var(--fw-strong);
+    border: 1px solid transparent;
+    white-space:nowrap;
+  }
+  .apd .badge.ok{
+    background: rgba(22,163,74,.10);
+    border-color: rgba(22,163,74,.22);
+    color:#166534;
+  }
+  .apd .badge.missing{
+    background: rgba(245,158,11,.12);
+    border-color: rgba(245,158,11,.22);
+    color:#7c2d12;
+  }
+  .apd .badge.remote{
+    background: rgba(37,99,235,.10);
+    border-color: rgba(37,99,235,.18);
+    color:#0c4a6e;
+  }
+
+  .apd .day-body{
+    padding: 12px;
+    display:grid;
+    gap: 10px;
+  }
+
+  .apd .school-name{
+    font-size: 13px;
+    font-weight: var(--fw-title);
+    color: var(--txt);
+    line-height: 1.6;
+  }
+  .apd .muted{
+    color: var(--mut2);
+    font-weight: var(--fw-normal);
+    font-size: 12px;
+  }
+
+  .apd .meta-grid{ display:grid; gap: 8px; }
+  .apd .meta{
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,.80);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+  }
+  .apd .meta .k{
+    font-size: 12px;
+    font-weight: var(--fw-normal);
+    color: var(--mut);
+  }
+  .apd .meta .v{
+    font-size: 12.6px;
+    font-weight: var(--fw-title);
+    color: var(--txt);
+  }
+
+  /* ===== Toast ===== */
+  .apd .toast-wrap{
+    position: fixed;
+    bottom: 16px;
+    left: 16px;
+    z-index: 9999;
+    display:grid;
+    gap: 8px;
+  }
+  .apd .toast{
+    min-width: 240px;
+    max-width: 380px;
+    background: rgba(15,23,42,.92);
+    color:#fff;
+    padding: 10px 12px;
+    border-radius: 16px;
+    box-shadow: 0 18px 50px rgba(15,23,42,.24);
+    font-weight: var(--fw-strong);
+    font-size: 12.5px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap: 10px;
+  }
+  .apd .toast .x{
+    border:0;
+    background: transparent;
+    color:#fff;
+    cursor:pointer;
+    font-weight: 900;
+    opacity: .85;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 1100px){
+    .apd .grid{ grid-template-columns: 1fr; }
+    .apd .sticky{ position: static; }
+    .apd .day-card{ min-width: 290px; }
+  }
+</style>
+
+<section class="apd">
+  <div class="shell">
+    <div class="wrap">
+
+      <!-- ===== Top Header ===== -->
+      <div class="top">
+        <div class="title">
+          <h1>تفاصيل خطة الأسبوع</h1>
+          <p class="sub">
+            المشرف: <b style="font-weight:var(--fw-title)">{{ sup.full_name }}</b>
+            — هوية: <b style="font-weight:var(--fw-title)">{{ sup.national_id }}</b>
+            — الأسبوع: <b style="font-weight:var(--fw-title)">#{{ week }}</b>
+            — رقم الخطة: <b style="font-weight:var(--fw-title)">#{{ plan.id }}</b>
+          </p>
+        </div>
+
+        {% comment %} ✅ عداد الأيام الناقصة بالأعلى (FIXED) {% endcomment %}
+        {% widthratio filled 1 -1 as neg_filled %}
+        {% with missing=5|add:neg_filled %}
+        <div class="actions">
+          <span class="chip"><span class="dot ok"></span> النظام يعمل</span>
+
+          {% if missing > 0 %}
+            <span class="chip" style="border-color:rgba(245,158,11,.22);background:rgba(245,158,11,.10);color:#7c2d12">
+              <span class="dot warn"></span> الأيام الناقصة: <b style="color:var(--txt);font-weight:var(--fw-title)">{{ missing }}</b>
+            </span>
+          {% else %}
+            <span class="chip" style="border-color:rgba(22,163,74,.22);background:rgba(22,163,74,.10);color:#166534">
+              <span class="dot ok"></span> مكتملة بالكامل ✅
+            </span>
+          {% endif %}
+
+          {% if plan.status == plan.STATUS_APPROVED %}
+            <span class="chip" style="border-color:rgba(22,163,74,.22);background:rgba(22,163,74,.10);color:#166534">
+              ✅ الحالة: معتمدة
+            </span>
+          {% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}
+            <span class="chip" style="border-color:rgba(245,158,11,.22);background:rgba(245,158,11,.10);color:#7c2d12">
+              🔓 الحالة: طلب فك اعتماد
+            </span>
+          {% else %}
+            <span class="chip" style="border-color:rgba(37,99,235,.18);background:rgba(37,99,235,.08);color:#0c4a6e">
+              📝 الحالة: مسودة
+            </span>
+          {% endif %}
+
+          <a class="btn" href="{% url 'visits:admin_dashboard' %}?week={{ week }}">↩ رجوع للوحة الإدارة</a>
+          <a class="btn primary" href="{% url 'visits:admin_plan_export_excel' plan.id %}">⬇ Excel</a>
+        </div>
+        {% endwith %}
+      </div>
+
+      <div class="grid">
+
+        <!-- ===============================
+             LEFT: Days Slider
+        ================================ -->
+        <div class="card">
+          <div class="card-h">
+            <div class="days-head">
+              <div class="card-title">📅 الأيام (سلايدر)</div>
+              <div class="hint">اسحب يمين/يسار أو استخدم الأسهم</div>
+            </div>
+
+            <div class="nav">
+              <button type="button" class="nav-btn" id="prevDay">◀ السابق</button>
+              <button type="button" class="nav-btn" id="nextDay">التالي ▶</button>
+            </div>
+          </div>
+
+          <div class="slider">
+            <div class="track" id="daysTrack">
+
+              {% for wd,name in weekdays %}
+                {% with d=day_map|get_item:wd %}
+                <div class="day-card
+                  {% if not d or not d.school %}state-missing{% else %}
+                    {% if d.visit_type == 'remote' %}state-remote{% else %}state-ok{% endif %}
+                  {% endif %}
+                ">
+                  <div class="day-top">
+                    <div class="day-name">
+                      <div class="d">{{ name }}</div>
+
+                      {% comment %} ✅ Badge فوق كل يوم {% endcomment %}
+                      {% if not d or not d.school %}
+                        <span class="badge missing">ناقص</span>
+                      {% else %}
+                        {% if d.visit_type == 'remote' %}
+                          <span class="badge remote">عن بعد</span>
+                        {% else %}
+                          <span class="badge ok">مكتمل</span>
+                        {% endif %}
+                      {% endif %}
+
+                      <div class="dt">
+                        {% if day_dates and day_dates|get_item:wd %}
+                          {{ day_dates|get_item:wd|date:"Y-m-d" }}
+                        {% else %}
+                          —
+                        {% endif %}
+                      </div>
+                    </div>
+
+                    <div class="right-tags">
+                      {% if d %}
+                        {% if d.visit_type == "in" %}
+                          <span class="tag in">حضوري</span>
+                        {% elif d.visit_type == "remote" %}
+                          <span class="tag remote">عن بعد</span>
+                        {% else %}
+                          <span class="tag none">—</span>
+                        {% endif %}
+                      {% else %}
+                        <span class="tag none">لا يوجد</span>
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  <div class="day-body">
+                    {% if d and d.school %}
+                      <div class="school-name">{{ d.school.name }}</div>
+
+                      <div class="meta-grid">
+                        <div class="meta">
+                          <div class="k">رقم المدرسة</div>
+                          <div class="v">{{ d.school.stat_code|default:"—" }}</div>
+                        </div>
+
+                        <div class="meta">
+                          <div class="k">المدير</div>
+                          <div class="v">
+                            {% if d.school.principal %}
+                              {{ d.school.principal.full_name|default:"—" }}
+                            {% else %}
+                              —
+                            {% endif %}
+                          </div>
+                        </div>
+
+                        <div class="meta">
+                          <div class="k">جوال المدير</div>
+                          <div class="v">
+                            {% if d.school.principal %}
+                              {{ d.school.principal.mobile|default:"—" }}
+                            {% else %}
+                              —
+                            {% endif %}
+                          </div>
+                        </div>
+                      </div>
+
+                    {% else %}
+                      <div class="school-name" style="color:#475569">لا يوجد مدرسة لهذا اليوم</div>
+                      <div class="muted">اليوم ناقص — اختر مدرسة ليصبح مكتمل.</div>
+                    {% endif %}
+                  </div>
+                </div>
+                {% endwith %}
+              {% endfor %}
+
+            </div>
+          </div>
+        </div>
+
+        <!-- ===============================
+             RIGHT: Summary + Timeline + Sticky Decisions
+        ================================ -->
+        <div class="summary">
+
+          <!-- Quick Summary -->
+          <div class="card">
+            <div class="card-h">
+              <div class="card-title">📌 ملخص الحالة</div>
+              <div class="hint">
+                {% if plan.saved_at %}
+                  آخر حفظ: <b style="font-weight:var(--fw-title);color:var(--txt)">{{ plan.saved_at|date:"Y-m-d" }} — {{ plan.saved_at|time:"H:i" }}</b>
+                {% else %}
+                  آخر حفظ: <b style="font-weight:var(--fw-title);color:var(--txt)">—</b>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="pad">
+              <div class="rows">
+                <div class="row">
+                  <div class="k">الأسبوع</div>
+                  <div class="v">#{{ week }}</div>
+                </div>
+
+                <div class="row">
+                  <div class="k">رقم الخطة</div>
+                  <div class="v">#{{ plan.id }}</div>
+                </div>
+
+                <div class="row">
+                  <div class="k">الامتلاء</div>
+                  <div class="v">{{ filled }}/5</div>
+                </div>
+
+                <div class="row">
+                  <div class="k">الحالة الحالية</div>
+                  <div class="v">
+                    {% if plan.status == plan.STATUS_APPROVED %}
+                      <span class="pill approved">معتمدة</span>
+                    {% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}
+                      <span class="pill unlock">طلب فك اعتماد</span>
+                    {% else %}
+                      <span class="pill draft">مسودة</span>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Progress -->
+              <div class="progress" style="margin-top:12px">
+                <div class="progress-top">
+                  <div class="txt">نسبة اكتمال الخطة</div>
+                  <div class="ratio"><span id="ratioTxt">0%</span></div>
+                </div>
+                <div class="bar"><span id="barFill"></span></div>
+                <div class="progress-note">
+                  <span class="mini-ico">✓</span>
+                  {% if filled == 5 %}
+                    الخطة مكتملة ويمكن اعتمادها ✅
+                  {% else %}
+                    الخطة غير مكتملة — يلزم إكمال الأيام المتبقية قبل الاعتماد.
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- Timeline -->
+              <div class="timeline" style="margin-top:12px">
+                <div class="hint" style="justify-content:space-between">
+                  <span><b style="font-weight:var(--fw-title);color:var(--txt)">Timeline</b> (حفظ → اعتماد → فك اعتماد)</span>
+                  <span style="color:var(--mut2)">يتغير تلقائيًا حسب الحالة</span>
+                </div>
+
+                <div class="tl-track">
+                  <div class="tl-step {% if plan.saved_at %}done{% else %}off{% endif %}">
+                    <div class="tl-dot">💾</div>
+                    <div class="tl-title">آخر حفظ</div>
+                    <div class="tl-sub">
+                      {% if plan.saved_at %}
+                        {{ plan.saved_at|date:"Y-m-d" }}<br>{{ plan.saved_at|time:"H:i" }}
+                      {% else %}
+                        —
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  <div class="tl-step {% if plan.status == plan.STATUS_APPROVED %}done{% else %}off{% endif %}">
+                    <div class="tl-dot">✅</div>
+                    <div class="tl-title">الاعتماد</div>
+                    <div class="tl-sub">
+                      {% if plan.status == plan.STATUS_APPROVED %}
+                        تم اعتمادها
+                      {% else %}
+                        لم تعتمد بعد
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  <div class="tl-step {% if plan.status == plan.STATUS_UNLOCK_REQUESTED %}wait{% else %}off{% endif %}">
+                    <div class="tl-dot">🔓</div>
+                    <div class="tl-title">فك الاعتماد</div>
+                    <div class="tl-sub">
+                      {% if plan.status == plan.STATUS_UNLOCK_REQUESTED %}
+                        يوجد طلب
+                      {% else %}
+                        لا يوجد طلب
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Sticky Decisions -->
+          <div class="card sticky" id="stickyDecisions">
+            <div class="card-h">
+              <div class="card-title">⚙️ قرارات الإدارة</div>
+              <div class="hint">اعتماد / إرجاع لمسودة</div>
+            </div>
+
+            <div class="pad decision-box">
+              <div class="d-actions">
+                <button
+                  type="button"
+                  class="act approve"
+                  data-action="approve"
+                  data-url="{% url 'visits:admin_plan_approve' plan.id %}"
+                  {% if plan.status == plan.STATUS_APPROVED %}disabled{% endif %}
+                  {% if filled != 5 %}disabled{% endif %}
+                >✅ اعتماد</button>
+
+                <button
+                  type="button"
+                  class="act draft"
+                  data-action="draft"
+                  data-url="{% url 'visits:admin_plan_back_to_draft' plan.id %}"
+                  {% if plan.status == plan.STATUS_DRAFT %}disabled{% endif %}
+                >↩ إرجاع لمسودة</button>
+              </div>
+
+              <div class="hint" style="border:1px dashed var(--line);border-radius:16px;padding:10px 12px;background:rgba(248,250,252,.78)">
+                ✅ الاعتماد متاح فقط إذا كانت الخطة <b style="font-weight:var(--fw-title);color:var(--txt)">5/5</b>.
+                <br>
+                ↩ إرجاع لمسودة يلغي الاعتماد ويسمح بالتعديل.
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+</section>
+
+<script>
+  // ===== Toast =====
+  function showToast(msg){
+    const wrap = document.getElementById("toastWrap");
+    const el = document.createElement("div");
+    el.className = "toast";
+    el.innerHTML = `<span>${msg}</span><button class="x" type="button">✕</button>`;
+    wrap.appendChild(el);
+    el.querySelector(".x").addEventListener("click", ()=> el.remove());
+    setTimeout(()=>{ if(el.parentNode) el.remove(); }, 2600);
+  }
+
+  // ===== Cookie helper =====
+  function getCookie(name){
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if(parts.length === 2) return parts.pop().split(';').shift();
+    return "";
+  }
+
+  // ===== POST Ajax =====
+  async function postAction(url){
+    const csrf = getCookie("csrftoken");
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrf,
+        "X-Requested-With": "XMLHttpRequest"
+      }
+    });
+    const data = await res.json().catch(()=> ({}));
+    if(!res.ok){
+      throw new Error((data && data.message) ? data.message : "حدث خطأ أثناء التنفيذ.");
+    }
+    return data;
+  }
+
+  // ===== Actions buttons =====
+  document.addEventListener("click", async (e)=>{
+    const btn = e.target.closest("button[data-action][data-url]");
+    if(!btn) return;
+    e.preventDefault();
+    if(btn.disabled) return;
+
+    const url = btn.getAttribute("data-url");
+    const oldText = btn.textContent;
+
+    btn.disabled = true;
+    btn.textContent = "جارٍ التنفيذ…";
+
+    try{
+      const data = await postAction(url);
+      showToast(data.message || "تم ✅");
+      setTimeout(()=> window.location.reload(), 450);
+    }catch(err){
+      showToast(err.message || "فشل ❌");
+      btn.disabled = false;
+      btn.textContent = oldText;
+    }
+  });
+
+  // ===== Days slider arrows =====
+  const track = document.getElementById("daysTrack");
+  const prevBtn = document.getElementById("prevDay");
+  const nextBtn = document.getElementById("nextDay");
+
+  if(track && prevBtn && nextBtn){
+    const step = () => Math.min(360, track.clientWidth * 0.9);
+
+    prevBtn.addEventListener("click", ()=>{
+      track.scrollBy({ left: step(), behavior: "smooth" });
+    });
+
+    nextBtn.addEventListener("click", ()=>{
+      track.scrollBy({ left: -step(), behavior: "smooth" });
+    });
+  }
+
+  // ===== Progress =====
+  (function(){
+    const filled = parseInt("{{ filled|default:0 }}", 10) || 0;
+    const pct = Math.max(0, Math.min(100, Math.round((filled / 5) * 100)));
+
+    const bar = document.getElementById("barFill");
+    const txt = document.getElementById("ratioTxt");
+
+    if(txt) txt.textContent = pct + "%";
+    if(bar) bar.style.width = pct + "%";
+  })();
+</script>
+{% endblock %}
