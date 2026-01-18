@@ -190,8 +190,19 @@ class Plan(models.Model):
         return f"{self.supervisor} — أسبوع {self.week.week_no}"
 
     def is_fully_filled(self) -> bool:
+        """
+        ✅ التعديل:
+        اليوم يعتبر "معبّى" إذا:
+        - فيه مدرسة (school_id موجود)
+        أو
+        - نوع الزيارة = بدون زيارة (none)
+        """
         needed = {0, 1, 2, 3, 4}
-        filled = {d.weekday for d in self.days.all() if d.school_id}
+        filled = {
+            d.weekday
+            for d in self.days.all()
+            if (d.school_id is not None) or (d.visit_type == PlanDay.VISIT_NONE)
+        }
         return needed.issubset(filled)
 
 
@@ -208,6 +219,7 @@ class PlanDay(models.Model):
         ordering = ["weekday"]
         indexes = [
             models.Index(fields=["weekday"]),
+            models.Index(fields=["visit_type"]),
         ]
 
     WEEKDAY_CHOICES = [
@@ -218,9 +230,30 @@ class PlanDay(models.Model):
         (4, "الخميس"),
     ]
 
+    # ✅ أنواع الزيارة (مع "بدون زيارة")
+    VISIT_IN = "in"
+    VISIT_REMOTE = "remote"
+    VISIT_NONE = "none"
+
     VISIT_CHOICES = [
-        ("in", "حضوري"),
-        ("remote", "عن بعد"),
+        (VISIT_IN, "حضوري"),
+        (VISIT_REMOTE, "عن بعد"),
+        (VISIT_NONE, "بدون زيارة مدرسية"),
+    ]
+
+    # ✅ أسباب جاهزة عند عدم وجود زيارة
+    REASON_MEETING = "meeting"
+    REASON_TRAINING = "training"
+    REASON_VISIT = "event"
+    REASON_OFFICE = "office"
+    REASON_OTHER = "other"
+
+    NO_VISIT_REASON_CHOICES = [
+        (REASON_MEETING, "اجتماع"),
+        (REASON_TRAINING, "تدريب"),
+        (REASON_VISIT, "لقاء/فعالية"),
+        (REASON_OFFICE, "عمل مكتبي"),
+        (REASON_OTHER, "أخرى"),
     ]
 
     plan = models.ForeignKey(
@@ -240,10 +273,29 @@ class PlanDay(models.Model):
         verbose_name="المدرسة",
     )
 
-    visit_type = models.CharField("نوع الزيارة", max_length=10, choices=VISIT_CHOICES, default="in")
+    visit_type = models.CharField("نوع اليوم", max_length=10, choices=VISIT_CHOICES, default=VISIT_IN)
+
+    # ✅ سبب عدم الزيارة (يظهر فقط إذا visit_type = none)
+    no_visit_reason = models.CharField(
+        "سبب عدم الزيارة",
+        max_length=20,
+        choices=NO_VISIT_REASON_CHOICES,
+        null=True,
+        blank=True,
+    )
+
+    # ✅ ملاحظة اختيارية (مفيدة خصوصًا مع "أخرى")
+    note = models.CharField("ملاحظة", max_length=120, null=True, blank=True)
 
     def __str__(self) -> str:
         return f"{self.plan} — {self.get_weekday_display()} — {self.school or '—'}"
+
+    def clean(self):
+        """
+        (اختياري) يمكنك إضافة تحقق هنا لاحقًا.
+        تركته بسيط عشان ما يسبب لك مشاكل أثناء الاستيراد/التعديل.
+        """
+        super().clean()
 
 
 # =========================

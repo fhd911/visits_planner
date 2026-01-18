@@ -33,6 +33,10 @@
     --danger: rgba(239,68,68,.10);
     --dangerb: rgba(239,68,68,.28);
     --dangerc: #7f1d1d;
+
+    --gray: rgba(100,116,139,.10);
+    --grayb: rgba(100,116,139,.22);
+    --grayc: #334155;
   }
 
   .page-wrap{ max-width:1280px; margin:0 auto; padding:16px 0 10px; display:grid; gap:14px; }
@@ -269,6 +273,7 @@
     box-shadow: 0 10px 22px rgba(2,6,23,.05);
   }
   .in-select:focus{ border-color: rgba(37,99,235,.45); }
+  .in-select[disabled]{ opacity:.6; background: rgba(248,250,252,.95); cursor:not-allowed; }
 
   /* Visit chip */
   .vchip{
@@ -310,8 +315,63 @@
     border-color: rgba(37,99,235,.22);
     color: #1e3a8a;
   }
+  .vchip[data-value="none"]{
+    background: var(--gray);
+    border-color: var(--grayb);
+    color: var(--grayc);
+  }
+
   .vchip .caret{ font-size: 11px; opacity: .85; transform: translateY(-1px); }
   .vchip.is-disabled{ opacity: .55; cursor: not-allowed; pointer-events: none; box-shadow: none; }
+
+  /* no-visit small box */
+  .novisit{
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    border: 1px dashed rgba(100,116,139,.35);
+    background: rgba(248,250,252,.92);
+    text-align: right;
+    display: none;
+  }
+  .novisit.show{ display:block; }
+
+  .novisit-row{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+  .novisit label{
+    font-size: 12.5px;
+    color: var(--muted);
+    font-weight: 900;
+    white-space:nowrap;
+  }
+  .novisit select, .novisit input{
+    height: 38px;
+    border-radius: 12px;
+    border: 1px solid rgba(226,232,240,.95);
+    background:#fff;
+    padding: 0 10px;
+    font-family:"Cairo", Arial;
+    font-size: 13px;
+    outline:none;
+    box-shadow: 0 10px 18px rgba(2,6,23,.05);
+  }
+  .novisit select:focus, .novisit input:focus{
+    border-color: rgba(100,116,139,.45);
+  }
+  .novisit input{
+    flex: 1;
+    min-width: 180px;
+  }
+  .novisit .hint2{
+    margin-top: 6px;
+    font-size: 12px;
+    color: rgba(100,116,139,.85);
+    font-weight: 900;
+  }
 
   /* Inline validation */
   .inline-msg{
@@ -606,8 +666,8 @@
                 <th class="col-day">اليوم</th>
                 <th class="col-gdate">التاريخ (ميلادي)</th>
                 <th class="col-hdate">التاريخ (هجري)</th>
-                <th class="col-school">المدرسة</th>
-                <th class="col-visit">نوع الزيارة</th>
+                <th class="col-school">المدرسة / سبب اليوم</th>
+                <th class="col-visit">نوع اليوم</th>
               </tr>
             </thead>
 
@@ -615,16 +675,20 @@
               {% for wd,name in weekdays %}
                 {% with d=day_dates|get_item:wd %}
                 {% with day=days_map|get_item:wd %}
-                {% with current=day.visit_type|default:"in" %}
-                <tr class="{% if d|date:'Y-m-d' == today|date:'Y-m-d' %}today{% endif %}">
+                {% with current=day.visit_type|default:visit_in_value %}
+                <tr class="{% if d|date:'Y-m-d' == today|date:'Y-m-d' %}today{% endif %}"
+                    data-row="{{ wd }}">
+
                   <td class="col-day"><span class="dayname">{{ name }}</span></td>
 
                   <td class="col-gdate"><span class="pill">{{ d|date:"d-m-Y" }}</span></td>
                   <td class="col-hdate"><span class="pill">{{ d|to_hijri }}</span></td>
 
                   <td class="col-school">
-                    <select class="in-select js-school" name="school_{{ wd }}"
-                      {% if plan.status == plan.STATUS_APPROVED %}disabled{% endif %}>
+                    <select class="in-select js-school"
+                            name="school_{{ wd }}"
+                            data-school="{{ wd }}"
+                            {% if plan.status == plan.STATUS_APPROVED %}disabled{% endif %}>
                       <option value="">— اختر —</option>
                       {% for s in schools %}
                         <option value="{{ s.id }}" {% if day and day.school_id == s.id %}selected{% endif %}>
@@ -632,22 +696,57 @@
                         </option>
                       {% endfor %}
                     </select>
+
+                    {# ✅ صندوق “بدون زيارة” يظهر فقط عند اختيار none #}
+                    <div class="novisit js-novisit" data-novisit="{{ wd }}">
+                      <div class="novisit-row">
+                        <label>السبب</label>
+                        <select name="reason_{{ wd }}"
+                                data-reason="{{ wd }}"
+                                {% if plan.status == plan.STATUS_APPROVED %}disabled{% endif %}>
+                          <option value="">بدون تحديد</option>
+                          {# هذه القيم يجب أن تطابق choices في model no_visit_reason #}
+                          <option value="meeting" {% if day and day.no_visit_reason == "meeting" %}selected{% endif %}>اجتماع</option>
+                          <option value="training" {% if day and day.no_visit_reason == "training" %}selected{% endif %}>تدريب</option>
+                          <option value="appointment" {% if day and day.no_visit_reason == "appointment" %}selected{% endif %}>لقاء/موعد</option>
+                          <option value="office" {% if day and day.no_visit_reason == "office" %}selected{% endif %}>عمل مكتبي</option>
+                          <option value="other" {% if day and day.no_visit_reason == "other" %}selected{% endif %}>أخرى</option>
+                        </select>
+
+                        <label>ملاحظة</label>
+                        <input type="text"
+                               name="note_{{ wd }}"
+                               data-note="{{ wd }}"
+                               value="{% if day and day.note %}{{ day.note }}{% endif %}"
+                               placeholder="اختياري…"
+                               {% if plan.status == plan.STATUS_APPROVED %}disabled{% endif %}>
+                      </div>
+                      <div class="hint2">عند اختيار “بدون زيارة” يتم تعطيل المدرسة تلقائيًا.</div>
+                    </div>
                   </td>
 
                   <td class="col-visit">
-                    <input type="hidden" name="visit_{{ wd }}" value="{{ current }}" data-visit-input="{{ wd }}">
-                    <button
-                      type="button"
+                    <input type="hidden"
+                           name="visit_{{ wd }}"
+                           value="{{ current }}"
+                           data-visit-input="{{ wd }}">
+
+                    <button type="button"
                       class="vchip {% if plan.status == plan.STATUS_APPROVED %}is-disabled{% endif %}"
                       data-visit-chip="{{ wd }}"
                       data-value="{{ current }}"
-                      title="اضغط للتبديل بين حضوري / عن بعد"
-                      aria-label="اضغط للتبديل بين حضوري وعن بعد"
+                      title="اضغط للتبديل بين حضوري / عن بعد / بدون زيارة"
+                      aria-label="اضغط للتبديل بين حضوري وعن بعد وبدون زيارة"
                       {% if plan.status == plan.STATUS_APPROVED %}disabled{% endif %}>
-                      <span data-visit-text>{% if current == "remote" %}عن بعد{% else %}حضوري{% endif %}</span>
+                      <span data-visit-text>
+                        {% if current == visit_remote_value %}عن بعد
+                        {% elif current == visit_none_value %}بدون زيارة
+                        {% else %}حضوري{% endif %}
+                      </span>
                       <span class="caret">▼</span>
                     </button>
                   </td>
+
                 </tr>
                 {% endwith %}
                 {% endwith %}
@@ -662,7 +761,8 @@
 
       <div class="actions">
         <div class="hint">
-          يمكنك الحفظ أكثر من مرة — <b>والاعتماد يتفعّل فقط عند اكتمال جميع الأيام.</b>
+          يمكنك الحفظ أكثر من مرة — <b>والاعتماد يتفعّل فقط عند اكتمال جميع الأيام</b>
+          (زيارة أو “بدون زيارة”).
         </div>
 
         <div class="btn-row">
@@ -679,7 +779,7 @@
           {% else %}
             <button class="btn btn-save" name="action" value="save" type="submit" id="saveBtn">حفظ</button>
             <button class="btn btn-approve" name="action" value="approve" type="submit" id="approveBtn"
-                    title="لا يمكن الاعتماد إلا بعد اختيار مدرسة لكل يوم">
+                    title="لا يمكن الاعتماد إلا بعد اكتمال جميع الأيام">
               اعتماد
             </button>
           {% endif %}
@@ -743,6 +843,13 @@
 {% block extra_js %}
 <script>
   (function(){
+    // ======================================================
+    // Config values from backend (safe fallbacks)
+    // ======================================================
+    const V_IN = "{{ visit_in_value|default:'in' }}";
+    const V_REMOTE = "{{ visit_remote_value|default:'remote' }}";
+    const V_NONE = "{{ visit_none_value|default:'none' }}";
+
     // =========================
     // Message Modal (Django messages)
     // =========================
@@ -899,41 +1006,113 @@
       });
     }
 
-    // =========================
-    // Visit chip toggle
-    // =========================
+    // ======================================================
+    // Visit chip: cycle in -> remote -> none -> in
+    // plus: none => disable school & show reason box
+    // ======================================================
+    function labelFor(value){
+      if(value === V_REMOTE) return "عن بعد";
+      if(value === V_NONE) return "بدون زيارة";
+      return "حضوري";
+    }
+
+    function nextValue(cur){
+      if(cur === V_IN) return V_REMOTE;
+      if(cur === V_REMOTE) return V_NONE;
+      return V_IN;
+    }
+
+    function getSchoolSelect(wd){
+      return document.querySelector('[data-school="'+wd+'"]');
+    }
+    function getNoVisitBox(wd){
+      return document.querySelector('[data-novisit="'+wd+'"]');
+    }
+
+    function applyNoVisitUI(wd, isNoVisit){
+      const schoolSel = getSchoolSelect(wd);
+      const box = getNoVisitBox(wd);
+      if(schoolSel){
+        if(isNoVisit){
+          schoolSel.value = "";
+          schoolSel.disabled = true;
+        }else{
+          // لا نفعله إذا كانت الصفحة أصلاً معتمدة (disabled من السيرفر)
+          if(!schoolSel.hasAttribute("data-locked")) schoolSel.disabled = false;
+        }
+      }
+      if(box){
+        if(isNoVisit) box.classList.add("show");
+        else box.classList.remove("show");
+      }
+    }
+
+    // mark locked selects (approved) so JS doesn’t re-enable
+    document.querySelectorAll(".js-school[disabled]").forEach(el=>{
+      el.setAttribute("data-locked","1");
+    });
+
     function setChipState(btn, value){
       btn.dataset.value = value;
+      const wd = btn.getAttribute("data-visit-chip");
+      const hidden = document.querySelector('[data-visit-input="'+wd+'"]');
       const text = btn.querySelector("[data-visit-text]");
-      if(text) text.textContent = (value === "remote") ? "عن بعد" : "حضوري";
+
+      if(hidden) hidden.value = value;
+      if(text) text.textContent = labelFor(value);
+
+      applyNoVisitUI(wd, value === V_NONE);
     }
 
     document.querySelectorAll("[data-visit-chip]").forEach(btn=>{
       btn.addEventListener("click", ()=>{
         if(btn.disabled) return;
+
         const wd = btn.getAttribute("data-visit-chip");
         const hidden = document.querySelector('[data-visit-input="'+wd+'"]');
-        const current = (hidden && hidden.value) ? hidden.value : (btn.dataset.value || "in");
-        const next = (current === "in") ? "remote" : "in";
-        if(hidden) hidden.value = next;
-        setChipState(btn, next);
+        const cur = (hidden && hidden.value) ? hidden.value : (btn.dataset.value || V_IN);
+        const nxt = nextValue(cur);
+
+        setChipState(btn, nxt);
         validatePlan();
       });
     });
 
+    // initialize UI on load
+    document.querySelectorAll("[data-visit-chip]").forEach(btn=>{
+      const wd = btn.getAttribute("data-visit-chip");
+      const hidden = document.querySelector('[data-visit-input="'+wd+'"]');
+      const cur = (hidden && hidden.value) ? hidden.value : (btn.dataset.value || V_IN);
+      btn.dataset.value = cur;
+      const text = btn.querySelector("[data-visit-text]");
+      if(text) text.textContent = labelFor(cur);
+      applyNoVisitUI(wd, cur === V_NONE);
+    });
+
     // =========================
-    // Validation
+    // Validation: missing days are those with:
+    // - no school AND not none
     // =========================
     const inlineMsg = document.getElementById("inlineMsg");
     const approveBtn = document.getElementById("approveBtn");
 
+    function isRowComplete(wd){
+      const hidden = document.querySelector('[data-visit-input="'+wd+'"]');
+      const v = hidden ? hidden.value : V_IN;
+
+      if(v === V_NONE) return true;
+
+      const schoolSel = getSchoolSelect(wd);
+      return schoolSel && !!schoolSel.value;
+    }
+
     function getMissingDays(){
       const missing = [];
-      document.querySelectorAll(".js-school").forEach((s, idx)=>{
-        if(!s.value){
-          const row = s.closest("tr");
-          const dayCell = row ? row.querySelector(".col-day") : null;
-          const dayName = dayCell ? dayCell.textContent.trim() : ("اليوم " + (idx+1));
+      document.querySelectorAll("tr[data-row]").forEach((tr, idx)=>{
+        const wd = tr.getAttribute("data-row");
+        const dayCell = tr.querySelector(".col-day");
+        const dayName = dayCell ? dayCell.textContent.trim() : ("اليوم " + (idx+1));
+        if(!isRowComplete(wd)){
           missing.push(dayName);
         }
       });
@@ -946,11 +1125,11 @@
       const missing = getMissingDays();
       if(missing.length){
         inlineMsg.classList.add("show");
-        inlineMsg.textContent = "تنبيه: اختر مدرسة لكل يوم قبل الاعتماد. الأيام الناقصة: " + missing.join("، ");
+        inlineMsg.textContent = "تنبيه: أكمل الأيام قبل الاعتماد. الأيام الناقصة: " + missing.join("، ");
 
         if(approveBtn){
           approveBtn.disabled = true;
-          approveBtn.title = "أكمل اختيار المدارس أولاً ثم يمكنك الاعتماد";
+          approveBtn.title = "أكمل الأيام أولاً ثم يمكنك الاعتماد";
         }
       }else{
         inlineMsg.classList.remove("show");
@@ -966,6 +1145,12 @@
       s.addEventListener("change", validatePlan);
     });
 
+    // revalidate when reason/note changes (optional)
+    document.querySelectorAll("[data-reason], [data-note]").forEach(el=>{
+      el.addEventListener("input", validatePlan);
+      el.addEventListener("change", validatePlan);
+    });
+
     validatePlan();
 
     const form = document.getElementById("planForm");
@@ -978,7 +1163,7 @@
             e.preventDefault();
             validatePlan();
             inlineMsg.scrollIntoView({behavior:"smooth", block:"center"});
-            openMsgModal("أكمل اختيار المدارس لكل الأيام قبل الاعتماد.", "warning", 2200);
+            openMsgModal("أكمل الأيام الناقصة قبل الاعتماد (الزيارة أو بدون زيارة).", "warning", 2200);
           }
         }
       });

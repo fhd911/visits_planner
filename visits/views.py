@@ -236,9 +236,23 @@ def _status_css(plan: Plan) -> str:
     return _status_code(plan)
 
 
+def _day_is_filled(d: Optional[PlanDay]) -> bool:
+    """
+    ✅ اليوم مكتمل إذا:
+    - فيه مدرسة
+    أو
+    - نوع اليوم = بدون زيارة (none)
+    """
+    if not d:
+        return False
+    if getattr(d, "school_id", None):
+        return True
+    return getattr(d, "visit_type", "") == getattr(PlanDay, "VISIT_NONE", "none")
+
+
 def _plan_filled_count(plan: Plan) -> int:
     day_map = {d.weekday: d for d in plan.days.all()}
-    return sum(1 for wd, _ in WEEKDAYS if day_map.get(wd) and day_map[wd].school_id)
+    return sum(1 for wd, _ in WEEKDAYS if _day_is_filled(day_map.get(wd)))
 
 
 # =====================
@@ -334,20 +348,49 @@ def plan_view(request: HttpRequest) -> HttpResponse:
 
         action = (request.POST.get("action") or "save").strip()  # save | approve
 
+        # ✅ حفظ الأيام (يدعم none + reason + note)
         for wd, _ in WEEKDAYS:
             sid = (request.POST.get(f"school_{wd}") or "").strip()
-            vtype = (request.POST.get(f"visit_{wd}") or "in").strip()
-            if vtype not in ("in", "remote"):
-                vtype = "in"
+            vtype = (request.POST.get(f"visit_{wd}") or getattr(PlanDay, "VISIT_IN", "in")).strip()
+
+            allowed = {
+                getattr(PlanDay, "VISIT_IN", "in"),
+                getattr(PlanDay, "VISIT_REMOTE", "remote"),
+                getattr(PlanDay, "VISIT_NONE", "none"),
+            }
+            if vtype not in allowed:
+                vtype = getattr(PlanDay, "VISIT_IN", "in")
+
+            reason = (request.POST.get(f"reason_{wd}") or "").strip() or None
+            note = (request.POST.get(f"note_{wd}") or "").strip() or None
+
+            # إذا none -> المدرسة لازم تكون None
+            if vtype == getattr(PlanDay, "VISIT_NONE", "none"):
+                sid = ""
+
+            # إذا ما فيه مدرسة ولا none => نحذف اليوم
+            if (not sid) and (vtype != getattr(PlanDay, "VISIT_NONE", "none")):
+                PlanDay.objects.filter(plan=plan, weekday=wd).delete()
+                continue
+
+            defaults = {"visit_type": vtype}
 
             if sid:
-                PlanDay.objects.update_or_create(
-                    plan=plan,
-                    weekday=wd,
-                    defaults={"school_id": sid, "visit_type": vtype},
-                )
+                defaults["school_id"] = sid
+                # لو رجع لزيارة فعلية: نفرّغ السبب
+                defaults["no_visit_reason"] = None
             else:
-                PlanDay.objects.filter(plan=plan, weekday=wd).delete()
+                defaults["school"] = None  # type: ignore[assignment]
+                defaults["no_visit_reason"] = reason
+
+            # ملاحظة (دائمًا اختيارية)
+            defaults["note"] = note
+
+            PlanDay.objects.update_or_create(
+                plan=plan,
+                weekday=wd,
+                defaults=defaults,
+            )
 
         plan.saved_at = timezone.now()
 
@@ -380,6 +423,10 @@ def plan_view(request: HttpRequest) -> HttpResponse:
             "week_choices": week_choices,
             "day_dates": day_dates,
             "today": date.today(),
+            # ✅ قيم اختيارية للعرض (مفيدة للقالب)
+            "visit_none_value": getattr(PlanDay, "VISIT_NONE", "none"),
+            "visit_in_value": getattr(PlanDay, "VISIT_IN", "in"),
+            "visit_remote_value": getattr(PlanDay, "VISIT_REMOTE", "remote"),
         },
     )
 
@@ -431,7 +478,7 @@ def export_plan_excel(request: HttpRequest) -> HttpResponse:
     ws.append(["", "", ""])
 
     header_row = 4
-    headers = ["اليوم", "المدرسة", "نوع الزيارة"]
+    headers = ["اليوم", "المدرسة/السبب", "نوع اليوم"]
     for col, h in enumerate(headers, start=1):
         cell = ws.cell(row=header_row, column=col, value=h)
         cell.font = bold_font
@@ -442,13 +489,23 @@ def export_plan_excel(request: HttpRequest) -> HttpResponse:
     days = {d.weekday: d for d in plan.days.all().select_related("school")}
     row = header_row + 1
 
+    none_val = getattr(PlanDay, "VISIT_NONE", "none")
+
     for wd, wd_name in WEEKDAYS:
         d = days.get(wd)
-        school_name = d.school.name if d and d.school else "—"
+
+        if d and d.visit_type == none_val:
+            reason = (d.get_no_visit_reason_display() if getattr(d, "no_visit_reason", None) else "بدون زيارة")
+            if getattr(d, "note", None):
+                reason = f"{reason} — {d.note}"
+            school_or_reason = reason
+        else:
+            school_or_reason = d.school.name if d and d.school else "—"
+
         visit_label = d.get_visit_type_display() if d else "—"
 
         ws.cell(row=row, column=1, value=wd_name).font = normal_font
-        ws.cell(row=row, column=2, value=school_name).font = normal_font
+        ws.cell(row=row, column=2, value=school_or_reason).font = normal_font
         ws.cell(row=row, column=3, value=visit_label).font = normal_font
 
         ws.cell(row=row, column=1).alignment = center
@@ -590,7 +647,7 @@ def admin_dashboard_view(request: HttpRequest) -> HttpResponse:
     rows = []
     for p in plans_filtered:
         day_map = {d.weekday: d for d in p.days.all()}
-        filled = sum(1 for wd, _ in WEEKDAYS if day_map.get(wd) and day_map[wd].school_id)
+        filled = sum(1 for wd, _ in WEEKDAYS if _day_is_filled(day_map.get(wd)))
         rows.append(
             {
                 "plan": p,
@@ -637,7 +694,6 @@ def admin_plan_detail_view(request: HttpRequest, plan_id: int) -> HttpResponse:
     """
     ✅ صفحة تفاصيل خطة مشرف
     - تُستخدم كرابط من لوحة الإدارة
-    - وتحل NoReverseMatch
     """
     plan = get_object_or_404(
         Plan.objects.select_related("supervisor", "week").prefetch_related("days__school"),
@@ -647,7 +703,7 @@ def admin_plan_detail_view(request: HttpRequest, plan_id: int) -> HttpResponse:
 
     sup = plan.supervisor
     day_map = {d.weekday: d for d in plan.days.all().select_related("school")}
-    filled = sum(1 for wd, _ in WEEKDAYS if day_map.get(wd) and day_map[wd].school_id)
+    filled = sum(1 for wd, _ in WEEKDAYS if _day_is_filled(day_map.get(wd)))
     day_dates = _build_day_dates_from_week(plan.week)
 
     return render(
@@ -712,7 +768,7 @@ def admin_plan_export_excel(request: HttpRequest, plan_id: int) -> HttpResponse:
     ws.append(["", "", ""])
 
     header_row = 4
-    headers = ["اليوم", "المدرسة", "نوع الزيارة"]
+    headers = ["اليوم", "المدرسة/السبب", "نوع اليوم"]
     for col, h in enumerate(headers, start=1):
         cell = ws.cell(row=header_row, column=col, value=h)
         cell.font = bold_font
@@ -722,14 +778,23 @@ def admin_plan_export_excel(request: HttpRequest, plan_id: int) -> HttpResponse:
 
     days_map = {d.weekday: d for d in plan.days.all().select_related("school")}
     row = header_row + 1
+    none_val = getattr(PlanDay, "VISIT_NONE", "none")
 
     for wd, wd_name in WEEKDAYS:
         d = days_map.get(wd)
-        school_name = d.school.name if d and d.school else "—"
+
+        if d and d.visit_type == none_val:
+            reason = (d.get_no_visit_reason_display() if getattr(d, "no_visit_reason", None) else "بدون زيارة")
+            if getattr(d, "note", None):
+                reason = f"{reason} — {d.note}"
+            school_or_reason = reason
+        else:
+            school_or_reason = d.school.name if d and d.school else "—"
+
         visit_label = d.get_visit_type_display() if d else "—"
 
         ws.cell(row=row, column=1, value=wd_name).font = normal_font
-        ws.cell(row=row, column=2, value=school_name).font = normal_font
+        ws.cell(row=row, column=2, value=school_or_reason).font = normal_font
         ws.cell(row=row, column=3, value=visit_label).font = normal_font
 
         ws.cell(row=row, column=1).alignment = center
@@ -902,7 +967,7 @@ def admin_export_week_excel(request: HttpRequest) -> HttpResponse:
     ws.title = f"الأسبوع {week_obj.week_no}"
     ws.sheet_view.rightToLeft = True
 
-    ws.append(["المشرف", "اليوم", "المدرسة", "نوع الزيارة"])
+    ws.append(["المشرف", "اليوم", "المدرسة/السبب", "نوع اليوم"])
 
     qs = (
         PlanDay.objects.filter(plan__week=week_obj)
@@ -910,13 +975,24 @@ def admin_export_week_excel(request: HttpRequest) -> HttpResponse:
         .order_by("plan__supervisor__full_name", "weekday")
     )
 
+    none_val = getattr(PlanDay, "VISIT_NONE", "none")
+
     for d in qs:
         day_label = WEEKDAY_MAP.get(d.weekday, str(d.weekday))
+
+        if d.visit_type == none_val:
+            reason = (d.get_no_visit_reason_display() if getattr(d, "no_visit_reason", None) else "بدون زيارة")
+            if getattr(d, "note", None):
+                reason = f"{reason} — {d.note}"
+            school_or_reason = reason
+        else:
+            school_or_reason = d.school.name if d.school else "—"
+
         ws.append(
             [
                 d.plan.supervisor.full_name,
                 day_label,
-                d.school.name if d.school else "—",
+                school_or_reason,
                 d.get_visit_type_display(),
             ]
         )
