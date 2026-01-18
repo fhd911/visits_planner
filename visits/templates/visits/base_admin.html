@@ -119,22 +119,23 @@
     }
 
     .user-chip{
-      display:flex; align-items:center; gap:10px;
+      display:flex; align-items:center;
       color:#fff;
       min-width: 240px;
       justify-content:flex-end;
     }
-    .user-chip .who{ display:flex; flex-direction:column; line-height:1.2; text-align:right; }
+    .user-chip .who{
+      display:flex; flex-direction:column;
+      line-height:1.2; text-align:right;
+    }
     .user-chip .who b{ font-size:13px; font-weight:900; }
     .user-chip .who small{ opacity:.85; font-size:12px; }
-    .user-chip .avatar{
-      width:40px; height:40px;
-      border-radius:14px;
-      background: rgba(255,255,255,.14);
-      border:1px solid rgba(255,255,255,.22);
-      display:grid; place-items:center;
-      font-weight:900;
-      user-select:none;
+
+    /* ✅✅ Kill Switch: اخفاء أي avatar نهائيًا في الهيدر */
+    .topbar .avatar,
+    .topbar .user-chip .avatar,
+    .topbar .inner .avatar{
+      display:none !important;
     }
 
     /* =========================
@@ -190,7 +191,6 @@
 
     /* =========================
        Messages (Admin Base)
-       - قابلة للتجاوز من القوالب الفرعية
     ========================= */
     .msgs{ margin:14px 0 0; display:grid; gap:8px; }
     .msg{
@@ -259,7 +259,6 @@
         <a href="{% url 'visits:admin_dashboard' %}" class="{% if 'admin/dashboard' in p %}active{% endif %}">
           لوحة الإدارة
         </a>
-        {# لو عندك صفحة استيراد داخل مشروعك، أضفها هنا #}
         {% if 'visits:admin_import' %}
           <a href="{% url 'visits:admin_import' %}" class="{% if 'manager/import' in p %}active{% endif %}">
             استيراد Excel
@@ -273,7 +272,7 @@
         <b>{% block header_title %}لوحة الإدارة{% endblock %}</b>
         <small>{% block header_subtitle %}متابعة خطط المشرفين{% endblock %}</small>
       </div>
-      <div class="avatar">{% block header_avatar %}ADM{% endblock %}</div>
+      {# ✅ تم حذف avatar نهائيًا #}
     </div>
 
   </div>
@@ -295,7 +294,6 @@
     </div>
     {% endblock %}
 
-    {# ✅ الرسائل: قابلة للتجاوز من أي قالب فرعي #}
     {% block page_messages %}
       {% if messages %}
         <div class="msgs">

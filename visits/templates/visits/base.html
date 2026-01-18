@@ -107,16 +107,12 @@
       min-width:240px;
       justify-content:flex-end;
     }
-    .user-chip .avatar{
-      width:40px; height:40px;
-      border-radius:14px;
-      background: rgba(255,255,255,.14);
-      border:1px solid rgba(255,255,255,.22);
-      display:grid; place-items:center;
-      font-weight:900;
-      user-select:none;
+    .user-chip .who{
+      display:flex;
+      flex-direction:column;
+      line-height:1.2;
+      text-align:right;
     }
-    .user-chip .who{ display:flex; flex-direction:column; line-height:1.2; text-align:right; }
     .user-chip .who b{ font-size:13px; font-weight:800; }
     .user-chip .who small{ opacity:.85; font-size:12px; font-weight:400; }
 
@@ -244,9 +240,7 @@
           <b>{% if sup %}المشرف: {{ sup.full_name }}{% else %}منصة الزيارات{% endif %}</b>
           <small>{% block subtitle %}إدارة خطط المشرفين الأسبوعية{% endblock %}</small>
         </div>
-        <div class="avatar">
-          {% if sup %}{{ sup.full_name|slice:":1" }}{% else %}VP{% endif %}
-        </div>
+        {# ✅ تم حذف الأفاتار (حرف j / VP) نهائيًا #}
       </div>
 
     </div>

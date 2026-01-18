@@ -1,711 +1,283 @@
+{# visits/templates/visits/login.html #}
 {% extends "visits/base.html" %}
 {% load static %}
 
-{% block title %}تسجيل الدخول — منصة الزيارات{% endblock %}
+{% block title %}تسجيل الدخول{% endblock %}
+{% block subtitle %}تسجيل دخول المشرف{% endblock %}
+
+{# ✅ لا نعرض Hero ولا رسائل base #}
+{% block hero %}{% endblock %}
 {% block page_messages %}{% endblock %}
 
-{% block content %}
+{% block extra_css %}
 <style>
-  /* ==========================================================
-     ROYAL CLASSIC LOGIN (Refined Edition ✅)
-     - Ultra calm / Clean / Premium
-     - Soft live validation (border + hint)
-     - Loader + Toast + Ajax-safe
-  ========================================================== */
+  /* ✅ إخفاء الهيدر فقط في صفحة الدخول */
+  header.topbar{ display:none !important; }
 
-  /* ✅ إخفاء أي هيدر/فوتر من base (بشكل أكثر أمان) */
-  body > header,
-  body > footer,
-  .site-header, .app-header, .topbar, .navbar,
-  .site-footer, .footer {
-    display: none !important;
+  /* ✅ توحيد الخط + تخفيف السمك داخل صفحة الدخول فقط */
+  .login-wrap, .login-wrap *{
+    font-family: "Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif !important;
+    font-weight: 500; /* الأساس */
   }
 
-  .royal-login{
-    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+  /* تحسين تموضع الصفحة بعد إخفاء الهيدر */
+  .page{ margin-top: 26px; }
+  .shell{ padding: 26px; }
 
-    --bg1:#f7fbff;
-    --bg2:#ffffff;
-
-    --card:#ffffff;
-    --soft:#f8fafc;
-
-    --txt:#0f172a;
-    --mut:#64748b;
-    --mut2:#94a3b8;
-
-    --line: rgba(148,163,184,.20);
-    --line2: rgba(148,163,184,.12);
-
-    --b1:#2563eb;
-    --b2:#60a5fa;
-
-    --ok:#16a34a;
-    --bad:#ef4444;
-
-    --shadow: 0 28px 90px rgba(15,23,42,.12);
-    --shadow2: 0 12px 30px rgba(15,23,42,.08);
-
-    font-family: var(--ff);
-    direction: rtl;
-    color: var(--txt);
-  }
-
-  .royal-login *{
-    font-family: var(--ff) !important;
-    box-sizing:border-box;
-  }
-
-  .royal-login .shell{
-    min-height:100vh;
+  /* Login Card (هادئة وكلاسيكية) */
+  .login-wrap{
+    min-height: calc(100vh - 180px);
     display:grid;
     place-items:center;
-    padding: 34px 16px;
-    background:
-      radial-gradient(1050px 520px at 18% -10%, rgba(37,99,235,.12), transparent 62%),
-      radial-gradient(880px 420px at 88% 0%, rgba(16,185,129,.08), transparent 60%),
-      linear-gradient(180deg, var(--bg1), var(--bg2));
-    position: relative;
+    padding: 14px 0 8px;
+  }
+
+  .login-card{
+    width:min(520px, 100%);
+    border-radius: 22px;
+    background: rgba(255,255,255,.86);
+    border: 1px solid rgba(148,163,184,.26);
+    box-shadow: 0 24px 60px rgba(2,6,23,.10);
+    backdrop-filter: blur(10px);
     overflow:hidden;
   }
 
-  /* زخرفة خفيفة جداً */
-  .royal-login .shell:before{
-    content:"";
-    position:absolute;
-    inset:0;
-    background:
-      radial-gradient(circle at 50% 18%, rgba(15,23,42,.04), transparent 40%),
-      radial-gradient(circle at 10% 85%, rgba(15,23,42,.03), transparent 45%),
-      radial-gradient(circle at 92% 85%, rgba(15,23,42,.03), transparent 45%);
-    pointer-events:none;
-  }
-
-  /* ✅ حركة دخول خفيفة */
-  @keyframes cardIn{
-    from{ transform: translateY(10px); opacity: 0; }
-    to{ transform: translateY(0); opacity: 1; }
-  }
-
-  .royal-login .card{
-    width: min(560px, 100%);
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 26px;
-    box-shadow: var(--shadow);
-    overflow:hidden;
-    position: relative;
-    z-index: 2;
-    animation: cardIn .35s ease both;
-  }
-
-  /* شريط رقيق جداً (Premium) */
-  .royal-login .topline{
-    height: 4px;
-    background: linear-gradient(90deg,
-      rgba(37,99,235,.90),
-      rgba(96,165,250,.85),
-      rgba(16,185,129,.55)
-    );
-  }
-
-  .royal-login .inner{
+  .login-head{
     padding: 18px 18px 14px;
-    display:grid;
-    gap: 14px;
-  }
-
-  /* ===== Brand ===== */
-  .royal-login .brand{
+    border-bottom: 1px solid rgba(226,232,240,.85);
+    background: linear-gradient(135deg, rgba(96,165,250,.12), rgba(34,197,94,.08));
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap: 12px;
-    padding: 4px 2px 8px;
+    gap:12px;
   }
 
-  .royal-login .logo{
+  .login-brand{
     display:flex;
     align-items:center;
-    gap: 10px;
-    min-width: 200px;
+    gap:10px;
   }
-
-  .royal-login .mark{
-    width: 44px;
-    height: 44px;
+  .login-brand .mark{
+    width:44px; height:44px;
     border-radius: 16px;
-    display:grid;
-    place-items:center;
-    color:#fff;
-    font-weight: 800;
-    letter-spacing: .4px;
-    background: linear-gradient(135deg, rgba(37,99,235,.95), rgba(96,165,250,.92));
-    box-shadow: 0 12px 30px rgba(37,99,235,.18);
-  }
-
-  .royal-login .brand-txt{
-    display:grid;
-    gap: 3px;
-  }
-  .royal-login .brand-txt b{
-    font-size: 13.4px;
-    font-weight: 800;
-    color: var(--txt);
-  }
-  .royal-login .brand-txt span{
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--mut);
-  }
-
-  .royal-login .status{
-    display:inline-flex;
-    align-items:center;
-    gap: 8px;
-    padding: 8px 12px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: rgba(248,250,252,.85);
-    color: var(--mut);
-    font-weight: 700;
-    font-size: 12px;
-    white-space:nowrap;
-  }
-  .royal-login .status .dot{
-    width: 9px; height: 9px;
-    border-radius:50%;
-    background: rgba(16,185,129,.95);
-    box-shadow: 0 0 0 4px rgba(16,185,129,.12);
-  }
-
-  /* ===== Title Panel ===== */
-  .royal-login .hero{
-    border: 1px solid var(--line2);
-    background: linear-gradient(180deg, rgba(248,250,252,.92), rgba(255,255,255,.92));
-    border-radius: 20px;
-    padding: 14px 14px;
-    display:grid;
-    gap: 5px;
-  }
-  .royal-login .hero h1{
-    margin:0;
-    font-size: 16px;
-    font-weight: 900;
-    color: var(--txt);
-  }
-  .royal-login .hero p{
-    margin:0;
-    font-size: 12.6px;
-    font-weight: 600;
-    color: var(--mut);
-    line-height: 1.7;
-  }
-
-  /* ===== Fields ===== */
-  .royal-login form{
-    display:grid;
-    gap: 12px;
-  }
-
-  .royal-login .field{
-    display:grid;
-    gap: 7px;
-  }
-  .royal-login label{
-    font-size: 12px;
-    font-weight: 800;
-    color: var(--mut);
-  }
-
-  .royal-login .control{
-    height: 46px;
-    border-radius: 18px;
-    border: 1px solid rgba(148,163,184,.22);
-    background: rgba(248,250,252,.92);
-    display:flex;
-    align-items:center;
-    gap: 10px;
-    padding: 0 12px;
-    transition: box-shadow .14s ease, border-color .14s ease, background .14s ease;
-  }
-
-  .royal-login .control:focus-within{
-    background:#fff;
-    border-color: rgba(37,99,235,.30);
-    box-shadow: 0 0 0 7px rgba(37,99,235,.10);
-  }
-
-  /* ✅ حالات OK / BAD للبورد */
-  .royal-login .control.ok{
-    border-color: rgba(22,163,74,.35);
-    box-shadow: 0 0 0 7px rgba(22,163,74,.10);
-    background: rgba(22,163,74,.04);
-  }
-  .royal-login .control.bad{
-    border-color: rgba(239,68,68,.35);
-    box-shadow: 0 0 0 7px rgba(239,68,68,.10);
-    background: rgba(239,68,68,.03);
-  }
-
-  .royal-login .ico{
-    width: 36px;
-    height: 36px;
-    border-radius: 15px;
-    display:grid;
-    place-items:center;
-    background: rgba(37,99,235,.08);
-    border: 1px solid rgba(37,99,235,.14);
-    color: rgba(37,99,235,.95);
-    flex: 0 0 auto;
-  }
-  .royal-login .ico svg{ width: 18px; height: 18px; }
-
-  /* ✅ أرقام واضحة - اتجاه LTR لكن داخل RTL */
-  .royal-login input{
-    width:100%;
-    border:0;
-    outline:none;
-    background:transparent;
-    font-size: 13.2px;
-    font-weight: 800;
-    color: var(--txt);
-    direction:ltr;
-    text-align:left;
-    letter-spacing: .4px;
-  }
-  .royal-login input::placeholder{
-    color: rgba(100,116,139,.62);
-    font-weight: 600;
-    letter-spacing: 0;
-  }
-
-  /* ✅ تحقق هاديء جداً */
-  .royal-login .mini-hint{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap: 10px;
-    padding: 0 2px;
-    font-size: 12px;
-    font-weight: 700;
-    color: rgba(100,116,139,.85);
-  }
-  .royal-login .mini-hint .left{
-    display:flex;
-    align-items:center;
-    gap: 8px;
-  }
-  .royal-login .badge{
-    width: 18px; height: 18px;
-    border-radius: 7px;
-    display:grid;
-    place-items:center;
-    border: 1px solid rgba(148,163,184,.22);
-    background: rgba(248,250,252,.92);
-    font-weight: 800;
-    color: rgba(100,116,139,.85);
-  }
-  .royal-login .mini-hint.good{ color:#166534; }
-  .royal-login .mini-hint.good .badge{
-    border-color: rgba(22,163,74,.24);
-    background: rgba(22,163,74,.12);
-    color:#166534;
-  }
-  .royal-login .mini-hint.bad{ color:#7f1d1d; }
-  .royal-login .mini-hint.bad .badge{
-    border-color: rgba(239,68,68,.24);
-    background: rgba(239,68,68,.12);
-    color:#7f1d1d;
-  }
-
-  /* ===== Actions ===== */
-  .royal-login .actions{
-    display:grid;
-    grid-template-columns: 1fr .42fr;
-    gap: 10px;
-    margin-top: 4px;
-  }
-
-  .royal-login .btn{
-    height: 48px;
-    border-radius: 18px;
-    border: 1px solid rgba(148,163,184,.22);
-    background:#fff;
-    color: var(--txt);
-    font-size: 13px;
-    font-weight: 900;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap: 10px;
-    box-shadow: var(--shadow2);
-    transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+    display:grid; place-items:center;
+    font-weight: 700; /* كان 900 */
+    background: rgba(37,99,235,.10);
+    border:1px solid rgba(37,99,235,.18);
+    color: #1d4ed8;
     user-select:none;
   }
-  .royal-login .btn:hover{
-    transform: translateY(-1px);
-    box-shadow: 0 16px 34px rgba(15,23,42,.10);
+  .login-brand .txt{ line-height:1.2; }
+  .login-brand .txt b{
+    display:block;
+    font-size:14px;
+    font-weight: 650; /* كان 900 */
+  }
+  .login-brand .txt small{
+    display:block;
+    font-size:12px;
+    color: var(--mut);
+    margin-top:2px;
+    font-weight: 500;
   }
 
-  .royal-login .btn.primary{
-    background: linear-gradient(135deg, rgba(37,99,235,.96), rgba(96,165,250,.95));
-    border-color: rgba(37,99,235,.22);
-    color:#fff;
+  .status-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    border-radius:999px;
+    background: rgba(255,255,255,.80);
+    border:1px solid rgba(226,232,240,.85);
+    font-size:12px;
+    color: var(--text);
+    white-space:nowrap;
+    font-weight: 600; /* إضافة */
+  }
+  .status-pill i{
+    width:10px; height:10px; border-radius:999px;
+    background: var(--ok);
+    box-shadow: 0 0 0 4px rgba(34,197,94,.16);
+    display:inline-block;
   }
 
-  .royal-login .btn:disabled{
-    opacity:.55;
-    cursor:not-allowed;
-    transform:none;
-    box-shadow:none;
+  .login-body{ padding: 18px; }
+
+  .login-title{
+    margin: 2px 0 2px;
+    font-size: 18px;
+    font-weight: 700; /* كان 900 */
+    letter-spacing: .2px;
+  }
+  .login-sub{
+    margin: 0 0 14px;
+    color: var(--mut);
+    font-size: 13px;
+    line-height: 1.9;
+    font-weight: 500;
   }
 
-  /* Loader */
-  .royal-login .spinner{
-    width: 16px; height: 16px;
-    border-radius: 50%;
-    border: 2px solid rgba(255,255,255,.40);
-    border-top-color: rgba(255,255,255,.98);
-    animation: spin .75s linear infinite;
-    display:none;
+  .field{ margin: 12px 0; }
+  .label{
+    font-size: 12.5px;
+    color: var(--mut);
+    margin: 0 2px 6px;
+    font-weight: 650; /* كان 800 */
   }
-  .royal-login .btn.loading .spinner{ display:inline-block; }
-  @keyframes spin{ from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 
-  /* ===== Footer small ===== */
-  .royal-login .foot{
-    padding: 12px 18px;
-    border-top: 1px solid rgba(148,163,184,.16);
+  .control{
+    position:relative;
     display:flex;
     align-items:center;
-    justify-content:space-between;
-    gap: 10px;
-    flex-wrap:wrap;
-    color: rgba(100,116,139,.78);
-    font-size: 12px;
-    font-weight: 650;
-    background: rgba(248,250,252,.66);
-  }
-
-  /* Toast */
-  .royal-login .toast-wrap{
-    position: fixed;
-    bottom: 16px;
-    left: 16px;
-    z-index: 9999;
-    display:grid;
-    gap: 8px;
-  }
-
-  @keyframes toastIn{
-    from{ transform: translateY(8px); opacity: 0; }
-    to{ transform: translateY(0); opacity: 1; }
-  }
-
-  .royal-login .toast{
-    min-width: 240px;
-    max-width: 380px;
-    background: rgba(15,23,42,.92);
-    color:#fff;
-    padding: 10px 12px;
+    gap:10px;
+    padding: 12px 12px;
     border-radius: 16px;
-    box-shadow: 0 18px 50px rgba(15,23,42,.24);
-    font-weight: 800;
-    font-size: 12.6px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap: 10px;
-    animation: toastIn .18s ease both;
+    background: rgba(248,250,252,.92);
+    border: 1px solid rgba(226,232,240,.95);
+    transition: .15s ease;
   }
-  .royal-login .toast .x{
-    border:0;
-    background: transparent;
-    color:#fff;
-    cursor:pointer;
-    font-weight: 900;
-    opacity: .85;
+  .control:focus-within{
+    border-color: rgba(37,99,235,.30); /* أخف */
+    box-shadow: 0 0 0 6px rgba(37,99,235,.08); /* أخف */
+    background:#fff;
   }
 
-  @media (max-width:560px){
-    .royal-login .actions{ grid-template-columns: 1fr; }
-    .royal-login .status{ justify-content:center; width:100%; }
+  .control input{
+    width:100%;
+    border:0;
+    outline:0;
+    background:transparent;
+    font: inherit;
+    padding:0;
+    color: var(--text);
+    font-weight: 600; /* كان 700 */
+    letter-spacing: .2px;
+  }
+  .hint{
+    margin-top:6px;
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    color: var(--mut);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .hint span{ opacity:.95; }
+
+  .actions{
+    margin-top: 14px;
+    display:flex;
+    gap:10px;
+  }
+  .btn{
+    height: 44px;
+    border-radius: 14px;
+    padding: 0 16px;
+    border: 1px solid rgba(226,232,240,.95);
+    background:#fff;
+    font-weight: 650; /* كان 900 */
+    cursor:pointer;
+    transition: .15s ease;
+  }
+  .btn:hover{ transform: translateY(-1px); }
+  .btn.primary{
+    flex:1;
+    border: 0;
+    background: linear-gradient(135deg, rgba(37,99,235,.92), rgba(59,130,246,.85));
+    color:#fff;
+    box-shadow: 0 16px 34px rgba(37,99,235,.18);
+    font-weight: 700; /* تأكيد */
+  }
+
+  .login-foot{
+    padding: 12px 18px;
+    border-top: 1px solid rgba(226,232,240,.85);
+    color: var(--mut);
+    font-size: 12px;
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    font-weight: 500;
+  }
+
+  /* موبايل */
+  @media (max-width: 520px){
+    .shell{ padding: 16px; }
+    .login-body{ padding: 16px; }
   }
 </style>
+{% endblock %}
 
-<section class="royal-login">
-  <div class="shell">
-    <div class="card">
-      <div class="topline"></div>
+{% block content %}
+<div class="login-wrap">
 
-      <div class="inner">
+  <div class="login-card">
 
-        <!-- ✅ Branding -->
-        <div class="brand">
-          <div class="logo">
-            <div class="mark">VP</div>
-            <div class="brand-txt">
-              <b>منصة الزيارات</b>
-              <span>بوابة المشرف</span>
-            </div>
-          </div>
-
-          <div class="status">
-            <span class="dot"></span>
-            يعمل الآن
-          </div>
+    <div class="login-head">
+      <div class="login-brand">
+        <div class="mark">VP</div>
+        <div class="txt">
+          <b>منصة الزيارات</b>
+          <small>بوابة المشرف</small>
         </div>
-
-        <!-- ✅ عنوان -->
-        <div class="hero">
-          <h1>تسجيل الدخول</h1>
-          <p>ادخل رقم الهوية + آخر 4 أرقام من الجوال المسجل لدى النظام</p>
-        </div>
-
-        <form method="post" id="loginForm" action="">
-          {% csrf_token %}
-
-          <!-- الهوية -->
-          <div class="field">
-            <label for="nid">رقم الهوية</label>
-            <div class="control" id="cNid">
-              <div class="ico" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path d="M4 7.5C4 6.12 5.12 5 6.5 5h11C18.88 5 20 6.12 20 7.5v9C20 17.88 18.88 19 17.5 19h-11C5.12 19 4 17.88 4 16.5v-9Z" stroke="currentColor" stroke-width="1.8"/>
-                  <path d="M7 9h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                  <path d="M7 12h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                </svg>
-              </div>
-
-              <input id="nid" name="national_id" inputmode="numeric" maxlength="10"
-                     placeholder="مثال: 1020103717" required>
-            </div>
-
-            <div class="mini-hint" id="hNid">
-              <div class="left">
-                <span class="badge" id="bNid">i</span>
-                <span id="tNid">10 أرقام فقط</span>
-              </div>
-              <span>تحقق مباشر</span>
-            </div>
-          </div>
-
-          <!-- آخر 4 -->
-          <div class="field">
-            <label for="last4">آخر 4 أرقام من الجوال</label>
-            <div class="control" id="cLast4">
-              <div class="ico" aria-hidden="true">
-                <svg viewBox="0 0 24 24" fill="none">
-                  <path d="M8 5.5C8 4.67 8.67 4 9.5 4h5C15.33 4 16 4.67 16 5.5v13c0 .83-.67 1.5-1.5 1.5h-5C8.67 20 8 19.33 8 18.5v-13Z" stroke="currentColor" stroke-width="1.8"/>
-                  <path d="M12 17.5h0" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-                </svg>
-              </div>
-
-              <!-- ⚠️ إن كان backend عندك يستقبل mobile_last4 غيّر الاسم هنا -->
-              <input id="last4" name="phone_last4" inputmode="numeric" maxlength="4"
-                     placeholder="مثال: 3717" required>
-            </div>
-
-            <div class="mini-hint" id="hLast4">
-              <div class="left">
-                <span class="badge" id="bLast4">i</span>
-                <span id="tLast4">4 أرقام فقط</span>
-              </div>
-              <span>تحقق مباشر</span>
-            </div>
-          </div>
-
-          <!-- Buttons -->
-          <div class="actions">
-            <button class="btn primary" type="submit" id="submitBtn" disabled>
-              <span class="spinner" aria-hidden="true"></span>
-              <span class="lbl">دخول</span>
-            </button>
-
-            <button class="btn" type="button" id="clearBtn">مسح</button>
-          </div>
-
-        </form>
       </div>
 
-      <div class="foot">
-        <div>© منصة خطة الزيارات — جميع الحقوق محفوظة</div>
-        <div>الإصدار: 2026</div>
-      </div>
+      <div class="status-pill"><i></i> يعمل الآن</div>
     </div>
 
-    <!-- Toast -->
-    <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+    <div class="login-body">
+      <div class="login-title">تسجيل الدخول</div>
+      <div class="login-sub">ادخل رقم الهوية + آخر 4 أرقام من الجوال المسجل في النظام.</div>
+
+      {# ✅ رسائل الدخول فقط (وليس رسائل base) #}
+      {% if messages %}
+        <div class="msgs" style="margin:0 0 10px;">
+          {% for message in messages %}
+            <div class="msg {{ message.tags }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="field">
+          <div class="label">رقم الهوية</div>
+          <div class="control">
+            <input name="national_id" inputmode="numeric" autocomplete="username"
+                   maxlength="10" placeholder="مثال: 1020103717" required>
+          </div>
+          <div class="hint">
+            <span>10 أرقام فقط</span>
+            <span>تحقق مباشر</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">آخر 4 أرقام من الجوال</div>
+          <div class="control">
+            <input name="phone_last4" inputmode="numeric" autocomplete="current-password"
+                   maxlength="4" placeholder="مثال: 3717" required>
+          </div>
+          <div class="hint">
+            <span>4 أرقام فقط</span>
+            <span>تحقق مباشر</span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="reset" class="btn">مسح</button>
+          <button type="submit" class="btn primary">دخول</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="login-foot">
+      <div>© منصة خطة الزيارات — جميع الحقوق محفوظة</div>
+      <div>الإصدار: 2026</div>
+    </div>
+
   </div>
-</section>
-
-<script>
-  function showToast(msg){
-    const wrap = document.getElementById("toastWrap");
-    const el = document.createElement("div");
-    el.className = "toast";
-    el.innerHTML = `<span>${msg}</span><button class="x" type="button">✕</button>`;
-    wrap.appendChild(el);
-    el.querySelector(".x").addEventListener("click", ()=> el.remove());
-    setTimeout(()=>{ if(el.parentNode) el.remove(); }, 2600);
-  }
-
-  const nid = document.getElementById("nid");
-  const last4 = document.getElementById("last4");
-  const submitBtn = document.getElementById("submitBtn");
-  const clearBtn = document.getElementById("clearBtn");
-  const form = document.getElementById("loginForm");
-
-  const cNid = document.getElementById("cNid");
-  const cLast4 = document.getElementById("cLast4");
-
-  const hNid = document.getElementById("hNid");
-  const bNid = document.getElementById("bNid");
-  const tNid = document.getElementById("tNid");
-
-  const hLast4 = document.getElementById("hLast4");
-  const bLast4 = document.getElementById("bLast4");
-  const tLast4 = document.getElementById("tLast4");
-
-  function onlyDigits(el, maxLen){
-    el.value = (el.value || "").replace(/\D/g, "").slice(0, maxLen);
-  }
-
-  function setHint(h, badge, text, state, okText, badText, idleText){
-    h.classList.remove("good","bad");
-    if(state === true){
-      h.classList.add("good");
-      badge.textContent = "✓";
-      text.textContent = okText;
-    }else if(state === false){
-      h.classList.add("bad");
-      badge.textContent = "!";
-      text.textContent = badText;
-    }else{
-      badge.textContent = "i";
-      text.textContent = idleText;
-    }
-  }
-
-  function setControlState(control, state){
-    control.classList.remove("ok","bad");
-    if(state === true) control.classList.add("ok");
-    else if(state === false) control.classList.add("bad");
-  }
-
-  function validate(){
-    const a = (nid.value || "").trim();
-    const b = (last4.value || "").trim();
-
-    const okNid = (a.length === 10);
-    const okLast4 = (b.length === 4);
-
-    setHint(hNid, bNid, tNid,
-      a.length ? okNid : null,
-      "رقم الهوية صحيح",
-      "الهوية يجب أن تكون 10 أرقام",
-      "10 أرقام فقط"
-    );
-
-    setHint(hLast4, bLast4, tLast4,
-      b.length ? okLast4 : null,
-      "الأرقام صحيحة",
-      "يجب إدخال 4 أرقام",
-      "4 أرقام فقط"
-    );
-
-    setControlState(cNid, a.length ? okNid : null);
-    setControlState(cLast4, b.length ? okLast4 : null);
-
-    submitBtn.disabled = !(okNid && okLast4);
-    return okNid && okLast4;
-  }
-
-  nid.addEventListener("input", ()=>{ onlyDigits(nid, 10); validate(); });
-  last4.addEventListener("input", ()=>{ onlyDigits(last4, 4); validate(); });
-
-  clearBtn.addEventListener("click", ()=>{
-    nid.value = "";
-    last4.value = "";
-    validate();
-    nid.focus();
-    showToast("تم المسح");
-  });
-
-  function setLoading(on){
-    if(on){
-      submitBtn.classList.add("loading");
-      submitBtn.disabled = true;
-    }else{
-      submitBtn.classList.remove("loading");
-      submitBtn.disabled = false;
-    }
-  }
-
-  form.addEventListener("submit", async (e)=>{
-    e.preventDefault();
-    if(!validate()){
-      showToast("أكمل البيانات بشكل صحيح");
-      return;
-    }
-
-    setLoading(true);
-
-    try{
-      const res = await fetch(window.location.href, {
-        method:"POST",
-        credentials: "same-origin",          // ✅ مهم مع Django
-        headers:{ "X-Requested-With":"XMLHttpRequest" },
-        body: new FormData(form)
-      });
-
-      // ✅ Redirect
-      if(res.redirected){
-        showToast("تم تسجيل الدخول ✅ جارٍ التحويل...");
-        setTimeout(()=> window.location.href = res.url, 450);
-        return;
-      }
-
-      // ✅ حاول قراءة JSON (ولو ما قدر = HTML)
-      const ct = (res.headers.get("content-type") || "").toLowerCase();
-      let data = null;
-
-      if(ct.includes("application/json")){
-        data = await res.json();
-      } else {
-        // إذا Django رجع HTML (رسالة خطأ)
-        const html = await res.text();
-        if(!res.ok) throw new Error("بيانات الدخول غير صحيحة");
-        // fallback: نفّذ إرسال طبيعي
-        showToast("تم ✅ جارٍ التحويل...");
-        setTimeout(()=> form.submit(), 220);
-        return;
-      }
-
-      if(!res.ok){
-        throw new Error(data.message || "بيانات الدخول غير صحيحة");
-      }
-
-      if(data && data.ok){
-        showToast(data.message || "تم ✅ جارٍ التحويل...");
-        const go = data.redirect_url || "{% url 'visits:plan' %}";
-        setTimeout(()=> window.location.href = go, 450);
-        return;
-      }
-
-      showToast("تم ✅");
-      setTimeout(()=> form.submit(), 250);
-
-    }catch(err){
-      showToast(err.message || "فشل ❌");
-      setLoading(false);
-      validate();
-    }
-  });
-
-  validate();
-  nid.focus();
-</script>
+</div>
 {% endblock %}
