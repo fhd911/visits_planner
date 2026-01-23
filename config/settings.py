@@ -8,17 +8,15 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-# -----------------------------------------------------------------------------
-# Base
-# -----------------------------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# -----------------------------------------------------------------------------
+
+# =============================================================================
 # Security
-# -----------------------------------------------------------------------------
+# =============================================================================
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-insecure-secret-key-change-me")
 
-DEBUG = os.getenv("DEBUG", "False") == "True"
+DEBUG = os.getenv("DEBUG", "False").strip().lower() in ("1", "true", "yes", "y")
 
 ALLOWED_HOSTS = [
     h.strip()
@@ -32,31 +30,32 @@ CSRF_TRUSTED_ORIGINS = [
     if o.strip()
 ]
 
-# -----------------------------------------------------------------------------
+# Render indicator (Render sets RENDER / RENDER_EXTERNAL_HOSTNAME)
+IS_RENDER = bool(os.getenv("RENDER")) or bool(os.getenv("RENDER_EXTERNAL_HOSTNAME"))
+
+
+# =============================================================================
 # Applications
-# -----------------------------------------------------------------------------
+# =============================================================================
 INSTALLED_APPS = [
-    # Django
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    # Local
     "visits",
 ]
 
-# -----------------------------------------------------------------------------
+
+# =============================================================================
 # Middleware
-# -----------------------------------------------------------------------------
+# =============================================================================
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
 
     "django.contrib.sessions.middleware.SessionMiddleware",
-
-    # Locale
     "django.middleware.locale.LocaleMiddleware",
 
     "django.middleware.common.CommonMiddleware",
@@ -66,11 +65,13 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+
 ROOT_URLCONF = "config.urls"
 
-# -----------------------------------------------------------------------------
+
+# =============================================================================
 # Templates
-# -----------------------------------------------------------------------------
+# =============================================================================
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
@@ -88,21 +89,20 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# -----------------------------------------------------------------------------
+
+# =============================================================================
 # Database
-# -----------------------------------------------------------------------------
-# ✅ Render: استخدم DATABASE_URL (Postgres) مباشرة
-# ✅ Local: fallback إلى SQLite
+# =============================================================================
 DATABASE_URL = (os.getenv("DATABASE_URL") or "").strip()
 
 if DATABASE_URL:
-    import dj_database_url  # ✅ لازم تكون موجودة في requirements.txt
+    import dj_database_url
 
     DATABASES = {
         "default": dj_database_url.parse(
             DATABASE_URL,
             conn_max_age=600,
-            ssl_require=True,
+            ssl_require=True,  # Render Postgres
         )
     }
 else:
@@ -113,9 +113,10 @@ else:
         }
     }
 
-# -----------------------------------------------------------------------------
+
+# =============================================================================
 # Password validation
-# -----------------------------------------------------------------------------
+# =============================================================================
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
@@ -123,9 +124,10 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-# -----------------------------------------------------------------------------
+
+# =============================================================================
 # Internationalization
-# -----------------------------------------------------------------------------
+# =============================================================================
 LANGUAGE_CODE = "ar"
 TIME_ZONE = "Asia/Riyadh"
 
@@ -141,36 +143,50 @@ LOCALE_PATHS = [
     BASE_DIR / "locale",
 ]
 
-# -----------------------------------------------------------------------------
+
+# =============================================================================
 # Static files
-# -----------------------------------------------------------------------------
+# =============================================================================
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-STORAGES = {
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+# ✅ أهم نقطة لمنع 500 محليًا:
+# - على Render: Manifest Storage (ممتاز)
+# - محليًا: StaticFilesStorage (ما يحتاج collectstatic)
+if IS_RENDER:
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        }
     }
-}
+else:
+    STORAGES = {
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        }
+    }
 
-# -----------------------------------------------------------------------------
-# Proxy / HTTPS (Render Fix for CSRF)
-# -----------------------------------------------------------------------------
+
+# =============================================================================
+# Proxy / HTTPS (Render)
+# =============================================================================
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
+# ✅ نخليها شغالة على Render فقط (لأن Local على http)
+CSRF_COOKIE_SECURE = IS_RENDER
+SESSION_COOKIE_SECURE = IS_RENDER
 
-# -----------------------------------------------------------------------------
+
+# =============================================================================
 # Default primary key field type
-# -----------------------------------------------------------------------------
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoAutoField" if False else "django.db.models.BigAutoField"
-# (سطر آمن: يحافظ على نفس النوع BigAutoField)
+# =============================================================================
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# -----------------------------------------------------------------------------
+
+# =============================================================================
 # Messages
-# -----------------------------------------------------------------------------
+# =============================================================================
 from django.contrib.messages import constants as messages  # noqa: E402
 
 MESSAGE_TAGS = {

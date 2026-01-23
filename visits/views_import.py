@@ -1,4 +1,5 @@
-# visits/views_import.py  (FINAL: صفحة الاستيراد + معالجة Excel بشكل ذكي)
+# visits/views_import.py  (FINAL ✅)
+# صفحة الاستيراد + معالجة Excel بشكل ذكي
 # Requires: openpyxl
 
 from __future__ import annotations
@@ -18,6 +19,9 @@ from .forms import ImportExcelForm
 from .models import Assignment, Principal, School, Supervisor
 
 
+# ============================================================================
+# Stats
+# ============================================================================
 @dataclass
 class ImportStats:
     created: int = 0
@@ -25,9 +29,9 @@ class ImportStats:
     skipped: int = 0
 
 
-# ---------------------------------------------------------------------
+# ============================================================================
 # Helpers
-# ---------------------------------------------------------------------
+# ============================================================================
 def _norm(v: Any) -> str:
     if v is None:
         return ""
@@ -36,7 +40,7 @@ def _norm(v: Any) -> str:
 
 def _digits(v: Any) -> str:
     """
-    يرجع الأرقام فقط من أي قيمة:
+    يرجع الأرقام فقط من أي قيمة (مفيد للهوية / الجوال):
     - 1020103717 -> 1020103717
     - "1020103717 " -> 1020103717
     - 70228.0 -> 70228
@@ -47,6 +51,21 @@ def _digits(v: Any) -> str:
         return ""
     s = s.replace(".0", "").strip()
     return re.sub(r"\D+", "", s)
+
+
+def _code(v: Any) -> str:
+    """
+    ✅ كود المدرسة / الرقم الإحصائي:
+    - يحافظ على الحروف مثل M3964353
+    - يحول 70228.0 إلى 70228
+    - يحذف الفراغات فقط
+    """
+    s = _norm(v)
+    if not s:
+        return ""
+    s = s.replace(".0", "").strip()
+    s = s.replace(" ", "")
+    return s
 
 
 def _to_bool(v: Any) -> bool:
@@ -80,14 +99,7 @@ def _canon_header(h: str) -> str:
         return "is_active"
 
     # ---------- Principals ----------
-    if x in {
-        "school_stat_code",
-        "school stat code",
-        "رقم المدرسة",
-        "رقم احصائي المدرسة",
-        "الرقم الإحصائي",
-        "الرقم الاحصائي",
-    }:
+    if x in {"school_stat_code", "school stat code", "رقم المدرسة", "رقم احصائي المدرسة", "الرقم الإحصائي"}:
         return "school_stat_code"
     if x in {"full_name", "full name", "الاسم", "اسم القائد", "اسم القائدة", "اسم المدير", "اسم المديرة"}:
         return "full_name"
@@ -106,8 +118,8 @@ def _canon_header(h: str) -> str:
     if x in {"supervisor_name", "supervisor name", "اسم المشرف", "المشرف"}:
         return "supervisor_name"
 
-    # ---------- Assignments (fallback matches) ----------
-    if x in {"school", "school stat code", "school_stat_code", "الرقم الإحصائي", "الرقم الاحصائي"}:
+    # ---------- Assignments ----------
+    if x in {"school", "school_stat_code", "school stat code", "الرقم الإحصائي", "الرقم الاحصائي"}:
         return "school_stat_code"
     if x in {"supervisor", "supervisor_national_id", "السجل المدني", "رقم الهوية", "الهوية"}:
         return "supervisor_national_id"
@@ -118,8 +130,7 @@ def _canon_header(h: str) -> str:
 def _sheet_rows(file) -> list[dict]:
     """
     يقرأ الشيت ويعيد list[dict] بحيث مفاتيح الأعمدة تكون:
-    - المفاتيح القياسية (canon)
-    - مع الاحتفاظ بالمفاتيح الأصلية
+    - مفاتيح أصلية + مفاتيح قياسية (canonical) لنفس القيم
     """
     wb = load_workbook(filename=file, data_only=True)
     ws = wb.active
@@ -137,35 +148,35 @@ def _sheet_rows(file) -> list[dict]:
 
         rec: dict = {}
 
-        # مفاتيح أصلية
+        # ضع القيم بمفاتيحها الأصلية
         for j in range(len(headers_raw)):
             key = headers_raw[j] if j < len(headers_raw) else f"col_{j}"
             rec[key] = row[j] if j < len(row) else None
 
-        # مفاتيح قياسية (canonical)
+        # ثم أضف مفاتيح canonical لنفس القيم
         for j in range(len(headers_raw)):
             canon = _canon_header(headers_raw[j])
-            rec[canon] = row[j] if j < len(row) else None
+            if canon and canon not in rec:
+                rec[canon] = row[j] if j < len(row) else None
 
         out.append(rec)
 
     return out
 
 
-# ---------------------------------------------------------------------
+# ============================================================================
 # Importers
-# ---------------------------------------------------------------------
+# ============================================================================
 def _import_schools(file, gender: str) -> ImportStats:
     """
-    الأعمدة المتوقعة:
+    الأعمدة المتوقعة (بالاسم):
       stat_code | name | education_type | stage | is_active (اختياري)
     """
     st = ImportStats()
     rows = _sheet_rows(file)
 
     for r in rows:
-        # ✅ مهم: stat_code بالأرقام فقط (يحمي من .0)
-        stat_code = _digits(r.get("stat_code"))
+        stat_code = _code(r.get("stat_code"))  # ✅ يحافظ على M...
         name = _norm(r.get("name"))
 
         if not stat_code or not name:
@@ -198,7 +209,7 @@ def _import_principals(file) -> ImportStats:
     rows = _sheet_rows(file)
 
     for r in rows:
-        school_stat_code = _digits(r.get("school_stat_code"))
+        school_stat_code = _code(r.get("school_stat_code"))  # ✅ قد يكون M...
         full_name = _norm(r.get("full_name"))
 
         if not school_stat_code or not full_name:
@@ -235,7 +246,7 @@ def _import_supervisors(file) -> ImportStats:
     rows = _sheet_rows(file)
 
     for r in rows:
-        national_id = _digits(r.get("national_id"))
+        national_id = _digits(r.get("national_id"))  # ✅ أرقام فقط
         full_name = _norm(r.get("full_name"))
 
         if not national_id or not full_name:
@@ -259,30 +270,39 @@ def _import_supervisors(file) -> ImportStats:
 
 def _import_assignments(file) -> ImportStats:
     """
-    ✅ يدعم الإسنادات حتى لو الأعمدة معكوسة/ملخبطة.
+    ✅ يدعم ملف الإسنادات بأي من هذي الصيغ:
+
+    1) القياسية:
+      supervisor_national_id | school_stat_code | is_active (اختياري)
+
+    2) العربية الشائعة:
+      السجل المدني | اسم المشرف | الرقم الإحصائي
+
+    ✅ ملاحظة مهمة:
+    - الهوية = أرقام فقط
+    - الرقم الإحصائي للمدرسة = قد يحتوي حرف M لذلك نستخدم _code وليس _digits
     """
     st = ImportStats()
     rows = _sheet_rows(file)
 
     for r in rows:
-        # 1) الأفضل: supervisor_national_id
+        # ✅ 1) هوية المشرف: نأخذها من أكثر من مكان
         sup_nid = _digits(r.get("supervisor_national_id")) or _digits(r.get("national_id"))
 
-        # 2) لو ما لقاه: جرّب من اسم المشرف لأنه أحياناً يحتوي رقم
+        # لو ملفك ملخبط: الهوية داخل "اسم المشرف"
         if not sup_nid:
             sup_nid = (
                 _digits(r.get("supervisor_name"))
                 or _digits(r.get("اسم المشرف"))
                 or _digits(r.get("المشرف"))
-                or _digits(r.get("اسم"))
             )
 
-        # رقم المدرسة
+        # ✅ 2) الرقم الإحصائي للمدرسة: لا نستخدم digits
         school_stat_code = (
-            _digits(r.get("school_stat_code"))
-            or _digits(r.get("stat_code"))
-            or _digits(r.get("الرقم الإحصائي"))
-            or _digits(r.get("الرقم الاحصائي"))
+            _code(r.get("school_stat_code"))
+            or _code(r.get("stat_code"))
+            or _code(r.get("الرقم الإحصائي"))
+            or _code(r.get("الرقم الاحصائي"))
         )
 
         if not sup_nid or not school_stat_code:
@@ -314,11 +334,11 @@ def _import_assignments(file) -> ImportStats:
     return st
 
 
-# ---------------------------------------------------------------------
+# ============================================================================
 # View
-# ---------------------------------------------------------------------
+# ============================================================================
 def manager_import_view(request: HttpRequest) -> HttpResponse:
-    results = {}
+    results: dict[str, ImportStats] = {}
 
     if request.method == "POST":
         form = ImportExcelForm(request.POST, request.FILES)
