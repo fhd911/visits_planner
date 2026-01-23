@@ -1,10 +1,11 @@
-# visits/views_import.py  (كود كامل: صفحة الاستيراد + معالجة Excel)
-# ملاحظة: يتطلب openpyxl
+# visits/views_import.py  (FINAL: صفحة الاستيراد + معالجة Excel بشكل ذكي)
+# Requires: openpyxl
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any
 
 from django.contrib import messages
 from django.db import transaction
@@ -24,48 +25,149 @@ class ImportStats:
     skipped: int = 0
 
 
-def _norm(v) -> str:
+# ---------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------
+def _norm(v: Any) -> str:
     if v is None:
         return ""
     return str(v).strip()
 
 
-def _to_bool(v) -> bool:
+def _digits(v: Any) -> str:
+    """
+    يرجع الأرقام فقط من أي قيمة:
+    - 1020103717 -> 1020103717
+    - "1020103717 " -> 1020103717
+    - 70228.0 -> 70228
+    - "70228-1" -> 702281
+    """
+    s = _norm(v)
+    if not s:
+        return ""
+    s = s.replace(".0", "").strip()
+    return re.sub(r"\D+", "", s)
+
+
+def _to_bool(v: Any) -> bool:
     s = _norm(v).lower()
     if s in {"1", "true", "yes", "y", "نعم"}:
         return True
     if s in {"0", "false", "no", "n", "لا"}:
         return False
-    return True  # افتراضي
+    return True  # default
+
+
+def _canon_header(h: str) -> str:
+    """
+    تحويل الهيدر (عربي/إنجليزي) إلى مفاتيح قياسية موحدة.
+    """
+    x = _norm(h).lower()
+    x = x.replace("ـ", "").replace("_", " ").strip()
+
+    # ---------- Schools ----------
+    if x in {"stat_code", "stat code", "الرقم الإحصائي", "الرقم الاحصائي", "رقم احصائي"}:
+        return "stat_code"
+    if x in {"name", "اسم المدرسة", "المدرسة"}:
+        return "name"
+    if x in {"education_type", "education type", "type", "نوع التعليم"}:
+        return "education_type"
+    if x in {"stage", "المرحلة"}:
+        return "stage"
+    if x in {"gender", "الجنس"}:
+        return "gender"
+    if x in {"is_active", "active", "نشط"}:
+        return "is_active"
+
+    # ---------- Principals ----------
+    if x in {
+        "school_stat_code",
+        "school stat code",
+        "رقم المدرسة",
+        "رقم احصائي المدرسة",
+        "الرقم الإحصائي",
+        "الرقم الاحصائي",
+    }:
+        return "school_stat_code"
+    if x in {"full_name", "full name", "الاسم", "اسم القائد", "اسم القائدة", "اسم المدير", "اسم المديرة"}:
+        return "full_name"
+    if x in {"national_id", "national id", "السجل المدني", "رقم الهوية", "الهوية"}:
+        return "national_id"
+    if x in {"mobile", "الجوال", "رقم الجوال"}:
+        return "mobile"
+    if x in {"sector", "القطاع"}:
+        return "sector"
+    if x in {"department", "القسم", "الإدارة"}:
+        return "department"
+
+    # ---------- Supervisors ----------
+    if x in {"supervisor_national_id", "supervisor national id", "رقم هوية المشرف"}:
+        return "supervisor_national_id"
+    if x in {"supervisor_name", "supervisor name", "اسم المشرف", "المشرف"}:
+        return "supervisor_name"
+
+    # ---------- Assignments (fallback matches) ----------
+    if x in {"school", "school stat code", "school_stat_code", "الرقم الإحصائي", "الرقم الاحصائي"}:
+        return "school_stat_code"
+    if x in {"supervisor", "supervisor_national_id", "السجل المدني", "رقم الهوية", "الهوية"}:
+        return "supervisor_national_id"
+
+    return _norm(h)
 
 
 def _sheet_rows(file) -> list[dict]:
+    """
+    يقرأ الشيت ويعيد list[dict] بحيث مفاتيح الأعمدة تكون:
+    - المفاتيح القياسية (canon)
+    - مع الاحتفاظ بالمفاتيح الأصلية
+    """
     wb = load_workbook(filename=file, data_only=True)
     ws = wb.active
-    headers = []
-    out = []
+
+    out: list[dict] = []
+    headers_raw: list[str] = []
+
     for i, row in enumerate(ws.iter_rows(values_only=True), start=1):
         if i == 1:
-            headers = [_norm(x) for x in row]
+            headers_raw = [_norm(x) for x in row]
             continue
+
         if not any(x is not None and _norm(x) != "" for x in row):
             continue
-        rec = {headers[j]: row[j] for j in range(len(headers))}
+
+        rec: dict = {}
+
+        # مفاتيح أصلية
+        for j in range(len(headers_raw)):
+            key = headers_raw[j] if j < len(headers_raw) else f"col_{j}"
+            rec[key] = row[j] if j < len(row) else None
+
+        # مفاتيح قياسية (canonical)
+        for j in range(len(headers_raw)):
+            canon = _canon_header(headers_raw[j])
+            rec[canon] = row[j] if j < len(row) else None
+
         out.append(rec)
+
     return out
 
 
+# ---------------------------------------------------------------------
+# Importers
+# ---------------------------------------------------------------------
 def _import_schools(file, gender: str) -> ImportStats:
     """
-    الأعمدة المتوقعة (بالاسم):
+    الأعمدة المتوقعة:
       stat_code | name | education_type | stage | is_active (اختياري)
     """
     st = ImportStats()
     rows = _sheet_rows(file)
 
     for r in rows:
-        stat_code = _norm(r.get("stat_code"))
+        # ✅ مهم: stat_code بالأرقام فقط (يحمي من .0)
+        stat_code = _digits(r.get("stat_code"))
         name = _norm(r.get("name"))
+
         if not stat_code or not name:
             st.skipped += 1
             continue
@@ -96,8 +198,9 @@ def _import_principals(file) -> ImportStats:
     rows = _sheet_rows(file)
 
     for r in rows:
-        school_stat_code = _norm(r.get("school_stat_code"))
+        school_stat_code = _digits(r.get("school_stat_code"))
         full_name = _norm(r.get("full_name"))
+
         if not school_stat_code or not full_name:
             st.skipped += 1
             continue
@@ -109,8 +212,8 @@ def _import_principals(file) -> ImportStats:
 
         defaults = {
             "full_name": full_name,
-            "national_id": _norm(r.get("national_id")),
-            "mobile": _norm(r.get("mobile")),
+            "national_id": _digits(r.get("national_id")),
+            "mobile": _digits(r.get("mobile")),
             "sector": _norm(r.get("sector")),
         }
 
@@ -132,8 +235,9 @@ def _import_supervisors(file) -> ImportStats:
     rows = _sheet_rows(file)
 
     for r in rows:
-        national_id = _norm(r.get("national_id"))
+        national_id = _digits(r.get("national_id"))
         full_name = _norm(r.get("full_name"))
+
         if not national_id or not full_name:
             st.skipped += 1
             continue
@@ -155,21 +259,39 @@ def _import_supervisors(file) -> ImportStats:
 
 def _import_assignments(file) -> ImportStats:
     """
-    الأعمدة المتوقعة:
-      supervisor_national_id | school_stat_code | is_active (اختياري)
+    ✅ يدعم الإسنادات حتى لو الأعمدة معكوسة/ملخبطة.
     """
     st = ImportStats()
     rows = _sheet_rows(file)
 
     for r in rows:
-        sup_nid = _norm(r.get("supervisor_national_id"))
-        school_stat_code = _norm(r.get("school_stat_code"))
+        # 1) الأفضل: supervisor_national_id
+        sup_nid = _digits(r.get("supervisor_national_id")) or _digits(r.get("national_id"))
+
+        # 2) لو ما لقاه: جرّب من اسم المشرف لأنه أحياناً يحتوي رقم
+        if not sup_nid:
+            sup_nid = (
+                _digits(r.get("supervisor_name"))
+                or _digits(r.get("اسم المشرف"))
+                or _digits(r.get("المشرف"))
+                or _digits(r.get("اسم"))
+            )
+
+        # رقم المدرسة
+        school_stat_code = (
+            _digits(r.get("school_stat_code"))
+            or _digits(r.get("stat_code"))
+            or _digits(r.get("الرقم الإحصائي"))
+            or _digits(r.get("الرقم الاحصائي"))
+        )
+
         if not sup_nid or not school_stat_code:
             st.skipped += 1
             continue
 
         supervisor = Supervisor.objects.filter(national_id=sup_nid).first()
         school = School.objects.filter(stat_code=school_stat_code).first()
+
         if not supervisor or not school:
             st.skipped += 1
             continue
@@ -179,8 +301,11 @@ def _import_assignments(file) -> ImportStats:
         }
 
         obj, created = Assignment.objects.update_or_create(
-            supervisor=supervisor, school=school, defaults=defaults
+            supervisor=supervisor,
+            school=school,
+            defaults=defaults,
         )
+
         if created:
             st.created += 1
         else:
@@ -189,6 +314,9 @@ def _import_assignments(file) -> ImportStats:
     return st
 
 
+# ---------------------------------------------------------------------
+# View
+# ---------------------------------------------------------------------
 def manager_import_view(request: HttpRequest) -> HttpResponse:
     results = {}
 
@@ -198,12 +326,16 @@ def manager_import_view(request: HttpRequest) -> HttpResponse:
             with transaction.atomic():
                 if form.cleaned_data.get("schools_boys"):
                     results["المدارس (بنين)"] = _import_schools(form.cleaned_data["schools_boys"], "boys")
+
                 if form.cleaned_data.get("schools_girls"):
                     results["المدارس (بنات)"] = _import_schools(form.cleaned_data["schools_girls"], "girls")
+
                 if form.cleaned_data.get("principals"):
                     results["مديرو المدارس"] = _import_principals(form.cleaned_data["principals"])
+
                 if form.cleaned_data.get("supervisors"):
                     results["المشرفون"] = _import_supervisors(form.cleaned_data["supervisors"])
+
                 if form.cleaned_data.get("assignments"):
                     results["الإسنادات"] = _import_assignments(form.cleaned_data["assignments"])
 
