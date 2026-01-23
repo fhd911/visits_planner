@@ -1,6 +1,8 @@
 # visits/urls.py
 from django.urls import path
+
 from . import views
+from . import views_import  # ✅ صفحة الاستيراد + تحميل المتجاهل
 
 app_name = "visits"
 
@@ -23,7 +25,7 @@ urlpatterns = [
     # ==================================================
     path("manager/dashboard/", views.admin_dashboard_view, name="admin_dashboard"),
 
-    # ✅ صفحة تفاصيل خطة مشرف (مهمة للقالب + لحل NoReverseMatch)
+    # ✅ صفحة تفاصيل خطة مشرف
     path("manager/plan/<int:plan_id>/", views.admin_plan_detail_view, name="admin_plan_detail"),
 
     # ✅ Export week Excel (لكل الأسبوع)
@@ -37,7 +39,10 @@ urlpatterns = [
     path("manager/plan-draft/<int:plan_id>/", views.admin_plan_back_to_draft_view, name="admin_plan_back_to_draft"),
 
     # ==================================================
-    # 4) Import
+    # 4) Import (✅ الجديد + تحميل المتجاهل)
     # ==================================================
-    path("manager/import/", views.admin_import_view, name="admin_import"),
+    path("manager/import/", views_import.manager_import_view, name="admin_import"),
+
+    # ✅ تحميل ملف المتجاهل بعد الاستيراد
+    path("manager/import/rejected.xlsx", views_import.download_rejected_view, name="download_rejected"),
 ]
