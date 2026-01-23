@@ -91,18 +91,19 @@ WSGI_APPLICATION = "config.wsgi.application"
 # -----------------------------------------------------------------------------
 # Database
 # -----------------------------------------------------------------------------
-DATABASE_URL = os.getenv("DATABASE_URL", "")
+# ✅ Render: استخدم DATABASE_URL (Postgres) مباشرة
+# ✅ Local: fallback إلى SQLite
+DATABASE_URL = (os.getenv("DATABASE_URL") or "").strip()
 
 if DATABASE_URL:
+    import dj_database_url  # ✅ لازم تكون موجودة في requirements.txt
+
     DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.getenv("PGDATABASE", ""),
-            "USER": os.getenv("PGUSER", ""),
-            "PASSWORD": os.getenv("PGPASSWORD", ""),
-            "HOST": os.getenv("PGHOST", ""),
-            "PORT": os.getenv("PGPORT", "5432"),
-        }
+        "default": dj_database_url.parse(
+            DATABASE_URL,
+            conn_max_age=600,
+            ssl_require=True,
+        )
     }
 else:
     DATABASES = {
@@ -164,7 +165,8 @@ SESSION_COOKIE_SECURE = True
 # -----------------------------------------------------------------------------
 # Default primary key field type
 # -----------------------------------------------------------------------------
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoAutoField" if False else "django.db.models.BigAutoField"
+# (سطر آمن: يحافظ على نفس النوع BigAutoField)
 
 # -----------------------------------------------------------------------------
 # Messages
