@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import os
 from pathlib import Path
 
 from google.oauth2 import service_account
@@ -5,11 +8,26 @@ from googleapiclient.discovery import build
 
 
 BASE_DIR = Path(__file__).resolve().parents[2]
-SERVICE_ACCOUNT_FILE = BASE_DIR / "secrets" / "service-account.json"
 SCOPES = ["https://www.googleapis.com/auth/drive"]
+
+# Render:
+#   /etc/secrets/service-account.json
+# Server:
+#   BASE_DIR / "secrets" / "service-account.json"
+SERVICE_ACCOUNT_FILE = Path(
+    os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "/etc/secrets/service-account.json")
+)
+
+if not SERVICE_ACCOUNT_FILE.exists():
+    SERVICE_ACCOUNT_FILE = BASE_DIR / "secrets" / "service-account.json"
 
 
 def get_drive_service():
+    if not SERVICE_ACCOUNT_FILE.exists():
+        raise FileNotFoundError(
+            f"Google service account file not found at: {SERVICE_ACCOUNT_FILE}"
+        )
+
     credentials = service_account.Credentials.from_service_account_file(
         str(SERVICE_ACCOUNT_FILE),
         scopes=SCOPES,
