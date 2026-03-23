@@ -7,6 +7,11 @@ app_name = "visits"
 
 urlpatterns = [
     # =========================================================
+    # صفحة الصيانة
+    # =========================================================
+    path("maintenance/", views.maintenance_page_view, name="maintenance_page"),
+
+    # =========================================================
     # دخول / خروج
     # =========================================================
     path("", views.login_view, name="login"),
@@ -57,6 +62,17 @@ urlpatterns = [
     path("manager/unlock-reject/<int:plan_id>/", views.admin_unlock_reject_view, name="admin_unlock_reject"),
 
     # =========================================================
+    # الإدارة - الصيانة
+    # =========================================================
+    path("manager/maintenance/", views.admin_maintenance_settings_view, name="admin_maintenance_settings"),
+    path("manager/maintenance/toggle/", views.admin_toggle_maintenance_view, name="admin_toggle_maintenance"),
+    path(
+        "manager/maintenance/message/",
+        views.admin_update_maintenance_message_view,
+        name="admin_update_maintenance_message",
+    ),
+
+    # =========================================================
     # الإدارة - المدارس
     # =========================================================
     path("manager/schools/", views.admin_school_list_view, name="admin_school_list"),
@@ -82,7 +98,6 @@ urlpatterns = [
     # الإدارة - الإسناد
     # =========================================================
     path("manager/assignments/", views.admin_assignments_overview_view, name="admin_assignments_overview"),
-
     path(
         "manager/supervisors/<int:supervisor_id>/assignments/",
         views.admin_supervisor_assignments_view,

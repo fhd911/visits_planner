@@ -112,6 +112,18 @@
     min-height:30px;
   }
 
+  .admin-page .chip.maintenance-active{
+    background:rgba(220,38,38,.08);
+    border-color:rgba(220,38,38,.15);
+    color:#991b1b;
+  }
+
+  .admin-page .chip.maintenance-inactive{
+    background:rgba(22,163,74,.08);
+    border-color:rgba(22,163,74,.14);
+    color:#166534;
+  }
+
   .admin-page .dot{
     width:7px;
     height:7px;
@@ -124,6 +136,16 @@
   .admin-page .dot.ok{
     background:rgba(16,185,129,.95);
     box-shadow:0 0 0 3px rgba(16,185,129,.08);
+  }
+
+  .admin-page .dot.warn{
+    background:rgba(245,158,11,.95);
+    box-shadow:0 0 0 3px rgba(245,158,11,.10);
+  }
+
+  .admin-page .dot.danger{
+    background:rgba(220,38,38,.95);
+    box-shadow:0 0 0 3px rgba(220,38,38,.10);
   }
 
   .admin-page .btn{
@@ -161,6 +183,18 @@
     background:rgba(14,165,164,.08);
     border-color:rgba(14,165,164,.15);
     color:var(--txt);
+  }
+
+  .admin-page .btn.warn{
+    background:rgba(245,158,11,.10);
+    border-color:rgba(245,158,11,.18);
+    color:#7c2d12;
+  }
+
+  .admin-page .btn.danger{
+    background:rgba(220,38,38,.10);
+    border-color:rgba(220,38,38,.18);
+    color:#991b1b;
   }
 
   .admin-page .btn:disabled{
@@ -925,13 +959,31 @@
       </div>
 
       <div class="right">
-        <span class="chip"><span class="dot ok"></span> النظام يعمل</span>
+        {% if site_setting and site_setting.is_maintenance_mode %}
+          <span class="chip maintenance-active">
+            <span class="dot danger"></span>
+            الصيانة مفعلة
+          </span>
+        {% else %}
+          <span class="chip maintenance-inactive">
+            <span class="dot ok"></span>
+            الموقع مفتوح
+          </span>
+        {% endif %}
+
         <span class="chip"><span class="dot"></span> الأسبوع: <b style="color:var(--txt);font-weight:var(--fw-title)">{{ week }}</b></span>
         <span class="chip">النتائج: <b style="color:var(--txt);font-weight:var(--fw-title)">{{ kpi_total }}</b></span>
 
         <button class="btn soft" id="bulkNotifyBtn" type="button">🔔 تنبيه عام</button>
         <a class="btn primary" href="{% url 'visits:admin_export_week' %}?week={{ week }}{% if show_all %}&all=1{% endif %}">⬇ Excel للأسبوع</a>
         <a class="btn soft" href="{% url 'visits:admin_import' %}">⬆ استيراد البيانات</a>
+
+        {% if site_setting and site_setting.is_maintenance_mode %}
+          <a class="btn danger" href="{% url 'visits:admin_maintenance_settings' %}">🛠 إعدادات الصيانة</a>
+        {% else %}
+          <a class="btn warn" href="{% url 'visits:admin_maintenance_settings' %}">🛠 الصيانة</a>
+        {% endif %}
+
         <a class="btn" href="{% url 'visits:logout' %}">خروج</a>
       </div>
     </div>

@@ -18,6 +18,118 @@ def _clean_text(v: str | None) -> str:
 
 
 # =========================
+# إعدادات الموقع العامة
+# =========================
+class SiteSetting(models.Model):
+    class Meta:
+        verbose_name = "إعدادات الموقع"
+        verbose_name_plural = "إعدادات الموقع"
+
+    site_name = models.CharField("اسم الموقع", max_length=150, default="بوابة الزيارات")
+    is_maintenance_mode = models.BooleanField("وضع الصيانة مفعّل", default=False)
+
+    maintenance_message = models.TextField(
+        "رسالة الصيانة",
+        blank=True,
+        null=True,
+        default="الموقع مغلق مؤقتًا للصيانة، وسيعود العمل خلال وقت قريب.",
+    )
+
+    allow_admin_only = models.BooleanField(
+        "السماح للإدارة فقط أثناء الصيانة",
+        default=True,
+        help_text="عند التفعيل: يمكن للإدارة فقط الدخول أثناء وضع الصيانة.",
+    )
+
+    expected_return_text = models.CharField(
+        "وقت العودة المتوقع (نصي)",
+        max_length=200,
+        blank=True,
+        null=True,
+        help_text="مثال: اليوم الساعة 3 مساءً أو خلال ساعة تقريبًا",
+    )
+
+    maintenance_starts_at = models.DateTimeField(
+        "بداية الصيانة",
+        null=True,
+        blank=True,
+        help_text="تاريخ ووقت بدء الصيانة.",
+    )
+
+    maintenance_ends_at = models.DateTimeField(
+        "نهاية الصيانة",
+        null=True,
+        blank=True,
+        help_text="تاريخ ووقت انتهاء الصيانة وإعادة فتح الموقع.",
+    )
+
+    updated_at = models.DateTimeField("آخر تحديث", auto_now=True)
+    created_at = models.DateTimeField("تاريخ الإنشاء", auto_now_add=True)
+
+    def __str__(self) -> str:
+        return self.site_name or "إعدادات الموقع"
+
+    def clean(self):
+        super().clean()
+        self.site_name = _clean_text(self.site_name) or "بوابة الزيارات"
+        self.maintenance_message = _clean_text(self.maintenance_message) or None
+        self.expected_return_text = _clean_text(self.expected_return_text) or None
+
+        errors = {}
+
+        if self.maintenance_starts_at and self.maintenance_ends_at:
+            if self.maintenance_ends_at <= self.maintenance_starts_at:
+                errors["maintenance_ends_at"] = "يجب أن يكون وقت نهاية الصيانة بعد وقت بدايتها."
+
+        if errors:
+            raise ValidationError(errors)
+
+    @property
+    def is_currently_in_maintenance_window(self) -> bool:
+        now = timezone.now()
+
+        if self.maintenance_starts_at and self.maintenance_ends_at:
+            return self.maintenance_starts_at <= now <= self.maintenance_ends_at
+
+        if self.maintenance_starts_at and not self.maintenance_ends_at:
+            return now >= self.maintenance_starts_at
+
+        if not self.maintenance_starts_at and self.maintenance_ends_at:
+            return now <= self.maintenance_ends_at
+
+        return False
+
+    @property
+    def maintenance_window_label(self) -> str:
+        local_start = timezone.localtime(self.maintenance_starts_at) if self.maintenance_starts_at else None
+        local_end = timezone.localtime(self.maintenance_ends_at) if self.maintenance_ends_at else None
+
+        if local_start and local_end:
+            return (
+                f"من {local_start.strftime('%Y-%m-%d %I:%M %p')} "
+                f"إلى {local_end.strftime('%Y-%m-%d %I:%M %p')}"
+            )
+
+        if local_start:
+            return f"تبدأ في {local_start.strftime('%Y-%m-%d %I:%M %p')}"
+
+        if local_end:
+            return f"تنتهي في {local_end.strftime('%Y-%m-%d %I:%M %p')}"
+
+        return "غير محدد"
+
+    @classmethod
+    def get_solo(cls) -> "SiteSetting":
+        obj, _created = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def save(self, *args, **kwargs):
+        self.pk = 1
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+
+# =========================
 # القطاعات
 # =========================
 class Sector(models.Model):

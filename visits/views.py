@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import re
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from functools import wraps
 from io import BytesIO
 from typing import Any, Optional
@@ -30,6 +30,7 @@ from .models import (
     Principal,
     School,
     Sector,
+    SiteSetting,
     Supervisor,
     SupervisorNotification,
     UnlockRequest,
@@ -171,6 +172,251 @@ def admin_only_view(view_func):
             return supervisor_redirect
         return staff_member_required(view_func)(request, *args, **kwargs)
     return _wrapped
+
+
+# =============================================================================
+# Site maintenance helpers
+# =============================================================================
+def _get_site_setting() -> SiteSetting:
+    return SiteSetting.get_solo()
+
+
+def _maintenance_message(setting: SiteSetting) -> str:
+    return (
+        setting.maintenance_message
+        or "الموقع مغلق مؤقتًا للصيانة، وسيعود العمل خلال وقت قريب."
+    )
+
+
+def _parse_dt_local(value: str) -> Optional[datetime]:
+    value = (value or "").strip()
+    if not value:
+        return None
+
+    fmts = (
+        "%Y-%m-%dT%H:%M",
+        "%Y-%m-%d %H:%M",
+        "%Y-%m-%dT%H:%M:%S",
+        "%Y-%m-%d %H:%M:%S",
+    )
+    for fmt in fmts:
+        try:
+            dt = datetime.strptime(value, fmt)
+            return timezone.make_aware(dt, timezone.get_current_timezone())
+        except Exception:
+            continue
+    return None
+
+
+def _format_dt_local(value: Optional[datetime]) -> str:
+    if not value:
+        return ""
+    return timezone.localtime(value).strftime("%Y-%m-%dT%H:%M")
+
+
+def _maintenance_is_active(setting: SiteSetting, *, persist: bool = False) -> bool:
+    active = bool(setting.is_maintenance_mode)
+    now = timezone.now()
+
+    starts_at = getattr(setting, "maintenance_starts_at", None)
+    ends_at = getattr(setting, "maintenance_ends_at", None)
+
+    if not active:
+        return False
+
+    if starts_at and now < starts_at:
+        return False
+
+    if ends_at and now >= ends_at:
+        if persist:
+            setting.is_maintenance_mode = False
+            setting.save(update_fields=["is_maintenance_mode", "updated_at"])
+        return False
+
+    return True
+
+
+def _maintenance_context() -> dict[str, Any]:
+    setting = _get_site_setting()
+    active = _maintenance_is_active(setting, persist=True)
+    return {
+        "site_setting": setting,
+        "maintenance_message": _maintenance_message(setting),
+        "expected_return_text": setting.expected_return_text or "",
+        "allow_admin_only": setting.allow_admin_only,
+        "maintenance_is_active": active,
+        "maintenance_starts_at": getattr(setting, "maintenance_starts_at", None),
+        "maintenance_ends_at": getattr(setting, "maintenance_ends_at", None),
+        "maintenance_starts_at_value": _format_dt_local(getattr(setting, "maintenance_starts_at", None)),
+        "maintenance_ends_at_value": _format_dt_local(getattr(setting, "maintenance_ends_at", None)),
+        "maintenance_window_label": getattr(setting, "maintenance_window_label", "غير محدد"),
+    }
+
+
+def _is_admin_user(request: HttpRequest) -> bool:
+    user = getattr(request, "user", None)
+    return bool(user and user.is_authenticated and user.is_staff)
+
+
+def _maintenance_allowed_for_request(request: HttpRequest, setting: SiteSetting) -> bool:
+    if not _maintenance_is_active(setting, persist=True):
+        return True
+
+    if _is_admin_user(request):
+        return True
+
+    if request.path.startswith("/admin/"):
+        return True
+
+    return False
+
+
+# =============================================================================
+# Maintenance views
+# =============================================================================
+def maintenance_page_view(request: HttpRequest) -> HttpResponse:
+    setting = _get_site_setting()
+    if not _maintenance_is_active(setting, persist=True):
+        if request.user.is_authenticated and request.user.is_staff:
+            return redirect("visits:admin_dashboard")
+        return redirect("visits:login")
+
+    context = _maintenance_context()
+    return render(request, "visits/maintenance.html", context)
+
+
+@admin_only_view
+def admin_maintenance_settings_view(request: HttpRequest) -> HttpResponse:
+    setting = _get_site_setting()
+    _maintenance_is_active(setting, persist=True)
+    return render(
+        request,
+        "visits/admin_maintenance_settings.html",
+        {
+            "site_setting": setting,
+            "maintenance_starts_at_value": _format_dt_local(getattr(setting, "maintenance_starts_at", None)),
+            "maintenance_ends_at_value": _format_dt_local(getattr(setting, "maintenance_ends_at", None)),
+            "maintenance_window_label": getattr(setting, "maintenance_window_label", "غير محدد"),
+            "maintenance_is_active": _maintenance_is_active(setting, persist=False),
+        },
+    )
+
+
+@admin_only_view
+@require_POST
+def admin_toggle_maintenance_view(request: HttpRequest) -> HttpResponse:
+    setting = _get_site_setting()
+
+    enable_raw = (
+        request.POST.get("enable")
+        or request.POST.get("is_maintenance_mode")
+        or request.POST.get("maintenance")
+        or ""
+    ).strip().lower()
+
+    if enable_raw in ("1", "true", "yes", "on", "enable"):
+        setting.is_maintenance_mode = True
+        msg = "تم تفعيل وضع الصيانة بنجاح."
+    elif enable_raw in ("0", "false", "no", "off", "disable"):
+        setting.is_maintenance_mode = False
+        msg = "تم إيقاف وضع الصيانة بنجاح."
+    else:
+        setting.is_maintenance_mode = not setting.is_maintenance_mode
+        msg = "تم تحديث حالة وضع الصيانة بنجاح."
+
+    setting.allow_admin_only = _bool_from_post(
+        request.POST.get("allow_admin_only"),
+        default=setting.allow_admin_only,
+    )
+    setting.save()
+    active = _maintenance_is_active(setting, persist=True)
+
+    if _is_ajax(request):
+        return JsonResponse(
+            {
+                "ok": True,
+                "message": msg,
+                "is_maintenance_mode": setting.is_maintenance_mode,
+                "maintenance_is_active": active,
+                "allow_admin_only": setting.allow_admin_only,
+                "maintenance_window_label": getattr(setting, "maintenance_window_label", "غير محدد"),
+            },
+            status=200,
+        )
+
+    messages.success(request, msg)
+    return redirect("visits:admin_maintenance_settings")
+
+
+@admin_only_view
+@require_POST
+def admin_update_maintenance_message_view(request: HttpRequest) -> HttpResponse:
+    setting = _get_site_setting()
+
+    starts_at_raw = (
+        request.POST.get("maintenance_starts_at")
+        or request.POST.get("starts_at")
+        or ""
+    )
+    ends_at_raw = (
+        request.POST.get("maintenance_ends_at")
+        or request.POST.get("ends_at")
+        or ""
+    )
+
+    starts_at = _parse_dt_local(starts_at_raw)
+    ends_at = _parse_dt_local(ends_at_raw)
+
+    if starts_at_raw.strip() and starts_at is None:
+        messages.error(request, "صيغة تاريخ بداية الصيانة غير صحيحة.")
+        return redirect("visits:admin_maintenance_settings")
+
+    if ends_at_raw.strip() and ends_at is None:
+        messages.error(request, "صيغة تاريخ نهاية الصيانة غير صحيحة.")
+        return redirect("visits:admin_maintenance_settings")
+
+    setting.site_name = (request.POST.get("site_name") or setting.site_name or "بوابة الزيارات").strip()
+    setting.maintenance_message = (
+        request.POST.get("maintenance_message")
+        or request.POST.get("message")
+        or ""
+    ).strip() or None
+    setting.expected_return_text = (
+        request.POST.get("expected_return_text")
+        or request.POST.get("expected_return")
+        or ""
+    ).strip() or None
+    setting.maintenance_starts_at = starts_at
+    setting.maintenance_ends_at = ends_at
+    setting.allow_admin_only = _bool_from_post(
+        request.POST.get("allow_admin_only"),
+        default=setting.allow_admin_only,
+    )
+    setting.save()
+    active = _maintenance_is_active(setting, persist=True)
+
+    msg = "تم تحديث رسالة وإعدادات الصيانة بنجاح."
+
+    if _is_ajax(request):
+        return JsonResponse(
+            {
+                "ok": True,
+                "message": msg,
+                "site_name": setting.site_name,
+                "maintenance_message": setting.maintenance_message or "",
+                "expected_return_text": setting.expected_return_text or "",
+                "allow_admin_only": setting.allow_admin_only,
+                "is_maintenance_mode": setting.is_maintenance_mode,
+                "maintenance_is_active": active,
+                "maintenance_starts_at": _format_dt_local(setting.maintenance_starts_at),
+                "maintenance_ends_at": _format_dt_local(setting.maintenance_ends_at),
+                "maintenance_window_label": getattr(setting, "maintenance_window_label", "غير محدد"),
+            },
+            status=200,
+        )
+
+    messages.success(request, msg)
+    return redirect("visits:admin_maintenance_settings")
 
 
 # =============================================================================
@@ -803,6 +1049,10 @@ def login_view(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated and request.user.is_staff:
         return redirect("visits:admin_dashboard")
 
+    setting = _get_site_setting()
+    if _maintenance_is_active(setting, persist=True) and not _maintenance_allowed_for_request(request, setting):
+        return redirect("visits:maintenance_page")
+
     context = _login_page_context()
 
     if request.method == "POST":
@@ -863,6 +1113,10 @@ def admin_login_view(request: HttpRequest) -> HttpResponse:
     if request.user.is_authenticated and request.user.is_staff:
         return redirect("visits:admin_dashboard")
 
+    setting = _get_site_setting()
+    if _maintenance_is_active(setting, persist=True) and not _maintenance_allowed_for_request(request, setting):
+        return redirect("visits:maintenance_page")
+
     if request.method == "POST":
         username = (request.POST.get("username") or "").strip()
         password = request.POST.get("password") or ""
@@ -908,6 +1162,10 @@ def logout_view(request: HttpRequest) -> HttpResponse:
 
 
 def supervisor_dashboard_view(request: HttpRequest) -> HttpResponse:
+    setting = _get_site_setting()
+    if _maintenance_is_active(setting, persist=True) and not _maintenance_allowed_for_request(request, setting):
+        return redirect("visits:maintenance_page")
+
     try:
         _require_supervisor(request)
     except Supervisor.DoesNotExist:
@@ -1059,6 +1317,10 @@ def weekly_letters_drive_view(request: HttpRequest, week_number: int) -> HttpRes
 # Supervisor plan views
 # =============================================================================
 def plan_view(request: HttpRequest) -> HttpResponse:
+    setting = _get_site_setting()
+    if _maintenance_is_active(setting, persist=True) and not _maintenance_allowed_for_request(request, setting):
+        return redirect("visits:maintenance_page")
+
     try:
         supervisor = _require_supervisor(request)
     except Supervisor.DoesNotExist:
@@ -1304,6 +1566,10 @@ def toggle_day_visited_view(request: HttpRequest, day_id: int) -> HttpResponse:
 # Notifications
 # =============================================================================
 def notifications_view(request: HttpRequest) -> HttpResponse:
+    setting = _get_site_setting()
+    if _maintenance_is_active(setting, persist=True) and not _maintenance_allowed_for_request(request, setting):
+        return redirect("visits:maintenance_page")
+
     try:
         supervisor = _require_supervisor(request)
     except Supervisor.DoesNotExist:
@@ -2118,6 +2384,8 @@ def admin_dashboard_view(request: HttpRequest) -> HttpResponse:
     paginator = Paginator(rows, page_size)
     page_obj = paginator.get_page(page)
     chart_data = _build_chart_counts(week_obj)
+    site_setting = _get_site_setting()
+    _maintenance_is_active(site_setting, persist=True)
 
     return render(
         request,
@@ -2141,6 +2409,7 @@ def admin_dashboard_view(request: HttpRequest) -> HttpResponse:
             "kpi_not_filled": kpi_not_filled,
             "show_all": show_all,
             "week_letter": WeeklyLetterLink.objects.filter(week=week_obj).first(),
+            "site_setting": site_setting,
             **chart_data,
         },
     )
