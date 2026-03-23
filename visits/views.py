@@ -814,7 +814,14 @@ def login_view(request: HttpRequest) -> HttpResponse:
                 or ""
             ).strip()
         )
-        last4 = _digits((request.POST.get("last4") or request.POST.get("phone_last4") or "").strip())
+        last4 = _digits(
+            (
+                request.POST.get("last4")
+                or request.POST.get("phone_last4")
+                or request.POST.get("mobile_last4")
+                or ""
+            ).strip()
+        )
 
         if len(nid) != 10:
             messages.error(request, "فضلاً أدخل رقم الهوية بشكل صحيح.")
