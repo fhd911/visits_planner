@@ -467,7 +467,7 @@
       </div>
     </div>
 
-    {% if links %}
+    {% if rows %}
       <div class="table-wrap">
         <table class="links-table">
           <thead>
@@ -481,7 +481,7 @@
             </tr>
           </thead>
           <tbody>
-            {% for item in links %}
+            {% for item in rows %}
               <tr>
                 <td>
                   <span class="week-badge">الأسبوع {{ item.week.week_no }}</span>
