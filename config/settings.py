@@ -168,8 +168,9 @@ else:
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 
-CSRF_COOKIE_SECURE = IS_RENDER
-SESSION_COOKIE_SECURE = IS_RENDER
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+SECURE_SSL_REDIRECT = not DEBUG
 
 
 # =============================================================================
