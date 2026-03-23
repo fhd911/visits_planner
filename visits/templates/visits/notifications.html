@@ -1,0 +1,625 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}الإشعارات{% endblock %}
+{% block page_messages %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  :root{
+    --card:rgba(255,255,255,.95);
+    --line:rgba(226,232,240,.94);
+    --text:#0f172a;
+    --muted:#64748b;
+    --muted-2:#94a3b8;
+
+    --shadow:0 16px 36px rgba(2,6,23,.08);
+    --shadow-soft:0 10px 24px rgba(2,6,23,.06);
+    --r:22px;
+
+    --ok-bg:rgba(22,163,74,.10);
+    --ok-br:rgba(22,163,74,.22);
+    --ok-tx:#166534;
+
+    --warn-bg:rgba(245,158,11,.12);
+    --warn-br:rgba(245,158,11,.24);
+    --warn-tx:#7c2d12;
+
+    --info-bg:rgba(37,99,235,.10);
+    --info-br:rgba(37,99,235,.20);
+    --info-tx:#1e3a8a;
+
+    --teal-bg:rgba(13,148,136,.10);
+    --teal-br:rgba(13,148,136,.22);
+    --teal-tx:#0f766e;
+
+    --danger-bg:rgba(239,68,68,.10);
+    --danger-br:rgba(239,68,68,.24);
+    --danger-tx:#991b1b;
+
+    --soft:rgba(248,250,252,.94);
+
+    --fw-title:800;
+    --fw-strong:700;
+    --fw-mid:600;
+    --fw-normal:500;
+    --fw-light:400;
+  }
+
+  .notif-page{
+    max-width:1220px;
+    margin:0 auto;
+    padding:12px 0 8px;
+    display:grid;
+    gap:12px;
+  }
+
+  .panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:var(--r);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    backdrop-filter:blur(10px);
+  }
+
+  .hero{
+    padding:14px 16px 13px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(248,250,252,.94), rgba(255,255,255,.95));
+  }
+
+  .hero-left{
+    display:grid;
+    gap:6px;
+    min-width:260px;
+  }
+
+  .hero-title{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .hero-title h1{
+    margin:0;
+    font-size:16px;
+    font-weight:var(--fw-title);
+    color:var(--text);
+    letter-spacing:.1px;
+  }
+
+  .bell{
+    width:40px;
+    height:40px;
+    border-radius:14px;
+    display:grid;
+    place-items:center;
+    background:rgba(37,99,235,.10);
+    border:1px solid rgba(37,99,235,.18);
+    color:#1e3a8a;
+    font-size:18px;
+    box-shadow:0 10px 24px rgba(37,99,235,.08);
+  }
+
+  .hero-sub{
+    margin:0;
+    font-size:12.75px;
+    color:var(--muted);
+    line-height:1.8;
+    font-weight:var(--fw-normal);
+  }
+
+  .hero-right{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+
+  .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--soft);
+    color:var(--muted);
+    font-size:12px;
+    font-weight:var(--fw-mid);
+    white-space:nowrap;
+  }
+
+  .chip b{
+    color:var(--text);
+    font-weight:var(--fw-strong);
+  }
+
+  .chip .dot{
+    width:8px;
+    height:8px;
+    border-radius:999px;
+    background:#94a3b8;
+    box-shadow:0 0 0 4px rgba(148,163,184,.14);
+  }
+
+  .chip .dot.ok{
+    background:#16a34a;
+    box-shadow:0 0 0 4px rgba(22,163,74,.14);
+  }
+
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    height:39px;
+    padding:0 14px;
+    border-radius:14px;
+    border:1px solid transparent;
+    font-family:"Cairo", Arial;
+    font-weight:var(--fw-mid);
+    font-size:13px;
+    cursor:pointer;
+    user-select:none;
+    text-decoration:none;
+    transition:.16s ease;
+    white-space:nowrap;
+  }
+  .btn:hover{ transform:translateY(-1px); }
+  .btn:active{ transform:translateY(1px); }
+
+  .btn-outline{
+    background:#fff;
+    border-color:var(--line);
+    color:var(--text);
+    box-shadow:var(--shadow-soft);
+  }
+  .btn-outline:hover{ border-color:rgba(148,163,184,.58); }
+
+  .btn-primary{
+    background:rgba(37,99,235,.10);
+    border-color:rgba(37,99,235,.20);
+    color:#1e3a8a;
+    box-shadow:var(--shadow-soft);
+  }
+  .btn-primary:hover{ background:rgba(37,99,235,.14); }
+
+  .toolbar{
+    padding:13px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,.88);
+  }
+
+  .toolbar-left{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .toolbar-right{
+    font-size:12.4px;
+    color:var(--muted);
+    font-weight:var(--fw-normal);
+  }
+
+  .toolbar-right b{
+    color:var(--text);
+    font-weight:var(--fw-strong);
+  }
+
+  .list-wrap{
+    padding:14px;
+    display:grid;
+    gap:12px;
+  }
+
+  .notif-card{
+    border:1px solid var(--line);
+    border-radius:20px;
+    background:#fff;
+    box-shadow:var(--shadow-soft);
+    overflow:hidden;
+  }
+
+  .notif-card.unread{
+    border-color:rgba(37,99,235,.18);
+    background:linear-gradient(180deg, rgba(37,99,235,.04), rgba(255,255,255,.99));
+  }
+
+  .notif-head{
+    padding:14px 14px 10px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  .notif-main{
+    display:grid;
+    gap:8px;
+    min-width:260px;
+    flex:1;
+  }
+
+  .kind-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .kind-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:7px 10px;
+    border-radius:999px;
+    font-size:11.6px;
+    font-weight:var(--fw-mid);
+    border:1px solid transparent;
+    white-space:nowrap;
+  }
+
+  .kind-pill.approved{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok-tx);
+  }
+  .kind-pill.returned{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn-tx);
+  }
+  .kind-pill.unlock_approved{
+    background:var(--teal-bg);
+    border-color:var(--teal-br);
+    color:var(--teal-tx);
+  }
+  .kind-pill.unlock_rejected{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:var(--danger-tx);
+  }
+  .kind-pill.default{
+    background:var(--info-bg);
+    border-color:var(--info-br);
+    color:var(--info-tx);
+  }
+
+  .kind-dot{
+    width:8px;
+    height:8px;
+    border-radius:999px;
+    background:currentColor;
+    opacity:.95;
+  }
+
+  .unread-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:6px 10px;
+    border-radius:999px;
+    background:rgba(220,38,38,.10);
+    border:1px solid rgba(220,38,38,.20);
+    color:#991b1b;
+    font-size:11.2px;
+    font-weight:var(--fw-mid);
+  }
+
+  .notif-title{
+    margin:0;
+    font-size:14px;
+    font-weight:var(--fw-strong);
+    color:var(--text);
+    line-height:1.8;
+  }
+
+  .notif-message{
+    margin:0;
+    font-size:12.85px;
+    color:var(--muted);
+    line-height:1.9;
+    font-weight:var(--fw-normal);
+  }
+
+  .notif-side{
+    display:grid;
+    gap:8px;
+    justify-items:end;
+    min-width:145px;
+  }
+
+  .notif-time{
+    color:var(--muted-2);
+    font-size:11.8px;
+    font-weight:var(--fw-mid);
+    white-space:nowrap;
+  }
+
+  .notif-meta{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+
+  .mini-chip{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:6px 10px;
+    border-radius:999px;
+    background:rgba(248,250,252,.96);
+    border:1px solid var(--line);
+    color:var(--muted);
+    font-size:11.4px;
+    font-weight:var(--fw-mid);
+  }
+
+  .notif-actions{
+    padding:0 14px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .mini-btn{
+    height:34px;
+    padding:0 12px;
+    border-radius:12px;
+    border:1px solid transparent;
+    font-family:"Cairo", Arial;
+    font-weight:var(--fw-mid);
+    font-size:12px;
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    white-space:nowrap;
+  }
+
+  .mini-btn.read{
+    background:rgba(37,99,235,.10);
+    border-color:rgba(37,99,235,.20);
+    color:#1e3a8a;
+  }
+  .mini-btn.link{
+    background:#fff;
+    border-color:var(--line);
+    color:var(--text);
+  }
+
+  .empty{
+    padding:26px 18px;
+    text-align:center;
+    color:var(--muted);
+    font-size:13px;
+    font-weight:var(--fw-normal);
+    line-height:1.95;
+    background:linear-gradient(180deg, rgba(248,250,252,.65), rgba(255,255,255,.96));
+    border:1px dashed rgba(148,163,184,.28);
+    border-radius:18px;
+  }
+
+  .pager{
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    border-top:1px solid var(--line);
+    background:rgba(248,250,252,.82);
+    color:var(--muted);
+    font-size:12.4px;
+    font-weight:var(--fw-normal);
+  }
+
+  .pager-links{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .pbtn{
+    height:34px;
+    padding:0 12px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    text-decoration:none;
+    color:var(--text);
+    font-weight:var(--fw-mid);
+    font-size:12px;
+    display:inline-flex;
+    align-items:center;
+    box-shadow:0 8px 18px rgba(2,6,23,.05);
+  }
+
+  .pbtn.disabled{
+    opacity:.5;
+    pointer-events:none;
+  }
+
+  @media (max-width: 860px){
+    .hero-right,
+    .toolbar{
+      justify-content:flex-start;
+    }
+    .notif-side{
+      min-width:unset;
+      justify-items:start;
+    }
+    .notif-meta{
+      justify-content:flex-start;
+    }
+    .notif-head{
+      align-items:flex-start;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notif-page">
+  <div class="panel">
+
+    <div class="hero">
+      <div class="hero-left">
+        <div class="hero-title">
+          <div class="bell">🔔</div>
+          <h1>إشعارات المشرف</h1>
+        </div>
+        <p class="hero-sub">
+          جميع التنبيهات المتعلقة باعتماد الخطة، إعادتها للمراجعة، وقبول أو رفض طلبات فك الاعتماد.
+        </p>
+      </div>
+
+      <div class="hero-right">
+        <span class="chip"><span class="dot ok"></span> المشرف: <b>{{ sup.full_name }}</b></span>
+        <span class="chip"><span class="dot"></span> غير المقروء: <b>{{ unread_count }}</b></span>
+
+        <a class="btn btn-outline" href="{% url 'visits:plan' %}?week={{ week }}">العودة إلى الخطة</a>
+
+        {% if unread_count and unread_count > 0 %}
+          <form method="post" action="{% url 'visits:mark_all_notifications_read' %}" style="margin:0">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button class="btn btn-primary" type="submit">تعيين الكل كمقروء</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <span class="chip">الإجمالي: <b>{{ page_obj.paginator.count }}</b></span>
+        <span class="chip">الصفحة: <b>{{ page_obj.number }}</b> / {{ page_obj.paginator.num_pages }}</span>
+      </div>
+
+      <div class="toolbar-right">
+        الأسبوع الحالي: <b>{{ week }}</b>
+      </div>
+    </div>
+
+    <div class="list-wrap">
+      {% if notifications %}
+        {% for n in notifications %}
+          <div class="notif-card {% if not n.is_read %}unread{% endif %}">
+            <div class="notif-head">
+              <div class="notif-main">
+                <div class="kind-row">
+                  <span class="kind-pill {% if n.notif_type == 'approved' %}approved{% elif n.notif_type == 'returned' %}returned{% elif n.notif_type == 'unlock_approved' %}unlock_approved{% elif n.notif_type == 'unlock_rejected' %}unlock_rejected{% else %}default{% endif %}">
+                    <span class="kind-dot"></span>
+                    {% if n.notif_type == "approved" %}
+                      تم اعتماد الخطة
+                    {% elif n.notif_type == "returned" %}
+                      تمت إعادة الخطة للمراجعة
+                    {% elif n.notif_type == "unlock_approved" %}
+                      تم قبول طلب فك الاعتماد
+                    {% elif n.notif_type == "unlock_rejected" %}
+                      تم رفض طلب فك الاعتماد
+                    {% else %}
+                      إشعار
+                    {% endif %}
+                  </span>
+
+                  {% if not n.is_read %}
+                    <span class="unread-badge">غير مقروء</span>
+                  {% endif %}
+                </div>
+
+                <h3 class="notif-title">{{ n.title }}</h3>
+
+                {% if n.message %}
+                  <p class="notif-message">{{ n.message }}</p>
+                {% endif %}
+              </div>
+
+              <div class="notif-side">
+                <div class="notif-time">
+                  {{ n.created_at|date:"Y-m-d" }} — {{ n.created_at|time:"H:i" }}
+                </div>
+
+                <div class="notif-meta">
+                  {% if n.plan %}
+                    <span class="mini-chip">الأسبوع {{ n.plan.week.week_no }}</span>
+                  {% endif %}
+                  <span class="mini-chip">{% if n.is_read %}مقروء{% else %}بانتظار القراءة{% endif %}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="notif-actions">
+              {% if n.plan %}
+                <a class="mini-btn link" href="{% url 'visits:plan' %}?week={{ n.plan.week.week_no }}">فتح الأسبوع</a>
+              {% endif %}
+
+              {% if not n.is_read %}
+                <form method="post" action="{% url 'visits:mark_notification_read' n.id %}" style="margin:0">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <button class="mini-btn read" type="submit">تعيين كمقروء</button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty">
+          لا توجد إشعارات حاليًا.<br>
+          ستظهر هنا إشعارات اعتماد الخطة أو إعادتها للمراجعة أو قرارات فك الاعتماد.
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="pager">
+      <div>
+        عرض {{ page_obj.object_list|length }} من {{ page_obj.paginator.count }}
+      </div>
+
+      <div class="pager-links">
+        {% if page_obj.has_previous %}
+          <a class="pbtn" href="?page={{ page_obj.previous_page_number }}&week={{ week }}">السابق</a>
+        {% else %}
+          <span class="pbtn disabled">السابق</span>
+        {% endif %}
+
+        {% if page_obj.has_next %}
+          <a class="pbtn" href="?page={{ page_obj.next_page_number }}&week={{ week }}">التالي</a>
+        {% else %}
+          <span class="pbtn disabled">التالي</span>
+        {% endif %}
+      </div>
+
+      <div>
+        صفحة {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

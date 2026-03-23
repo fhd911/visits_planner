@@ -4,36 +4,50 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{% block title %}منصة الزيارات{% endblock %}</title>
+  <title>{% block title %}نظام زيارات المشرفين{% endblock %}</title>
 
-  <!-- Cairo -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
-    /* =========================
-       Tokens
-    ========================= */
     :root{
       --green-950:#053b2b;
       --green-900:#064e3b;
+      --green-850:#0a5a43;
+      --green-800:#0b5a43;
 
       --bg:#eef5ff;
+      --bg-2:#f6f8fc;
+      --panel:#ffffff;
+      --panel-soft:rgba(255,255,255,.78);
+
       --text:#0f172a;
       --mut:#64748b;
+      --mut-2:#94a3b8;
 
-      --line: rgba(226,232,240,.85);
-      --shadow: 0 18px 40px rgba(2,6,23,.10);
+      --line:rgba(226,232,240,.88);
+      --line-strong:rgba(203,213,225,.96);
+
+      --shadow:0 16px 34px rgba(2,6,23,.08);
+      --shadow-soft:0 8px 18px rgba(2,6,23,.05);
+      --shadow-top:0 12px 28px rgba(2,6,23,.16);
+
+      --r-xl:26px;
+      --r-lg:22px;
+      --r-md:18px;
+      --r-sm:14px;
 
       --blue:#2563eb;
       --ok:#16a34a;
       --warn:#f59e0b;
       --danger:#ef4444;
 
-      --r-lg:26px;
-      --r-md:22px;
-      --r-sm:14px;
+      --fw-title:800;
+      --fw-strong:700;
+      --fw-mid:600;
+      --fw-normal:500;
+      --fw-light:400;
     }
 
     *{ box-sizing:border-box; }
@@ -41,39 +55,41 @@
 
     body{
       margin:0;
-      font-family:"Cairo", system-ui, -apple-system, Segoe UI, Arial;
+      font-family:"Cairo",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
       color:var(--text);
       background:
-        radial-gradient(900px 500px at 10% 0%, rgba(96,165,250,.18), transparent 55%),
-        radial-gradient(800px 500px at 90% 10%, rgba(34,197,94,.16), transparent 60%),
-        linear-gradient(180deg, var(--bg), #f6f8fc 35%, #f1f5f9);
+        radial-gradient(900px 500px at 10% 0%, rgba(96,165,250,.15), transparent 55%),
+        radial-gradient(800px 500px at 90% 10%, rgba(34,197,94,.12), transparent 60%),
+        linear-gradient(180deg, var(--bg), var(--bg-2) 35%, #f1f5f9);
     }
 
-    a{ text-decoration:none; color:inherit; }
-    b,strong{ font-weight:800; }
+    a{
+      text-decoration:none;
+      color:inherit;
+    }
 
-    /* =========================
-       Header
-    ========================= */
+    b,strong{
+      font-weight:var(--fw-strong);
+    }
+
     .topbar{
       position:sticky;
       top:0;
-      z-index:50;
-      background: linear-gradient(180deg, rgba(5,59,43,.96), rgba(5,59,43,.92));
-      border-bottom:1px solid rgba(255,255,255,.10);
-      box-shadow: 0 10px 22px rgba(2,6,23,.18);
-      backdrop-filter: blur(8px);
+      z-index:70;
+      background:linear-gradient(180deg, rgba(5,59,43,.98), rgba(6,78,59,.95));
+      border-bottom:1px solid rgba(255,255,255,.08);
+      box-shadow:var(--shadow-top);
+      backdrop-filter:blur(10px);
     }
 
     .topbar .inner{
-      max-width:1280px;
+      max-width:1320px;
       margin:0 auto;
-      padding:14px 18px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
+      padding:12px 18px;
+      display:grid;
+      grid-template-columns:auto minmax(0,1fr) auto;
       gap:14px;
-      flex-wrap:wrap;
+      align-items:center;
     }
 
     .brand{
@@ -81,275 +97,594 @@
       align-items:center;
       gap:12px;
       color:#fff;
-      min-width: 240px;
+      min-width:0;
+      justify-self:end;
     }
 
     .brand .logo{
-      width:44px; height:44px;
-      border-radius:14px;
-      background: rgba(255,255,255,.10);
-      border:1px solid rgba(255,255,255,.18);
-      display:grid; place-items:center;
-      font-weight:900;
-      letter-spacing:.5px;
+      width:46px;
+      height:46px;
+      border-radius:15px;
+      background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.08));
+      border:1px solid rgba(255,255,255,.16);
+      display:grid;
+      place-items:center;
+      font-weight:var(--fw-title);
+      font-size:18px;
+      letter-spacing:.4px;
       user-select:none;
+      flex:0 0 auto;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
     }
 
-    .brand .meta{ display:flex; flex-direction:column; line-height:1.2; }
-    .brand .title{ font-weight:800; font-size:15px; }
-    .brand .sub{ font-weight:400; opacity:.85; font-size:12px; margin-top:2px; }
+    .brand .meta{
+      display:flex;
+      flex-direction:column;
+      line-height:1.2;
+      min-width:0;
+    }
 
-    .user-chip{
+    .brand .title{
+      font-weight:var(--fw-strong);
+      font-size:15.5px;
+      white-space:nowrap;
+    }
+
+    .brand .sub{
+      opacity:.88;
+      font-size:12.5px;
+      margin-top:3px;
+      font-weight:var(--fw-normal);
+      white-space:nowrap;
+    }
+
+    .nav{
       display:flex;
       align-items:center;
-      gap:10px;
-      color:#fff;
-      min-width:240px;
-      justify-content:flex-end;
+      justify-content:center;
+      gap:8px;
+      flex-wrap:wrap;
+      min-width:0;
     }
-    .user-chip .who{
+
+    .nav a{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:38px;
+      padding:0 14px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.08);
+      color:#fff;
+      font-size:13px;
+      font-weight:var(--fw-mid);
+      transition:background .18s ease, transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+      white-space:nowrap;
+      flex:0 0 auto;
+    }
+
+    .nav a:hover{
+      background:rgba(255,255,255,.13);
+      transform:translateY(-1px);
+    }
+
+    .nav a.active{
+      background:#fff;
+      color:var(--green-900);
+      border-color:rgba(255,255,255,.75);
+      box-shadow:0 10px 18px rgba(2,6,23,.14);
+      font-weight:var(--fw-strong);
+    }
+
+    .header-chip{
+      display:flex;
+      align-items:center;
+      justify-self:start;
+      color:#fff;
+      min-width:0;
+    }
+
+    .header-chip .who{
       display:flex;
       flex-direction:column;
       line-height:1.2;
       text-align:right;
+      min-width:0;
     }
-    .user-chip .who b{ font-size:13px; font-weight:800; }
-    .user-chip .who small{ opacity:.85; font-size:12px; font-weight:400; }
 
-    /* =========================
-       Layout
-    ========================= */
+    .header-chip .who b{
+      font-size:13px;
+      font-weight:var(--fw-strong);
+      white-space:nowrap;
+    }
+
+    .header-chip .who small{
+      opacity:.86;
+      font-size:12px;
+      font-weight:var(--fw-normal);
+      white-space:nowrap;
+    }
+
+    .topbar .avatar,
+    .topbar .header-chip .avatar,
+    .topbar .inner .avatar{
+      display:none !important;
+    }
+
     .page{
-      max-width:1280px;
-      margin:18px auto 0;
-      padding:0 18px 28px;
+      max-width:1320px;
+      margin:14px auto 0;
+      padding:0 18px 24px;
     }
 
     .shell{
-      background: rgba(255,255,255,.72);
-      border:1px solid rgba(148,163,184,.26);
-      border-radius: var(--r-lg);
-      padding:18px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(10px);
+      background:var(--panel-soft);
+      border:1px solid rgba(148,163,184,.24);
+      border-radius:var(--r-xl);
+      padding:16px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(10px);
     }
 
     .hero{
-      padding:18px 18px 16px;
-      border-radius: var(--r-md);
-      background: linear-gradient(135deg, rgba(96,165,250,.14), rgba(34,197,94,.10));
-      border:1px solid rgba(148,163,184,.22);
+      padding:15px 18px;
+      border-radius:var(--r-lg);
+      background:linear-gradient(135deg, rgba(96,165,250,.10), rgba(34,197,94,.08));
+      border:1px solid rgba(148,163,184,.18);
       display:flex;
-      align-items:flex-start;
+      align-items:center;
       justify-content:space-between;
       gap:14px;
       flex-wrap:wrap;
     }
 
-    .hero h1{ margin:0; font-size:18px; font-weight:900; }
-    .hero p{ margin:6px 0 0; color:var(--mut); font-size:13px; line-height:1.8; }
+    .hero h1{
+      margin:0;
+      font-size:18px;
+      font-weight:var(--fw-title);
+      line-height:1.45;
+    }
 
-    .pill-row{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-start; }
+    .hero p{
+      margin:5px 0 0;
+      color:var(--mut);
+      font-size:13.2px;
+      line-height:1.9;
+      font-weight:var(--fw-normal);
+    }
+
+    .hero-meta{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
     .pill{
       display:inline-flex;
       align-items:center;
-      gap:10px;
+      gap:9px;
       padding:8px 12px;
       border-radius:999px;
-      background: rgba(255,255,255,.86);
+      background:rgba(255,255,255,.88);
       border:1px solid var(--line);
-      box-shadow: 0 10px 22px rgba(2,6,23,.06);
+      box-shadow:var(--shadow-soft);
       font-size:12.5px;
-      color: var(--text);
+      white-space:nowrap;
+      color:rgba(15,23,42,.90);
+      font-weight:var(--fw-mid);
+    }
+
+    .dot{
+      width:9px;
+      height:9px;
+      border-radius:999px;
+      background:#22c55e;
+      box-shadow:0 0 0 4px rgba(34,197,94,.14);
+      flex:0 0 auto;
+    }
+
+    .dot.blue{
+      background:#3b82f6;
+      box-shadow:0 0 0 4px rgba(59,130,246,.14);
+    }
+
+    .page-actions{
+      margin:14px 0 0;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      padding:12px 14px;
+      border-radius:18px;
+      background:rgba(255,255,255,.70);
+      border:1px solid rgba(226,232,240,.88);
+      box-shadow:var(--shadow-soft);
+    }
+
+    .page-actions a,
+    .page-actions button{
+      appearance:none;
+      border:0;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:38px;
+      padding:0 14px;
+      border-radius:999px;
+      background:#fff;
+      color:var(--text);
+      border:1px solid rgba(203,213,225,.95);
+      box-shadow:0 6px 14px rgba(2,6,23,.04);
+      font-family:inherit;
+      font-size:13px;
+      font-weight:var(--fw-mid);
+      transition:background .18s ease, transform .18s ease, border-color .18s ease, box-shadow .18s ease;
       white-space:nowrap;
     }
-    .dot{
-      width:10px; height:10px; border-radius:999px;
-      background:#22c55e;
-      box-shadow: 0 0 0 4px rgba(34,197,94,.18);
-    }
-    .dot.blue{ background:#3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,.18); }
-    .dot.orange{ background:#f59e0b; box-shadow: 0 0 0 4px rgba(245,158,11,.18); }
 
-    /* =========================
-       Messages
-    ========================= */
-    .msgs{ margin:14px 0 0; display:grid; gap:8px; }
+    .page-actions a:hover,
+    .page-actions button:hover{
+      transform:translateY(-1px);
+      border-color:rgba(148,163,184,.95);
+      box-shadow:0 10px 18px rgba(2,6,23,.07);
+    }
+
+    .page-actions .btn-primary{
+      background:linear-gradient(180deg, var(--green-900), var(--green-850));
+      color:#fff;
+      border-color:rgba(5,59,43,.88);
+      box-shadow:0 10px 18px rgba(5,59,43,.18);
+    }
+
+    .page-actions .btn-danger{
+      background:rgba(239,68,68,.08);
+      color:#991b1b;
+      border-color:rgba(239,68,68,.18);
+    }
+
+    .page-actions .btn-soft{
+      background:rgba(248,250,252,.94);
+      color:#334155;
+    }
+
+    .msgs{
+      margin:14px 0 0;
+      display:grid;
+      gap:8px;
+    }
+
     .msg{
-      border-radius: var(--r-sm);
+      border-radius:var(--r-sm);
       padding:10px 12px;
       font-size:13px;
       border:1px solid rgba(226,232,240,.9);
       background:#fff;
-      box-shadow: 0 10px 22px rgba(2,6,23,.06);
-      font-weight:800;
+      box-shadow:0 8px 18px rgba(2,6,23,.05);
+      font-weight:var(--fw-mid);
+      line-height:1.8;
     }
-    .msg.success{ border-color: rgba(34,197,94,.25); background: rgba(34,197,94,.08); }
-    .msg.warning{ border-color: rgba(245,158,11,.25); background: rgba(245,158,11,.10); }
-    .msg.error{ border-color: rgba(239,68,68,.25); background: rgba(239,68,68,.08); }
-    .msg.info{ border-color: rgba(59,130,246,.25); background: rgba(59,130,246,.08); }
 
-    /* =========================
-       Footer
-    ========================= */
+    .msg.success{
+      border-color:rgba(34,197,94,.22);
+      background:rgba(34,197,94,.08);
+    }
+
+    .msg.warning{
+      border-color:rgba(245,158,11,.22);
+      background:rgba(245,158,11,.10);
+    }
+
+    .msg.error{
+      border-color:rgba(239,68,68,.22);
+      background:rgba(239,68,68,.08);
+    }
+
+    .msg.info{
+      border-color:rgba(59,130,246,.22);
+      background:rgba(59,130,246,.08);
+    }
+
     footer{
       margin:18px auto 22px;
-      max-width:1280px;
+      max-width:1320px;
       padding:0 18px;
       color:#64748b;
       font-size:12.5px;
     }
+
     .foot{
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap:10px;
       padding:12px 14px;
-      border-radius: 18px;
-      background: rgba(255,255,255,.72);
-      border:1px solid rgba(226,232,240,.85);
-      box-shadow: 0 10px 22px rgba(2,6,23,.06);
+      border-radius:18px;
+      background:rgba(255,255,255,.74);
+      border:1px solid rgba(226,232,240,.86);
+      box-shadow:0 8px 18px rgba(2,6,23,.05);
       flex-wrap:wrap;
+      font-weight:var(--fw-normal);
     }
 
-    /* =========================
-       Mobile Layout Fix
-    ========================= */
-    @media (max-width: 768px){
-
-      body{
-        background:#f1f5f9;
-      }
-
+    @media (max-width: 1180px){
       .topbar .inner{
-        padding:10px 12px;
-        gap:8px;
+        grid-template-columns:1fr;
+        justify-items:center;
+        gap:10px;
       }
 
-      .brand{
-        min-width:auto;
+      .brand,
+      .header-chip{
+        justify-self:center;
       }
 
-      .brand .logo{
-        width:36px; height:36px;
-        border-radius:12px;
-        font-size:14px;
+      .header-chip .who{
+        text-align:center;
       }
 
-      .brand .title{
-        font-size:13px;
+      .nav{
+        width:100%;
+        justify-content:center;
+      }
+    }
+
+    @media (max-width: 900px){
+      .page{
+        padding:0 12px 22px;
       }
 
-      .brand .sub{
-        font-size:11px;
+      footer{
+        padding:0 12px;
       }
 
-      .user-chip{
-        display:none;
+      .brand .title,
+      .brand .sub,
+      .header-chip .who b,
+      .header-chip .who small{
+        white-space:normal;
+      }
+
+      .hero{
+        align-items:flex-start;
+      }
+    }
+
+    @media (max-width: 640px){
+      .topbar .inner{
+        padding:12px;
+      }
+
+      .nav{
+        gap:7px;
+      }
+
+      .nav a{
+        min-height:36px;
+        padding:0 12px;
+        font-size:12.4px;
       }
 
       .page{
-        margin:10px auto 0;
-        padding:0 10px 18px;
+        padding:0 10px 20px;
       }
 
       .shell{
         padding:12px;
-        border-radius:18px;
+        border-radius:22px;
       }
 
       .hero{
-        padding:12px;
-        border-radius:16px;
+        padding:14px;
       }
 
       .hero h1{
-        font-size:15px;
+        font-size:16.5px;
       }
 
-      .hero p{
-        font-size:12px;
+      .page-actions{
+        padding:10px;
       }
 
-      .pill{
-        font-size:11.5px;
-        padding:6px 10px;
-      }
-
-      footer{
-        padding:0 10px;
-      }
-
-      .foot{
-        justify-content:center;
-        text-align:center;
-        font-size:11.5px;
+      .page-actions a,
+      .page-actions button{
+        min-height:36px;
+        font-size:12.6px;
       }
     }
-
-    {% block extra_css %}{% endblock %}
   </style>
+
+  {% block extra_css %}{% endblock %}
 </head>
 
 <body>
-  <header class="topbar">
-    <div class="inner">
+{% with url_name=request.resolver_match.url_name %}
+<header class="topbar">
+  <div class="inner">
 
-      <div class="brand">
-        <div class="logo">ز</div>
-        <div class="meta">
-          <div class="title">نظام زيارات المشرفين</div>
-          <div class="sub">قسم الإدارة المدرسية — تعليم عسير</div>
-        </div>
+    <div class="brand">
+      <div class="logo">ز</div>
+      <div class="meta">
+        <div class="title">نظام زيارات المشرفين</div>
+        <div class="sub">قسم الإدارة المدرسية — تعليم عسير</div>
       </div>
-
-      <div class="user-chip">
-        <div class="who">
-          <b>{% if sup %}المشرف: {{ sup.full_name }}{% else %}منصة الزيارات{% endif %}</b>
-          <small>{% block subtitle %}إدارة خطط المشرفين الأسبوعية{% endblock %}</small>
-        </div>
-      </div>
-
     </div>
-  </header>
 
-  <main class="page">
-    <div class="shell">
+    <nav class="nav">
+      {% if request.session.visits_sup_id %}
+        <a href="{% url 'visits:supervisor_dashboard' %}"
+           class="{% if url_name == 'supervisor_dashboard' %}active{% endif %}">
+          بوابة المشرف
+        </a>
 
-      {% block hero %}
-      <div class="hero">
-        <div>
-          <h1>{% block hero_title %}خطة الأسبوع{% endblock %}</h1>
-          <p>{% block hero_desc %}إدارة خطة الزيارات الأسبوعية بشكل واضح ومنظم.{% endblock %}</p>
-        </div>
-        <div class="pill-row">
-          <div class="pill"><span class="dot blue"></span> النظام يعمل</div>
-          <div class="pill"><span class="dot orange"></span> اليوم: {% now "d-m-Y" %}</div>
-        </div>
+        <a href="{% url 'visits:plan' %}"
+           class="{% if url_name == 'plan' or url_name == 'supervisor_visit_status' %}active{% endif %}">
+          خطة الأسبوع
+        </a>
+
+        <a href="{% url 'visits:notifications' %}"
+           class="{% if url_name == 'notifications' %}active{% endif %}">
+          الإشعارات
+        </a>
+
+        {% block supervisor_topbar_actions %}{% endblock %}
+
+      {% elif request.user.is_staff %}
+        <a href="{% url 'visits:admin_dashboard' %}"
+           class="{% if url_name == 'admin_dashboard' %}active{% endif %}">
+          لوحة الإدارة
+        </a>
+
+        <a href="{% url 'visits:admin_school_list' %}"
+           class="{% if url_name == 'admin_school_list' %}active{% endif %}">
+          المدارس
+        </a>
+
+        <a href="{% url 'visits:admin_supervisor_list' %}"
+           class="{% if url_name == 'admin_supervisor_list' %}active{% endif %}">
+          المشرفون
+        </a>
+
+        <a href="{% url 'visits:admin_assignments_overview' %}"
+           class="{% if url_name == 'admin_assignments_overview' or url_name == 'admin_supervisor_assignments' %}active{% endif %}">
+          الإسناد
+        </a>
+
+        <a href="{% url 'visits:admin_sector_list' %}"
+           class="{% if url_name == 'admin_sector_list' %}active{% endif %}">
+          القطاعات
+        </a>
+
+        <a href="{% url 'visits:admin_import' %}"
+           class="{% if url_name == 'admin_import' %}active{% endif %}">
+          مركز الاستيراد
+        </a>
+
+        <a href="{% url 'visits:weekly_letter_links_list' %}"
+           class="{% if url_name == 'weekly_letter_links_list' or url_name == 'weekly_letter_link_create' %}active{% endif %}">
+          روابط الخطابات
+        </a>
+
+        {% block topbar_actions %}{% endblock %}
+      {% endif %}
+    </nav>
+
+    <div class="header-chip">
+      <div class="who">
+        <b>
+          {% block header_title %}
+            {% if request.session.visits_sup_id %}
+              بوابة المشرف
+            {% elif request.user.is_staff %}
+              لوحة الإدارة
+            {% else %}
+              نظام زيارات المشرفين
+            {% endif %}
+          {% endblock %}
+        </b>
+        <small>
+          {% if request.session.visits_sup_id %}
+            متابعة الخطة والإشعارات
+          {% elif request.user.is_staff %}
+            إدارة الصفحات التنفيذية والبيانات المرجعية
+          {% else %}
+            قسم الإدارة المدرسية — تعليم عسير
+          {% endif %}
+        </small>
       </div>
-      {% endblock %}
+    </div>
 
-      {% block page_messages %}
-        {% if messages %}
-          <div class="msgs">
-            {% for message in messages %}
-              <div class="msg {{ message.tags }}">{{ message }}</div>
-            {% endfor %}
+  </div>
+</header>
+{% endwith %}
+
+<main class="page">
+  <div class="shell">
+
+    {% block hero %}
+      {% if request.session.visits_sup_id %}
+        <div class="hero">
+          <div>
+            <h1>بوابة المشرف</h1>
+            <p>إدارة الخطة الأسبوعية، متابعة التنفيذ، والاطلاع على الإشعارات المرتبطة بالزيارات.</p>
           </div>
-        {% endif %}
-      {% endblock %}
 
-      {% block content %}{% endblock %}
-    </div>
-  </main>
+          <div class="hero-meta">
+            <div class="pill">
+              <span class="dot blue"></span>
+              النظام يعمل
+            </div>
+            <div class="pill">
+              <span class="dot"></span>
+              اليوم: {% now "d-m-Y" %}
+            </div>
+          </div>
+        </div>
+      {% elif request.user.is_staff %}
+        <div class="hero">
+          <div>
+            <h1>لوحة الإدارة</h1>
+            <p>إدارة الخطط والبيانات المرجعية للمدارس والمشرفين والإسناد والقطاعات عبر صفحات منظمة وواضحة.</p>
+          </div>
 
-  <footer>
-    <div class="foot">
-      <div>© منصة خطة الزيارات — جميع الحقوق محفوظة</div>
-      <div>الإصدار: 2026</div>
-    </div>
-  </footer>
+          <div class="hero-meta">
+            <div class="pill">
+              <span class="dot blue"></span>
+              النظام يعمل
+            </div>
+            <div class="pill">
+              <span class="dot"></span>
+              اليوم: {% now "d-m-Y" %}
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <div class="hero">
+          <div>
+            <h1>نظام زيارات المشرفين</h1>
+            <p>منصة تنظيم ومتابعة خطط الزيارات الأسبوعية والإشعارات المرتبطة بها.</p>
+          </div>
 
-  {% block extra_js %}{% endblock %}
+          <div class="hero-meta">
+            <div class="pill">
+              <span class="dot blue"></span>
+              النظام يعمل
+            </div>
+            <div class="pill">
+              <span class="dot"></span>
+              اليوم: {% now "d-m-Y" %}
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    {% endblock %}
+
+    {% block page_actions %}{% endblock %}
+
+    {% block page_messages %}
+      {% if messages %}
+        <div class="msgs">
+          {% for message in messages %}
+            <div class="msg {{ message.tags|default:'info' }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endblock %}
+
+    {% block content %}{% endblock %}
+
+  </div>
+</main>
+
+<footer>
+  <div class="foot">
+    <div>© منصة خطة الزيارات — جميع الحقوق محفوظة</div>
+    <div>الإصدار: 2026</div>
+  </div>
+</footer>
+
+{% block extra_js %}{% endblock %}
 </body>
 </html>

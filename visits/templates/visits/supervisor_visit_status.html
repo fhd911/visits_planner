@@ -1,0 +1,1101 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}متابعة تنفيذ الزيارات{% endblock %}
+{% block page_messages %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .visit-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+
+    --fw-hero:800;
+    --fw-title:700;
+    --fw-strong:600;
+    --fw-normal:500;
+    --fw-muted:400;
+
+    --bg1:#f4f7fb;
+    --bg2:#fbfdff;
+
+    --card:rgba(255,255,255,.96);
+    --soft:rgba(248,250,252,.94);
+
+    --txt:#0f172a;
+    --mut:#64748b;
+    --mut2:#94a3b8;
+
+    --line:rgba(148,163,184,.20);
+    --line2:rgba(148,163,184,.12);
+
+    --ok:#16a34a;
+    --warn:#f59e0b;
+    --danger:#dc2626;
+    --info:#2563eb;
+
+    --ok-bg:rgba(22,163,74,.10);
+    --warn-bg:rgba(245,158,11,.10);
+    --danger-bg:rgba(220,38,38,.08);
+    --info-bg:rgba(37,99,235,.08);
+
+    --shadow:0 16px 38px rgba(15,23,42,.08);
+    --shadow2:0 8px 22px rgba(15,23,42,.06);
+
+    font-family:var(--ff);
+    direction:rtl;
+    color:var(--txt);
+  }
+
+  .visit-page *{
+    font-family:var(--ff) !important;
+    box-sizing:border-box;
+  }
+
+  .visit-page .shell{
+    min-height:calc(100vh - 80px);
+    padding:12px 12px 20px;
+    background:
+      radial-gradient(1050px 430px at 12% 0%, rgba(37,99,235,.07), transparent 58%),
+      radial-gradient(1050px 430px at 88% 0%, rgba(16,185,129,.07), transparent 58%),
+      linear-gradient(180deg, var(--bg1), var(--bg2));
+  }
+
+  .visit-page .wrap{
+    max-width:1380px;
+    margin:0 auto;
+    display:grid;
+    gap:10px;
+  }
+
+  .visit-page .head{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:22px;
+    box-shadow:var(--shadow);
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  .visit-page .title{
+    display:grid;
+    gap:4px;
+    min-width:260px;
+  }
+
+  .visit-page .title h1{
+    margin:0;
+    font-size:16px;
+    font-weight:var(--fw-hero);
+    color:var(--txt);
+  }
+
+  .visit-page .title p{
+    margin:0;
+    font-size:12.5px;
+    font-weight:var(--fw-normal);
+    color:var(--mut);
+    line-height:1.75;
+  }
+
+  .visit-page .head-right{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    flex-wrap:wrap;
+    justify-content:flex-end;
+  }
+
+  .visit-page .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--soft);
+    color:var(--mut);
+    font-size:12px;
+    font-weight:var(--fw-strong);
+  }
+
+  .visit-page .dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:rgba(37,99,235,.95);
+    box-shadow:0 0 0 4px rgba(37,99,235,.09);
+    flex:0 0 auto;
+  }
+
+  .visit-page .dot.ok{
+    background:rgba(16,185,129,.95);
+    box-shadow:0 0 0 4px rgba(16,185,129,.10);
+  }
+
+  .visit-page .btn{
+    height:36px;
+    padding:0 12px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--txt);
+    font-weight:var(--fw-strong);
+    font-size:12.5px;
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    box-shadow:0 8px 16px rgba(15,23,42,.05);
+    transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+    user-select:none;
+    white-space:nowrap;
+  }
+
+  .visit-page .btn:hover{
+    transform:translateY(-1px);
+    box-shadow:0 12px 22px rgba(15,23,42,.08);
+  }
+
+  .visit-page .btn.primary{
+    background:linear-gradient(135deg, rgba(37,99,235,.96), rgba(96,165,250,.96));
+    border-color:rgba(37,99,235,.16);
+    color:#fff;
+  }
+
+  .visit-page .btn.soft{
+    background:rgba(14,165,164,.09);
+    border-color:rgba(14,165,164,.16);
+    color:var(--txt);
+  }
+
+  .visit-page .btn.ok{
+    background:rgba(22,163,74,.12);
+    border-color:rgba(22,163,74,.20);
+    color:#166534;
+  }
+
+  .visit-page .btn.warn{
+    background:rgba(245,158,11,.12);
+    border-color:rgba(245,158,11,.22);
+    color:#7c2d12;
+  }
+
+  .visit-page .btn:disabled{
+    opacity:.6;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+
+  .visit-page .kpis{
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:10px;
+  }
+
+  .visit-page .kpi{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    box-shadow:var(--shadow2);
+    padding:12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    min-height:62px;
+  }
+
+  .visit-page .kpi .meta{
+    display:grid;
+    gap:3px;
+  }
+
+  .visit-page .kpi .label{
+    font-size:12px;
+    font-weight:var(--fw-normal);
+    color:var(--mut);
+  }
+
+  .visit-page .kpi .value{
+    font-size:18px;
+    font-weight:var(--fw-title);
+    color:var(--txt);
+  }
+
+  .visit-page .kpi .icon{
+    width:36px;
+    height:36px;
+    border-radius:14px;
+    display:grid;
+    place-items:center;
+    border:1px solid var(--line);
+    background:var(--soft);
+    font-size:16px;
+    flex:0 0 auto;
+  }
+
+  .visit-page .grid{
+    display:grid;
+    grid-template-columns:1.05fr .95fr;
+    gap:12px;
+  }
+
+  .visit-page .panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:22px;
+    box-shadow:var(--shadow2);
+    overflow:hidden;
+  }
+
+  .visit-page .panel-head{
+    padding:12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(248,250,252,.94), rgba(255,255,255,.92));
+    flex-wrap:wrap;
+  }
+
+  .visit-page .panel-title{
+    margin:0;
+    font-size:13px;
+    font-weight:var(--fw-title);
+    color:var(--txt);
+  }
+
+  .visit-page .panel-sub{
+    margin:3px 0 0;
+    font-size:12px;
+    color:var(--mut);
+    font-weight:var(--fw-normal);
+  }
+
+  .visit-page .panel-body{
+    padding:14px;
+  }
+
+  .visit-page .mini-grid{
+    display:grid;
+    gap:10px;
+  }
+
+  .visit-page .mini-card{
+    border:1px solid var(--line2);
+    border-radius:16px;
+    background:rgba(248,250,252,.82);
+    padding:12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+
+  .visit-page .mini-right{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+
+  .visit-page .mini-badge{
+    width:36px;
+    height:36px;
+    border-radius:14px;
+    display:grid;
+    place-items:center;
+    border:1px solid var(--line);
+    background:#fff;
+    font-size:15px;
+    flex:0 0 auto;
+  }
+
+  .visit-page .mini-label{
+    font-size:12.4px;
+    color:var(--mut);
+  }
+
+  .visit-page .mini-value{
+    font-size:17px;
+    color:var(--txt);
+    font-weight:var(--fw-title);
+  }
+
+  .visit-page .list{
+    display:grid;
+    gap:10px;
+  }
+
+  .visit-page .remain-item{
+    border:1px solid var(--line2);
+    border-radius:16px;
+    background:rgba(248,250,252,.82);
+    padding:12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  .visit-page .remain-item .name{
+    font-size:13px;
+    font-weight:var(--fw-strong);
+    color:var(--txt);
+  }
+
+  .visit-page .remain-item .sub{
+    margin-top:4px;
+    font-size:11.7px;
+    color:var(--mut2);
+  }
+
+  .visit-page .pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:7px 10px;
+    border-radius:999px;
+    font-weight:var(--fw-strong);
+    font-size:12px;
+    border:1px solid transparent;
+    white-space:nowrap;
+  }
+
+  .visit-page .pill.ok{
+    background:rgba(22,163,74,.10);
+    border-color:rgba(22,163,74,.20);
+    color:#166534;
+  }
+
+  .visit-page .pill.warn{
+    background:rgba(245,158,11,.12);
+    border-color:rgba(245,158,11,.20);
+    color:#7c2d12;
+  }
+
+  .visit-page .table-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:26px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+
+  .visit-page .table-head{
+    padding:12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(248,250,252,.94), rgba(255,255,255,.92));
+    flex-wrap:wrap;
+  }
+
+  .visit-page .hint{
+    font-size:12px;
+    font-weight:var(--fw-normal);
+    color:var(--mut);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .visit-page .mini{
+    width:18px;
+    height:18px;
+    border-radius:7px;
+    display:grid;
+    place-items:center;
+    border:1px solid rgba(16,185,129,.20);
+    background:rgba(16,185,129,.10);
+    color:#166534;
+    font-weight:var(--fw-title);
+    font-size:12px;
+    flex:0 0 auto;
+  }
+
+  .visit-page .table-wrap{
+    overflow:auto;
+  }
+
+  .visit-page table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+  }
+
+  .visit-page thead th{
+    position:sticky;
+    top:0;
+    z-index:2;
+    background:rgba(248,250,252,.98);
+    border-bottom:1px solid var(--line);
+    padding:12px;
+    font-size:12px;
+    font-weight:var(--fw-strong);
+    color:var(--mut);
+    text-align:right;
+    white-space:nowrap;
+  }
+
+  .visit-page tbody td{
+    border-bottom:1px solid var(--line2);
+    padding:12px;
+    font-size:13px;
+    font-weight:var(--fw-normal);
+    color:var(--txt);
+    vertical-align:middle;
+  }
+
+  .visit-page tbody tr:nth-child(even){
+    background:rgba(2,6,23,.01);
+  }
+
+  .visit-page tbody tr:hover{
+    background:rgba(37,99,235,.035);
+  }
+
+  .visit-page .school-name{
+    font-size:13px;
+    font-weight:var(--fw-title);
+    color:var(--txt);
+  }
+
+  .visit-page .school-sub{
+    margin-top:4px;
+    font-size:11.7px;
+    color:var(--mut2);
+    line-height:1.7;
+  }
+
+  .visit-page .status-box{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:7px 10px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+  }
+
+  .visit-page .status-box.done{
+    background:var(--ok-bg);
+    border:1px solid rgba(22,163,74,.20);
+    color:#166534;
+  }
+
+  .visit-page .status-box.pending{
+    background:var(--warn-bg);
+    border:1px solid rgba(245,158,11,.22);
+    color:#7c2d12;
+  }
+
+  .visit-page .note{
+    width:100%;
+    min-height:76px;
+    border-radius:14px;
+    border:1px solid var(--line);
+    background:rgba(248,250,252,.92);
+    padding:10px 12px;
+    outline:none;
+    color:var(--txt);
+    font-weight:var(--fw-normal);
+    line-height:1.8;
+    resize:vertical;
+  }
+
+  .visit-page .note:focus{
+    border-color:rgba(59,130,246,.35);
+    box-shadow:0 0 0 4px rgba(59,130,246,.07);
+    background:#fff;
+  }
+
+  .visit-page .row-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  .visit-page .a-btn{
+    height:32px;
+    padding:0 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    font-weight:var(--fw-strong);
+    font-size:12px;
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    transition:transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+    user-select:none;
+    box-shadow:0 6px 12px rgba(15,23,42,.05);
+    white-space:nowrap;
+  }
+
+  .visit-page .a-btn:hover{
+    transform:translateY(-1px);
+    box-shadow:0 10px 18px rgba(15,23,42,.08);
+  }
+
+  .visit-page .a-btn.ok{
+    background:rgba(22,163,74,.12);
+    border-color:rgba(22,163,74,.22);
+    color:#166534;
+  }
+
+  .visit-page .a-btn.warn{
+    background:rgba(245,158,11,.12);
+    border-color:rgba(245,158,11,.22);
+    color:#7c2d12;
+  }
+
+  .visit-page .a-btn.ghost{
+    background:rgba(37,99,235,.08);
+    border-color:rgba(37,99,235,.14);
+    color:#0c4a6e;
+  }
+
+  .visit-page .a-btn:disabled{
+    opacity:.55;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+
+  .visit-page .small-help{
+    margin-top:6px;
+    font-size:11.4px;
+    color:var(--mut2);
+    line-height:1.7;
+  }
+
+  .visit-page .empty{
+    padding:18px;
+    color:var(--mut);
+    font-weight:var(--fw-normal);
+  }
+
+  .visit-page .toast-wrap{
+    position:fixed;
+    bottom:16px;
+    left:16px;
+    z-index:10000;
+    display:grid;
+    gap:8px;
+  }
+
+  .visit-page .toast{
+    min-width:240px;
+    max-width:380px;
+    background:rgba(15,23,42,.92);
+    color:#fff;
+    padding:10px 12px;
+    border-radius:16px;
+    box-shadow:0 18px 50px rgba(15,23,42,.24);
+    font-weight:var(--fw-strong);
+    font-size:12.5px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+
+  .visit-page .toast .x{
+    border:0;
+    background:transparent;
+    color:#fff;
+    cursor:pointer;
+    font-weight:900;
+    opacity:.85;
+  }
+
+  @media (max-width: 1100px){
+    .visit-page .kpis{
+      grid-template-columns:repeat(2, 1fr);
+    }
+
+    .visit-page .grid{
+      grid-template-columns:1fr;
+    }
+
+    .visit-page .filters-grid{
+      grid-template-columns:1fr 1fr;
+    }
+  }
+
+  @media (max-width: 640px){
+    .visit-page .kpis{
+      grid-template-columns:1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="visit-page">
+  <div class="shell">
+    <div class="wrap">
+
+      <div class="head">
+        <div class="title">
+          <h1>متابعة تنفيذ الزيارات</h1>
+          <p>سجّل المدارس التي تمت زيارتها فعليًا، واطّلع على إجمالي المدارس المسندة والمتبقي منها خلال الأسبوع الحالي.</p>
+        </div>
+
+        <div class="head-right">
+          <span class="chip"><span class="dot ok"></span> المتابعة مفعلة</span>
+          <span class="chip"><span class="dot"></span> الأسبوع: <b style="color:var(--txt);font-weight:var(--fw-title)">{{ week }}</b></span>
+          <a class="btn soft" href="{% url 'visits:plan' %}?week={{ week }}">🗓 العودة للخطة</a>
+          <a class="btn primary" href="{% url 'visits:export_supervisor_assignments_excel' %}">🏫 المدارس المسندة</a>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi">
+          <div class="meta">
+            <div class="label">إجمالي المدارس المسندة</div>
+            <div class="value" id="assignedCount">{{ assigned_count|default:"0" }}</div>
+          </div>
+          <div class="icon">🏫</div>
+        </div>
+
+        <div class="kpi">
+          <div class="meta">
+            <div class="label">المدارس التي تمت زيارتها</div>
+            <div class="value" id="visitedCount">{{ visited_count|default:"0" }}</div>
+          </div>
+          <div class="icon">✅</div>
+        </div>
+
+        <div class="kpi">
+          <div class="meta">
+            <div class="label">المدارس المتبقية</div>
+            <div class="value" id="remainingCount">{{ remaining_count|default:"0" }}</div>
+          </div>
+          <div class="icon">⏳</div>
+        </div>
+
+        <div class="kpi">
+          <div class="meta">
+            <div class="label">زيارات الأسبوع بالخطة</div>
+            <div class="value">{{ school_days|length }}</div>
+          </div>
+          <div class="icon">📅</div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3 class="panel-title">ملخص التنفيذ</h3>
+              <p class="panel-sub">نظرة سريعة على وضع التنفيذ الفعلي للزيارات.</p>
+            </div>
+            <span class="chip">المشرف: {{ sup.full_name }}</span>
+          </div>
+
+          <div class="panel-body">
+            <div class="mini-grid">
+              <div class="mini-card">
+                <div class="mini-right">
+                  <div class="mini-badge">📌</div>
+                  <div>
+                    <div class="mini-label">إجمالي المدارس المسندة</div>
+                    <div class="mini-value" id="assignedCount2">{{ assigned_count|default:"0" }}</div>
+                  </div>
+                </div>
+                <span class="pill ok">مسندة لك</span>
+              </div>
+
+              <div class="mini-card">
+                <div class="mini-right">
+                  <div class="mini-badge">✅</div>
+                  <div>
+                    <div class="mini-label">المدارس التي تمت زيارتها</div>
+                    <div class="mini-value" id="visitedCount2">{{ visited_count|default:"0" }}</div>
+                  </div>
+                </div>
+                <span class="pill ok">منجزة</span>
+              </div>
+
+              <div class="mini-card">
+                <div class="mini-right">
+                  <div class="mini-badge">⏳</div>
+                  <div>
+                    <div class="mini-label">المدارس المتبقية</div>
+                    <div class="mini-value" id="remainingCount2">{{ remaining_count|default:"0" }}</div>
+                  </div>
+                </div>
+                <span class="pill warn">متبقية</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3 class="panel-title">المدارس المتبقية</h3>
+              <p class="panel-sub">هذه المدارس ما زالت غير محسوبة ضمن المدارس التي تمت زيارتها.</p>
+            </div>
+            <span class="chip" id="remainingBadge">المتبقي {{ remaining_count|default:"0" }}</span>
+          </div>
+
+          <div class="panel-body">
+            <div class="list" id="remainingSchoolsList">
+              {% for school in remaining_schools %}
+                <div class="remain-item" data-school-id="{{ school.id }}">
+                  <div>
+                    <div class="name">{{ school.name }}</div>
+                    <div class="sub">الرقم الإحصائي: {{ school.stat_code }}</div>
+                  </div>
+                  <span class="pill warn">بانتظار الزيارة</span>
+                </div>
+              {% empty %}
+                <div class="empty" id="remainingSchoolsEmpty">لا توجد مدارس متبقية حاليًا. أحسنت 👏</div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-head">
+          <div class="hint">
+            <span class="mini">✓</span>
+            يمكنك تسجيل “تمت الزيارة” أو التراجع عنها لكل مدرسة مخططة حضوريًا
+          </div>
+
+          <div class="hint">
+            الأسبوع <b style="color:var(--txt);font-weight:var(--fw-title)">#{{ week }}</b>
+            —
+            الزيارات الحضورية في الخطة <b style="color:var(--txt);font-weight:var(--fw-title)">{{ school_days|length }}</b>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th style="min-width:120px">اليوم</th>
+                <th style="min-width:280px">المدرسة</th>
+                <th style="min-width:150px">حالة التنفيذ</th>
+                <th style="min-width:180px">وقت التسجيل</th>
+                <th style="min-width:280px">ملاحظة الزيارة</th>
+                <th style="min-width:220px">الإجراء</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for d in school_days %}
+                <tr id="day-row-{{ d.id }}" data-day-id="{{ d.id }}" data-school-id="{{ d.school.id }}" data-visited="{% if d.visited %}1{% else %}0{% endif %}">
+                  <td>
+                    <div class="school-name">{{ d.get_weekday_display }}</div>
+                    <div class="school-sub">زيارة حضورية</div>
+                  </td>
+
+                  <td>
+                    <div class="school-name">{{ d.school.name }}</div>
+                    <div class="school-sub">
+                      الرقم الإحصائي: {{ d.school.stat_code }}
+                      {% if d.note %}<br>ملاحظة الخطة: {{ d.note }}{% endif %}
+                    </div>
+                  </td>
+
+                  <td>
+                    {% if d.visited %}
+                      <span class="status-box done" id="status-{{ d.id }}">تمت الزيارة</span>
+                    {% else %}
+                      <span class="status-box pending" id="status-{{ d.id }}">بانتظار التنفيذ</span>
+                    {% endif %}
+                  </td>
+
+                  <td id="visited-at-{{ d.id }}">
+                    {% if d.visited_at %}
+                      {{ d.visited_at|date:"Y-m-d" }} — {{ d.visited_at|time:"H:i" }}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    <textarea class="note" id="visit-note-{{ d.id }}" placeholder="اكتب ملاحظة مختصرة عن الزيارة...">{% if d.visit_note %}{{ d.visit_note }}{% endif %}</textarea>
+                    <div class="small-help">هذه الملاحظة خاصة بتسجيل تنفيذ الزيارة.</div>
+                  </td>
+
+                  <td>
+                    <div class="row-actions">
+                      <button
+                        class="a-btn ok"
+                        type="button"
+                        data-action="mark-visited"
+                        data-day-id="{{ d.id }}"
+                        data-url="{% url 'visits:toggle_day_visited' d.id %}"
+                        {% if d.visited %}style="display:none"{% endif %}
+                        id="mark-btn-{{ d.id }}"
+                      >✅ تمت الزيارة</button>
+
+                      <button
+                        class="a-btn warn"
+                        type="button"
+                        data-action="unmark-visited"
+                        data-day-id="{{ d.id }}"
+                        data-url="{% url 'visits:toggle_day_visited' d.id %}"
+                        {% if not d.visited %}style="display:none"{% endif %}
+                        id="unmark-btn-{{ d.id }}"
+                      >↩ إلغاء التسجيل</button>
+                    </div>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="empty">لا توجد زيارات حضورية مخططة لهذا الأسبوع.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+</section>
+
+<script>
+  function showToast(msg){
+    const wrap = document.getElementById("toastWrap");
+    if(!wrap) return;
+
+    const el = document.createElement("div");
+    el.className = "toast";
+    el.innerHTML = `<span>${msg}</span><button class="x" type="button">✕</button>`;
+    wrap.appendChild(el);
+
+    const closeBtn = el.querySelector(".x");
+    if(closeBtn){
+      closeBtn.addEventListener("click", () => el.remove());
+    }
+
+    setTimeout(() => {
+      if(el.parentNode){
+        el.remove();
+      }
+    }, 2800);
+  }
+
+  function getCookie(name){
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if(parts.length === 2){
+      return parts.pop().split(";").shift();
+    }
+    return "";
+  }
+
+  async function postAction(url, payload = {}){
+    const csrf = getCookie("csrftoken");
+    const formData = new FormData();
+
+    Object.entries(payload).forEach(([key, value]) => {
+      formData.append(key, value ?? "");
+    });
+
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrf,
+        "X-Requested-With": "XMLHttpRequest"
+      },
+      body: formData
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if(!res.ok){
+      throw new Error(data.message || "حدث خطأ أثناء التنفيذ.");
+    }
+
+    return data;
+  }
+
+  function updateSummaryCounts(assignedCount, visitedCount, remainingCount){
+    const ids = {
+      assigned: ["assignedCount", "assignedCount2"],
+      visited: ["visitedCount", "visitedCount2"],
+      remaining: ["remainingCount", "remainingCount2"]
+    };
+
+    ids.assigned.forEach(id => {
+      const el = document.getElementById(id);
+      if(el && typeof assignedCount !== "undefined"){
+        el.textContent = assignedCount;
+      }
+    });
+
+    ids.visited.forEach(id => {
+      const el = document.getElementById(id);
+      if(el && typeof visitedCount !== "undefined"){
+        el.textContent = visitedCount;
+      }
+    });
+
+    ids.remaining.forEach(id => {
+      const el = document.getElementById(id);
+      if(el && typeof remainingCount !== "undefined"){
+        el.textContent = remainingCount;
+      }
+    });
+
+    const remainingBadge = document.getElementById("remainingBadge");
+    if(remainingBadge && typeof remainingCount !== "undefined"){
+      remainingBadge.textContent = `المتبقي ${remainingCount}`;
+    }
+  }
+
+  function updateRowStatus(dayId, visited, visitedAt, visitNote){
+    const row = document.getElementById(`day-row-${dayId}`);
+    const status = document.getElementById(`status-${dayId}`);
+    const visitedAtEl = document.getElementById(`visited-at-${dayId}`);
+    const noteEl = document.getElementById(`visit-note-${dayId}`);
+    const markBtn = document.getElementById(`mark-btn-${dayId}`);
+    const unmarkBtn = document.getElementById(`unmark-btn-${dayId}`);
+
+    if(row){
+      row.setAttribute("data-visited", visited ? "1" : "0");
+    }
+
+    if(status){
+      if(visited){
+        status.textContent = "تمت الزيارة";
+        status.classList.remove("pending");
+        status.classList.add("done");
+      } else {
+        status.textContent = "بانتظار التنفيذ";
+        status.classList.remove("done");
+        status.classList.add("pending");
+      }
+    }
+
+    if(visitedAtEl){
+      visitedAtEl.textContent = visitedAt || "—";
+    }
+
+    if(noteEl && typeof visitNote !== "undefined" && visitNote !== null){
+      noteEl.value = visitNote;
+    }
+
+    if(markBtn){
+      markBtn.style.display = visited ? "none" : "";
+      markBtn.disabled = false;
+      markBtn.textContent = "✅ تمت الزيارة";
+    }
+
+    if(unmarkBtn){
+      unmarkBtn.style.display = visited ? "" : "none";
+      unmarkBtn.disabled = false;
+      unmarkBtn.textContent = "↩ إلغاء التسجيل";
+    }
+  }
+
+  function removeSchoolFromRemainingList(schoolId){
+    const item = document.querySelector(`#remainingSchoolsList [data-school-id="${schoolId}"]`);
+    if(item){
+      item.remove();
+    }
+
+    const list = document.getElementById("remainingSchoolsList");
+    const hasItems = list && list.querySelector('[data-school-id]');
+    const hasEmpty = document.getElementById("remainingSchoolsEmpty");
+
+    if(list && !hasItems && !hasEmpty){
+      const empty = document.createElement("div");
+      empty.className = "empty";
+      empty.id = "remainingSchoolsEmpty";
+      empty.textContent = "لا توجد مدارس متبقية حاليًا. أحسنت 👏";
+      list.appendChild(empty);
+    }
+  }
+
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-action][data-url][data-day-id]");
+    if(!btn) return;
+
+    e.preventDefault();
+
+    if(btn.disabled){
+      return;
+    }
+
+    const action = btn.getAttribute("data-action");
+    const dayId = btn.getAttribute("data-day-id");
+    const url = btn.getAttribute("data-url");
+
+    const row = document.getElementById(`day-row-${dayId}`);
+    const noteEl = document.getElementById(`visit-note-${dayId}`);
+    const schoolId = row ? row.getAttribute("data-school-id") : "";
+
+    let payload = {};
+
+    if(action === "mark-visited"){
+      payload.visited = "1";
+      payload.visit_note = noteEl ? noteEl.value.trim() : "";
+      btn.disabled = true;
+      btn.textContent = "جارٍ التسجيل…";
+    } else if(action === "unmark-visited"){
+      payload.visited = "0";
+      btn.disabled = true;
+      btn.textContent = "جارٍ التنفيذ…";
+    } else {
+      return;
+    }
+
+    try{
+      const data = await postAction(url, payload);
+
+      updateRowStatus(
+        dayId,
+        !!data.visited,
+        data.visited_at || "",
+        typeof data.visit_note !== "undefined" ? data.visit_note : (noteEl ? noteEl.value : "")
+      );
+
+      updateSummaryCounts(
+        data.assigned_count,
+        data.visited_count,
+        data.remaining_count
+      );
+
+      if(action === "mark-visited" && schoolId){
+        removeSchoolFromRemainingList(schoolId);
+      }
+
+      showToast(data.message || "تم الحفظ");
+    } catch(err){
+      btn.disabled = false;
+      if(action === "mark-visited"){
+        btn.textContent = "✅ تمت الزيارة";
+      } else {
+        btn.textContent = "↩ إلغاء التسجيل";
+      }
+      showToast(err.message || "فشل التنفيذ");
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends "visits/base.html" %}
+
+{% block title %}حذف رابط الخطاب الأسبوعي{% endblock %}
+{% block header_title %}روابط الخطابات{% endblock %}
+{% block header_subtitle %}حذف رابط أسبوعي{% endblock %}
+
+{% block hero %}
+<div class="hero">
+  <div>
+    <h1>حذف رابط الخطاب الأسبوعي</h1>
+    <p>تأكيد حذف الرابط المرتبط بالأسبوع المحدد.</p>
+  </div>
+  <div class="pill-row">
+    <div class="pill"><span class="dot blue"></span> عملية إدارية</div>
+    <div class="pill"><span class="dot"></span> تأكيد قبل الحذف</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div style="margin-top:16px;">
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:22px;overflow:hidden;">
+    <div style="padding:16px 20px;border-bottom:1px solid #e2e8f0;font-weight:800;">مراجعة بيانات السجل قبل الحذف</div>
+
+    <div style="padding:22px;display:flex;flex-direction:column;gap:16px;">
+      <div style="border:1px solid #fecaca;background:#fff1f2;color:#b91c1c;border-radius:16px;padding:16px 18px;font-weight:800;">
+        هل أنت متأكد من حذف رابط الخطاب المرتبط بالأسبوع {{ obj.week.week_no }}؟
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div style="border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;background:#fff;">
+          <div style="color:#64748b;font-size:12px;">الأسبوع</div>
+          <div style="font-weight:800;">الأسبوع {{ obj.week.week_no }} — يبدأ {{ obj.week.start_sunday }}</div>
+        </div>
+
+        <div style="border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;background:#fff;">
+          <div style="color:#64748b;font-size:12px;">الحالة</div>
+          <div style="font-weight:800;">{% if obj.is_active %}نشط{% else %}غير نشط{% endif %}</div>
+        </div>
+
+        <div style="border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;background:#fff;">
+          <div style="color:#64748b;font-size:12px;">العنوان</div>
+          <div style="font-weight:800;">{{ obj.title|default:"—" }}</div>
+        </div>
+
+        <div style="border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;background:#fff;">
+          <div style="color:#64748b;font-size:12px;">الملاحظة</div>
+          <div style="font-weight:800;">{{ obj.note|default:"—" }}</div>
+        </div>
+
+        <div style="grid-column:1/-1;border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;background:#fff;">
+          <div style="color:#64748b;font-size:12px;">الرابط</div>
+          <div style="font-weight:800;direction:ltr;text-align:left;">{{ obj.drive_url }}</div>
+        </div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button type="submit" style="background:#dc2626;color:#fff;border:none;padding:11px 18px;border-radius:12px;font-weight:800;">تأكيد الحذف</button>
+          <a href="{% url 'visits:weekly_letter_links_list' %}" style="background:#fff;border:1px solid #cbd5e1;padding:11px 18px;border-radius:12px;">إلغاء</a>
+          <a href="{{ obj.drive_url }}" target="_blank" rel="noopener noreferrer" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;padding:11px 18px;border-radius:12px;">فتح الرابط</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

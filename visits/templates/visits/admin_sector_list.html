@@ -1,0 +1,491 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}إدارة القطاعات{% endblock %}
+{% block page_messages %}{% endblock %}
+
+{% block header_title %}إدارة القطاعات{% endblock %}
+{% block header_subtitle %}إضافة وتعديل وتعطيل القطاعات وربطها بالمدارس والمشرفين{% endblock %}
+
+{% block extra_css %}
+<style>
+  .sector-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+    --fw-hero:800;
+    --fw-title:700;
+    --fw-strong:600;
+    --fw-normal:500;
+
+    --card:rgba(255,255,255,.97);
+    --soft:rgba(248,250,252,.95);
+
+    --txt:#0f172a;
+    --mut:#64748b;
+    --mut2:#94a3b8;
+
+    --line:rgba(148,163,184,.18);
+    --line2:rgba(148,163,184,.10);
+
+    --ok:#16a34a;
+    --blue:#2563eb;
+    --warn:#f59e0b;
+    --danger:#dc2626;
+
+    --shadow:0 12px 28px rgba(15,23,42,.06);
+    --shadow2:0 6px 16px rgba(15,23,42,.045);
+  }
+
+  .sector-page *{ box-sizing:border-box; font-family:var(--ff) !important; }
+  .sector-page .wrap{ display:grid; gap:10px; }
+
+  .sector-page .head,
+  .sector-page .form-card,
+  .sector-page .table-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:20px;
+    box-shadow:var(--shadow);
+  }
+
+  .sector-page .head{
+    padding:12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .sector-page .head h1{
+    margin:0;
+    color:var(--txt);
+    font-size:15px;
+    line-height:1.5;
+    font-weight:var(--fw-hero);
+  }
+
+  .sector-page .head p{
+    margin:3px 0 0;
+    color:var(--mut);
+    font-size:11.8px;
+    line-height:1.8;
+    font-weight:var(--fw-normal);
+  }
+
+  .sector-page .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    min-height:31px;
+    padding:6px 10px;
+    border-radius:999px;
+    background:var(--soft);
+    border:1px solid var(--line);
+    color:var(--mut);
+    font-size:11.2px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+  }
+
+  .sector-page .dot{
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:var(--ok);
+    box-shadow:0 0 0 3px rgba(22,163,74,.10);
+    flex:0 0 auto;
+  }
+
+  .sector-page .form-card{
+    padding:12px;
+    display:grid;
+    gap:8px;
+  }
+
+  .sector-page .form-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .sector-page .form-title{
+    color:var(--txt);
+    font-size:12.5px;
+    font-weight:var(--fw-title);
+    margin:0;
+  }
+
+  .sector-page .grid{
+    display:grid;
+    grid-template-columns:1.3fr auto;
+    gap:8px;
+    align-items:end;
+  }
+
+  .sector-page .field label{
+    display:block;
+    margin-bottom:5px;
+    color:var(--mut);
+    font-size:11px;
+    font-weight:var(--fw-normal);
+  }
+
+  .sector-page .input{
+    width:100%;
+    height:36px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:rgba(248,250,252,.95);
+    padding:0 11px;
+    outline:none;
+    color:var(--txt);
+    font-size:11.8px;
+    font-weight:var(--fw-strong);
+  }
+
+  .sector-page .input:focus{
+    border-color:rgba(59,130,246,.30);
+    box-shadow:0 0 0 4px rgba(59,130,246,.06);
+    background:#fff;
+  }
+
+  .sector-page .btn{
+    height:36px;
+    padding:0 13px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--txt);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    text-decoration:none;
+    cursor:pointer;
+    white-space:nowrap;
+    font-size:11.5px;
+    font-weight:var(--fw-strong);
+    box-shadow:0 5px 12px rgba(15,23,42,.045);
+  }
+
+  .sector-page .btn.primary{
+    background:linear-gradient(135deg, rgba(37,99,235,.95), rgba(96,165,250,.95));
+    border-color:rgba(37,99,235,.14);
+    color:#fff;
+  }
+
+  .sector-page .filters{
+    display:grid;
+    grid-template-columns:1.2fr auto auto;
+    gap:8px;
+    align-items:end;
+  }
+
+  .sector-page .table-head{
+    padding:10px 12px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(248,250,252,.95), rgba(255,255,255,.92));
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .sector-page .hint{
+    color:var(--mut);
+    font-size:11.1px;
+    font-weight:var(--fw-normal);
+  }
+
+  .sector-page .table-wrap{ overflow:auto; }
+
+  .sector-page table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    table-layout:fixed;
+  }
+
+  .sector-page thead th{
+    position:sticky;
+    top:0;
+    z-index:2;
+    background:rgba(248,250,252,.985);
+    border-bottom:1px solid var(--line);
+    padding:10px;
+    text-align:right;
+    color:var(--mut);
+    font-size:11px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+  }
+
+  .sector-page thead th:nth-child(1){ width:34%; }
+  .sector-page thead th:nth-child(2){ width:18%; }
+  .sector-page thead th:nth-child(3){ width:18%; }
+  .sector-page thead th:nth-child(4){ width:15%; }
+  .sector-page thead th:nth-child(5){ width:15%; }
+
+  .sector-page tbody td{
+    padding:10px;
+    border-bottom:1px solid var(--line2);
+    color:var(--txt);
+    font-size:12px;
+    vertical-align:middle;
+  }
+
+  .sector-page tbody tr:nth-child(even){ background:rgba(2,6,23,.012); }
+  .sector-page tbody tr:hover{ background:rgba(37,99,235,.025); }
+
+  .sector-page .sector-name{
+    font-size:12.6px;
+    font-weight:var(--fw-strong);
+    color:var(--txt);
+  }
+
+  .sector-page .badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:28px;
+    min-width:68px;
+    padding:5px 9px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+    border:1px solid transparent;
+  }
+
+  .sector-page .badge.active{
+    background:rgba(22,163,74,.10);
+    border-color:rgba(22,163,74,.18);
+    color:#166534;
+  }
+
+  .sector-page .badge.inactive{
+    background:rgba(245,158,11,.10);
+    border-color:rgba(245,158,11,.18);
+    color:#92400e;
+  }
+
+  .sector-page .count{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:28px;
+    min-width:60px;
+    padding:5px 9px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--soft);
+    color:var(--txt);
+    font-size:11px;
+    font-weight:var(--fw-strong);
+  }
+
+  .sector-page .actions{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    justify-content:flex-start;
+  }
+
+  .sector-page .a-btn{
+    height:28px;
+    padding:0 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--txt);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    text-decoration:none;
+    cursor:pointer;
+    font-size:10.8px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+    box-shadow:0 4px 10px rgba(15,23,42,.04);
+  }
+
+  .sector-page .a-btn.edit{
+    background:rgba(37,99,235,.08);
+    border-color:rgba(37,99,235,.14);
+    color:#1d4ed8;
+  }
+
+  .sector-page .a-btn.toggle{
+    background:rgba(245,158,11,.10);
+    border-color:rgba(245,158,11,.18);
+    color:#92400e;
+  }
+
+  .sector-page .empty{
+    padding:18px;
+    color:var(--mut);
+    font-size:11.5px;
+    font-weight:var(--fw-normal);
+  }
+
+  @media (max-width: 760px){
+    .sector-page .grid,
+    .sector-page .filters{
+      grid-template-columns:1fr;
+    }
+    .sector-page table{
+      table-layout:auto;
+    }
+    .sector-page thead th:nth-child(n){
+      width:auto;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="sector-page">
+  <div class="wrap">
+
+    <div class="head">
+      <div>
+        <h1>إدارة القطاعات</h1>
+        <p>إضافة وتحديث وتعطيل القطاعات مع عرض عدد المدارس والمشرفين المرتبطين بكل قطاع.</p>
+      </div>
+      <div class="chip"><span class="dot"></span> القطاعات المعروضة: <b>{{ rows|length }}</b></div>
+    </div>
+
+    <form class="form-card" method="post" action="{% url 'visits:admin_sector_save' %}">
+      {% csrf_token %}
+      <input type="hidden" name="sector_id" id="sectorIdInput">
+      <div class="form-head">
+        <h3 class="form-title">إضافة / تعديل قطاع</h3>
+      </div>
+
+      <div class="grid">
+        <div class="field">
+          <label>اسم القطاع</label>
+          <input class="input" type="text" name="name" id="sectorNameInput" placeholder="مثال: قطاع خميس مشيط">
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn primary" type="submit">حفظ</button>
+          <button class="btn" type="button" id="resetSectorBtn">إعادة ضبط</button>
+        </div>
+      </div>
+    </form>
+
+    <form class="form-card" method="get">
+      <div class="filters">
+        <div class="field">
+          <label>بحث</label>
+          <input class="input" type="text" name="q" value="{{ q }}" placeholder="ابحث باسم القطاع">
+        </div>
+
+        <div class="field">
+          <label>العرض</label>
+          <select class="input" name="inactive">
+            <option value="0" {% if not show_inactive %}selected{% endif %}>النشطة فقط</option>
+            <option value="1" {% if show_inactive %}selected{% endif %}>الكل</option>
+          </select>
+        </div>
+
+        <div style="display:flex;gap:6px;align-items:end;flex-wrap:wrap">
+          <button class="btn primary" type="submit">تطبيق</button>
+          <a class="btn" href="{% url 'visits:admin_sector_list' %}">إعادة ضبط</a>
+        </div>
+      </div>
+    </form>
+
+    <div class="table-card">
+      <div class="table-head">
+        <div class="hint">إدارة مرجعية للقطاعات المستخدمة في المدارس والمشرفين.</div>
+        <div class="hint">عدد النتائج: <b>{{ rows|length }}</b></div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>القطاع</th>
+              <th>المدارس</th>
+              <th>المشرفون</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in rows %}
+              <tr>
+                <td><div class="sector-name">{{ s.name }}</div></td>
+                <td><span class="count">{{ s.schools_count }}</span></td>
+                <td><span class="count">{{ s.supervisors_count }}</span></td>
+                <td>
+                  {% if s.is_active %}
+                    <span class="badge active">نشط</span>
+                  {% else %}
+                    <span class="badge inactive">معطل</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="actions">
+                    <button
+                      class="a-btn edit"
+                      type="button"
+                      data-sector-id="{{ s.id }}"
+                      data-sector-name="{{ s.name }}"
+                    >
+                      ✏️ تعديل
+                    </button>
+
+                    <form method="post" action="{% url 'visits:admin_sector_toggle_active' s.id %}" style="margin:0">
+                      {% csrf_token %}
+                      <button class="a-btn toggle" type="submit">
+                        {% if s.is_active %}⛔ تعطيل{% else %}✅ تفعيل{% endif %}
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="empty">لا توجد قطاعات مطابقة.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const sectorIdInput = document.getElementById("sectorIdInput");
+  const sectorNameInput = document.getElementById("sectorNameInput");
+  const resetSectorBtn = document.getElementById("resetSectorBtn");
+
+  document.addEventListener("click", function(e){
+    const btn = e.target.closest("[data-sector-id][data-sector-name]");
+    if(!btn) return;
+
+    sectorIdInput.value = btn.getAttribute("data-sector-id") || "";
+    sectorNameInput.value = btn.getAttribute("data-sector-name") || "";
+    sectorNameInput.focus();
+    sectorNameInput.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
+  if (resetSectorBtn){
+    resetSectorBtn.addEventListener("click", function(){
+      sectorIdInput.value = "";
+      sectorNameInput.value = "";
+      sectorNameInput.focus();
+    });
+  }
+</script>
+{% endblock %}

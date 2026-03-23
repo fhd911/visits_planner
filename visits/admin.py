@@ -5,6 +5,7 @@ from datetime import timedelta
 from django.contrib import admin
 from django.contrib.admin import RelatedOnlyFieldListFilter
 from django.core.exceptions import ValidationError
+from django.db import models
 from django.utils import timezone
 from django.utils.html import format_html
 
@@ -16,18 +17,16 @@ from .models import (
     Principal,
     School,
     Supervisor,
+    SupervisorNotification,
     UnlockRequest,
+    WeeklyLetterLink,
 )
 
-# ✅ تعريب رأس لوحة الإدارة
 admin.site.site_header = "لوحة إدارة الزيارات"
 admin.site.site_title = "إدارة الزيارات"
 admin.site.index_title = "الإدارة الرئيسية"
 
 
-# =========================
-# ✅ Badge helper (حل مشكلة format_html)
-# =========================
 def _badge(text: str, *, bg: str, color: str, weight: int = 800) -> str:
     return format_html(
         '<span style="padding:3px 10px;border-radius:999px;'
@@ -39,9 +38,6 @@ def _badge(text: str, *, bg: str, color: str, weight: int = 800) -> str:
     )
 
 
-# =========================
-# Supervisor
-# =========================
 @admin.register(Supervisor)
 class SupervisorAdmin(admin.ModelAdmin):
     list_display = ("full_name", "national_id", "mobile", "last4", "is_active")
@@ -57,9 +53,6 @@ class SupervisorAdmin(admin.ModelAdmin):
             return "—"
 
 
-# =========================
-# School
-# =========================
 @admin.register(School)
 class SchoolAdmin(admin.ModelAdmin):
     list_display = ("name", "stat_code", "gender", "is_active")
@@ -68,9 +61,6 @@ class SchoolAdmin(admin.ModelAdmin):
     ordering = ("name",)
 
 
-# =========================
-# Principal
-# =========================
 @admin.register(Principal)
 class PrincipalAdmin(admin.ModelAdmin):
     list_display = ("full_name", "school", "mobile")
@@ -78,9 +68,6 @@ class PrincipalAdmin(admin.ModelAdmin):
     autocomplete_fields = ("school",)
 
 
-# =========================
-# Assignment
-# =========================
 @admin.register(Assignment)
 class AssignmentAdmin(admin.ModelAdmin):
     list_display = ("supervisor", "school", "is_active")
@@ -95,9 +82,6 @@ class AssignmentAdmin(admin.ModelAdmin):
     ordering = ("supervisor__full_name", "school__name")
 
 
-# =========================
-# ✅ PlanWeek
-# =========================
 @admin.register(PlanWeek)
 class PlanWeekAdmin(admin.ModelAdmin):
     list_display = ("week_no", "start_sunday", "end_thursday", "title", "break_badge")
@@ -119,20 +103,14 @@ class PlanWeekAdmin(admin.ModelAdmin):
         return _badge("✅ فعّال", bg="#dcfce7", color="#166534")
 
 
-# =========================
-# Inline PlanDay داخل الخطة
-# =========================
 class PlanDayInline(admin.TabularInline):
     model = PlanDay
     extra = 0
-    fields = ("weekday", "school", "visit_type")
+    fields = ("weekday", "school", "visit_type", "no_visit_reason", "note")
     autocomplete_fields = ("school",)
     ordering = ("weekday",)
 
 
-# =========================
-# ✅ Plan
-# =========================
 @admin.register(Plan)
 class PlanAdmin(admin.ModelAdmin):
     list_display = (
@@ -163,7 +141,6 @@ class PlanAdmin(admin.ModelAdmin):
     inlines = [PlanDayInline]
 
     def save_model(self, request, obj: Plan, form, change):
-        # ✅ منع إنشاء خطة لأسبوع إجازة
         if obj.week and getattr(obj.week, "is_break", False):
             raise ValidationError("لا يمكن إنشاء/تعديل خطة على أسبوع مُحدد كإجازة.")
         super().save_model(request, obj, form, change)
@@ -195,7 +172,9 @@ class PlanAdmin(admin.ModelAdmin):
     @admin.display(description="الامتلاء")
     def filled_badge(self, obj: Plan):
         try:
-            count = obj.days.filter(school__isnull=False).count()
+            count = obj.days.filter(
+                models.Q(school__isnull=False) | models.Q(visit_type=PlanDay.VISIT_NONE)
+            ).count()
         except Exception:
             count = 0
 
@@ -204,13 +183,10 @@ class PlanAdmin(admin.ModelAdmin):
         return _badge(f"{count}/5", bg="#fff7ed", color="#7c2d12")
 
 
-# =========================
-# PlanDay (Standalone)
-# =========================
 @admin.register(PlanDay)
 class PlanDayAdmin(admin.ModelAdmin):
-    list_display = ("plan", "weekday", "school", "visit_type")
-    list_filter = ("weekday", "visit_type")
+    list_display = ("plan", "weekday", "school", "visit_type", "no_visit_reason")
+    list_filter = ("weekday", "visit_type", "no_visit_reason")
     search_fields = (
         "plan__supervisor__full_name",
         "plan__supervisor__national_id",
@@ -221,9 +197,6 @@ class PlanDayAdmin(admin.ModelAdmin):
     ordering = ("plan__week__week_no", "weekday")
 
 
-# =========================
-# UnlockRequest
-# =========================
 @admin.register(UnlockRequest)
 class UnlockRequestAdmin(admin.ModelAdmin):
     list_display = ("plan", "status_badge", "created_at", "resolved_at")
@@ -246,11 +219,6 @@ class UnlockRequestAdmin(admin.ModelAdmin):
         return _badge("❌ مرفوض", bg="#fee2e2", color="#991b1b")
 
     def save_model(self, request, obj: UnlockRequest, form, change):
-        """
-        - pending: الخطة = unlock + resolved_at = None
-        - approved: الخطة -> draft + resolved_at = الآن
-        - rejected: الخطة -> approved + resolved_at = الآن
-        """
         old_status = None
         if change and obj.pk:
             old_status = UnlockRequest.objects.filter(pk=obj.pk).values_list("status", flat=True).first()
@@ -288,3 +256,62 @@ class UnlockRequestAdmin(admin.ModelAdmin):
             if obj.resolved_at is None:
                 obj.resolved_at = timezone.now()
                 obj.save(update_fields=["resolved_at"])
+
+
+@admin.register(SupervisorNotification)
+class SupervisorNotificationAdmin(admin.ModelAdmin):
+    list_display = ("supervisor", "notif_type", "title", "is_read", "created_at")
+    list_filter = ("notif_type", "is_read", "created_at")
+    search_fields = (
+        "supervisor__full_name",
+        "supervisor__national_id",
+        "title",
+        "message",
+    )
+    autocomplete_fields = ("supervisor", "plan")
+    readonly_fields = ("created_at",)
+    ordering = ("-created_at",)
+
+
+@admin.register(WeeklyLetterLink)
+class WeeklyLetterLinkAdmin(admin.ModelAdmin):
+    list_display = (
+        "week",
+        "week_start",
+        "title",
+        "is_active_badge",
+        "open_link",
+        "updated_at",
+    )
+    list_filter = ("is_active", "week__is_break")
+    search_fields = ("title", "note", "week__week_no", "week__title", "drive_url")
+    autocomplete_fields = ("week",)
+    ordering = ("week__week_no",)
+    readonly_fields = ("created_at", "updated_at")
+
+    fieldsets = (
+        (None, {"fields": ("week", "title", "drive_url", "note", "is_active")}),
+        ("التوقيت", {"fields": ("created_at", "updated_at")}),
+    )
+
+    @admin.display(description="بداية الأسبوع")
+    def week_start(self, obj: WeeklyLetterLink):
+        try:
+            return obj.week.start_sunday
+        except Exception:
+            return "—"
+
+    @admin.display(description="الحالة")
+    def is_active_badge(self, obj: WeeklyLetterLink):
+        if obj.is_active:
+            return _badge("✅ نشط", bg="#dcfce7", color="#166534")
+        return _badge("⛔ غير نشط", bg="#e5e7eb", color="#374151")
+
+    @admin.display(description="الرابط")
+    def open_link(self, obj: WeeklyLetterLink):
+        if not obj.drive_url:
+            return "—"
+        return format_html(
+            '<a href="{}" target="_blank" rel="noopener noreferrer">فتح الرابط</a>',
+            obj.drive_url,
+        )

@@ -1,15 +1,12 @@
-# visits/views_import.py  (FINAL ✅)
-# صفحة الاستيراد + معالجة Excel بشكل ذكي
-# Requires: openpyxl
-
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from io import BytesIO
 from typing import Any
 
 from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
 from django.db import transaction
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
@@ -36,12 +33,12 @@ class ImportStats:
 # ============================================================================
 SESSION_REJ_HEADERS = "import_rejected_headers"
 SESSION_REJ_ROWS = "import_rejected_rows"
+MAX_REJECTED_IN_SESSION = 3000
 
 
 def _rej_add(rejected: list[dict], row: dict, reason: str, importer: str) -> None:
-    """
-    إضافة سجل مرفوض مع السبب + نوع الاستيراد.
-    """
+    if len(rejected) >= MAX_REJECTED_IN_SESSION:
+        return
     x = dict(row or {})
     x["_reason"] = reason
     x["_importer"] = importer
@@ -59,7 +56,7 @@ def _norm(v: Any) -> str:
 
 def _digits(v: Any) -> str:
     """
-    يرجع الأرقام فقط من أي قيمة (مفيد للهوية / الجوال):
+    يرجع الأرقام فقط من أي قيمة:
     - 1020103717 -> 1020103717
     - "1020103717 " -> 1020103717
     - 70228.0 -> 70228
@@ -74,7 +71,7 @@ def _digits(v: Any) -> str:
 
 def _code(v: Any) -> str:
     """
-    ✅ كود المدرسة / الرقم الإحصائي:
+    كود المدرسة / الرقم الإحصائي:
     - يحافظ على الحروف مثل M3964353
     - يحول 70228.0 إلى 70228
     - يحذف الفراغات فقط
@@ -93,7 +90,7 @@ def _to_bool(v: Any) -> bool:
         return True
     if s in {"0", "false", "no", "n", "لا"}:
         return False
-    return True  # default
+    return True
 
 
 def _canon_header(h: str) -> str:
@@ -104,43 +101,35 @@ def _canon_header(h: str) -> str:
     x = x.replace("ـ", "").replace("_", " ").strip()
 
     # ---------- Schools ----------
-    if x in {"stat_code", "stat code", "الرقم الإحصائي", "الرقم الاحصائي", "رقم احصائي"}:
+    if x in {"stat_code", "stat code", "الرقم الإحصائي", "الرقم الاحصائي", "رقم احصائي", "code"}:
         return "stat_code"
-    if x in {"name", "اسم المدرسة", "المدرسة"}:
+    if x in {"name", "اسم المدرسة", "المدرسة", "schoolname"}:
         return "name"
-    if x in {"education_type", "education type", "type", "نوع التعليم"}:
-        return "education_type"
-    if x in {"stage", "المرحلة"}:
-        return "stage"
     if x in {"gender", "الجنس"}:
         return "gender"
     if x in {"is_active", "active", "نشط"}:
         return "is_active"
 
     # ---------- Principals ----------
-    if x in {"school_stat_code", "school stat code", "رقم المدرسة", "رقم احصائي المدرسة", "الرقم الإحصائي"}:
+    if x in {"school_stat_code", "school stat code", "رقم المدرسة", "رقم احصائي المدرسة"}:
         return "school_stat_code"
     if x in {"full_name", "full name", "الاسم", "اسم القائد", "اسم القائدة", "اسم المدير", "اسم المديرة"}:
         return "full_name"
-    if x in {"national_id", "national id", "السجل المدني", "رقم الهوية", "الهوية"}:
-        return "national_id"
-    if x in {"mobile", "الجوال", "رقم الجوال"}:
+    if x in {"mobile", "الجوال", "رقم الجوال", "الهاتف", "phone"}:
         return "mobile"
-    if x in {"sector", "القطاع"}:
-        return "sector"
-    if x in {"department", "القسم", "الإدارة"}:
-        return "department"
 
     # ---------- Supervisors ----------
+    if x in {"national_id", "national id", "السجل المدني", "رقم الهوية", "الهوية", "nid"}:
+        return "national_id"
     if x in {"supervisor_national_id", "supervisor national id", "رقم هوية المشرف"}:
         return "supervisor_national_id"
     if x in {"supervisor_name", "supervisor name", "اسم المشرف", "المشرف"}:
         return "supervisor_name"
 
     # ---------- Assignments ----------
-    if x in {"school", "school_stat_code", "school stat code", "الرقم الإحصائي", "الرقم الاحصائي"}:
+    if x in {"school", "school_stat_code", "school stat code"}:
         return "school_stat_code"
-    if x in {"supervisor", "supervisor_national_id", "السجل المدني", "رقم الهوية", "الهوية"}:
+    if x in {"supervisor", "supervisor_national_id"}:
         return "supervisor_national_id"
 
     return _norm(h)
@@ -149,7 +138,8 @@ def _canon_header(h: str) -> str:
 def _sheet_rows(file) -> list[dict]:
     """
     يقرأ الشيت ويعيد list[dict] بحيث مفاتيح الأعمدة تكون:
-    - مفاتيح أصلية + مفاتيح قياسية (canonical) لنفس القيم
+    - المفاتيح الأصلية
+    - والمفاتيح القياسية canonical
     """
     wb = load_workbook(filename=file, data_only=True)
     ws = wb.active
@@ -165,14 +155,12 @@ def _sheet_rows(file) -> list[dict]:
         if not any(x is not None and _norm(x) != "" for x in row):
             continue
 
-        rec: dict = {}
+        rec: dict[str, Any] = {}
 
-        # ضع القيم بمفاتيحها الأصلية
         for j in range(len(headers_raw)):
             key = headers_raw[j] if j < len(headers_raw) else f"col_{j}"
             rec[key] = row[j] if j < len(row) else None
 
-        # ثم أضف مفاتيح canonical لنفس القيم
         for j in range(len(headers_raw)):
             canon = _canon_header(headers_raw[j])
             if canon and canon not in rec:
@@ -188,14 +176,14 @@ def _sheet_rows(file) -> list[dict]:
 # ============================================================================
 def _import_schools(file, gender: str, rejected: list[dict]) -> ImportStats:
     """
-    الأعمدة المتوقعة (بالاسم):
-      stat_code | name | education_type | stage | is_active (اختياري)
+    الأعمدة المتوقعة:
+      stat_code | name | is_active (اختياري)
     """
     st = ImportStats()
     rows = _sheet_rows(file)
 
     for r in rows:
-        stat_code = _code(r.get("stat_code"))  # ✅ يحافظ على M...
+        stat_code = _code(r.get("stat_code"))
         name = _norm(r.get("name"))
 
         if not stat_code or not name:
@@ -206,12 +194,13 @@ def _import_schools(file, gender: str, rejected: list[dict]) -> ImportStats:
         defaults = {
             "name": name,
             "gender": gender,
-            "education_type": _norm(r.get("education_type")),
-            "stage": _norm(r.get("stage")),
             "is_active": _to_bool(r.get("is_active")) if "is_active" in r else True,
         }
 
-        obj, created = School.objects.update_or_create(stat_code=stat_code, defaults=defaults)
+        _, created = School.objects.update_or_create(
+            stat_code=stat_code,
+            defaults=defaults,
+        )
         if created:
             st.created += 1
         else:
@@ -223,13 +212,16 @@ def _import_schools(file, gender: str, rejected: list[dict]) -> ImportStats:
 def _import_principals(file, rejected: list[dict]) -> ImportStats:
     """
     الأعمدة المتوقعة:
-      school_stat_code | full_name | national_id (اختياري) | mobile (اختياري) | sector (اختياري)
+      school_stat_code | full_name | mobile (اختياري)
+
+    يدعم كذلك الملفات التي يكون فيها العمود باسم:
+      الرقم الإحصائي
     """
     st = ImportStats()
     rows = _sheet_rows(file)
 
     for r in rows:
-        school_stat_code = _code(r.get("school_stat_code"))  # ✅ قد يكون M...
+        school_stat_code = _code(r.get("school_stat_code")) or _code(r.get("stat_code"))
         full_name = _norm(r.get("full_name"))
 
         if not school_stat_code or not full_name:
@@ -245,12 +237,13 @@ def _import_principals(file, rejected: list[dict]) -> ImportStats:
 
         defaults = {
             "full_name": full_name,
-            "national_id": _digits(r.get("national_id")),
-            "mobile": _digits(r.get("mobile")),
-            "sector": _norm(r.get("sector")),
+            "mobile": _digits(r.get("mobile")) or None,
         }
 
-        obj, created = Principal.objects.update_or_create(school=school, defaults=defaults)
+        _, created = Principal.objects.update_or_create(
+            school=school,
+            defaults=defaults,
+        )
         if created:
             st.created += 1
         else:
@@ -262,16 +255,12 @@ def _import_principals(file, rejected: list[dict]) -> ImportStats:
 def _import_supervisors(file, rejected: list[dict]) -> ImportStats:
     """
     الأعمدة المتوقعة:
-      national_id | full_name | department (اختياري) | is_active (اختياري)
-
-    ✅ يدعم كذلك:
-      السجل المدني | اسم المشرف
+      national_id | full_name | mobile (اختياري) | is_active (اختياري)
     """
     st = ImportStats()
     rows = _sheet_rows(file)
 
     for r in rows:
-        # يدعم ملفات المشرفين الشائعة
         national_id = _digits(r.get("national_id")) or _digits(r.get("supervisor_national_id"))
         full_name = _norm(r.get("full_name")) or _norm(r.get("supervisor_name"))
 
@@ -282,11 +271,14 @@ def _import_supervisors(file, rejected: list[dict]) -> ImportStats:
 
         defaults = {
             "full_name": full_name,
-            "department": _norm(r.get("department")),
+            "mobile": _digits(r.get("mobile")) or None,
             "is_active": _to_bool(r.get("is_active")) if "is_active" in r else True,
         }
 
-        obj, created = Supervisor.objects.update_or_create(national_id=national_id, defaults=defaults)
+        _, created = Supervisor.objects.update_or_create(
+            national_id=national_id,
+            defaults=defaults,
+        )
         if created:
             st.created += 1
         else:
@@ -297,26 +289,16 @@ def _import_supervisors(file, rejected: list[dict]) -> ImportStats:
 
 def _import_assignments(file, rejected: list[dict]) -> ImportStats:
     """
-    ✅ يدعم ملف الإسنادات بأي من هذي الصيغ:
-
-    1) القياسية:
+    يدعم:
       supervisor_national_id | school_stat_code | is_active (اختياري)
-
-    2) العربية الشائعة:
-      السجل المدني | اسم المشرف | الرقم الإحصائي
-
-    ✅ ملاحظة مهمة:
-    - الهوية = أرقام فقط
-    - الرقم الإحصائي للمدرسة = قد يحتوي حرف M لذلك نستخدم _code وليس _digits
+    أو الصيغ العربية الشائعة.
     """
     st = ImportStats()
     rows = _sheet_rows(file)
 
     for r in rows:
-        # ✅ 1) هوية المشرف: نأخذها من أكثر من مكان
         sup_nid = _digits(r.get("supervisor_national_id")) or _digits(r.get("national_id"))
 
-        # لو ملفك ملخبط: الهوية داخل "اسم المشرف"
         if not sup_nid:
             sup_nid = (
                 _digits(r.get("supervisor_name"))
@@ -324,7 +306,6 @@ def _import_assignments(file, rejected: list[dict]) -> ImportStats:
                 or _digits(r.get("المشرف"))
             )
 
-        # ✅ 2) الرقم الإحصائي للمدرسة: لا نستخدم digits
         school_stat_code = (
             _code(r.get("school_stat_code"))
             or _code(r.get("stat_code"))
@@ -353,7 +334,7 @@ def _import_assignments(file, rejected: list[dict]) -> ImportStats:
             "is_active": _to_bool(r.get("is_active")) if "is_active" in r else True,
         }
 
-        obj, created = Assignment.objects.update_or_create(
+        _, created = Assignment.objects.update_or_create(
             supervisor=supervisor,
             school=school,
             defaults=defaults,
@@ -370,6 +351,7 @@ def _import_assignments(file, rejected: list[dict]) -> ImportStats:
 # ============================================================================
 # View: Manager Import
 # ============================================================================
+@staff_member_required
 def manager_import_view(request: HttpRequest) -> HttpResponse:
     results: dict[str, ImportStats] = {}
     rejected: list[dict] = []
@@ -377,66 +359,95 @@ def manager_import_view(request: HttpRequest) -> HttpResponse:
     if request.method == "POST":
         form = ImportExcelForm(request.POST, request.FILES)
         if form.is_valid():
-            with transaction.atomic():
-                if form.cleaned_data.get("schools_boys"):
-                    results["المدارس (بنين)"] = _import_schools(
-                        form.cleaned_data["schools_boys"], "boys", rejected
+            try:
+                with transaction.atomic():
+                    if form.cleaned_data.get("schools_boys"):
+                        results["المدارس (بنين)"] = _import_schools(
+                            form.cleaned_data["schools_boys"],
+                            "boys",
+                            rejected,
+                        )
+
+                    if form.cleaned_data.get("schools_girls"):
+                        results["المدارس (بنات)"] = _import_schools(
+                            form.cleaned_data["schools_girls"],
+                            "girls",
+                            rejected,
+                        )
+
+                    if form.cleaned_data.get("principals"):
+                        results["مديرو المدارس"] = _import_principals(
+                            form.cleaned_data["principals"],
+                            rejected,
+                        )
+
+                    if form.cleaned_data.get("supervisors"):
+                        results["المشرفون"] = _import_supervisors(
+                            form.cleaned_data["supervisors"],
+                            rejected,
+                        )
+
+                    if form.cleaned_data.get("assignments"):
+                        results["الإسنادات"] = _import_assignments(
+                            form.cleaned_data["assignments"],
+                            rejected,
+                        )
+
+                if rejected:
+                    keys = set()
+                    for rr in rejected:
+                        keys |= set(rr.keys())
+
+                    fixed = ["_importer", "_reason"]
+                    headers = fixed + sorted([k for k in keys if k not in fixed])
+
+                    request.session[SESSION_REJ_HEADERS] = headers
+                    request.session[SESSION_REJ_ROWS] = rejected
+                else:
+                    request.session.pop(SESSION_REJ_HEADERS, None)
+                    request.session.pop(SESSION_REJ_ROWS, None)
+
+                request.session.modified = True
+
+                if rejected and len(rejected) >= MAX_REJECTED_IN_SESSION:
+                    messages.success(
+                        request,
+                        f"تمت عملية الاستيراد بنجاح ✅ مع وجود مرفوضات كثيرة. "
+                        f"تم حفظ أول {MAX_REJECTED_IN_SESSION} سجل مرفوض فقط للتنزيل."
                     )
-
-                if form.cleaned_data.get("schools_girls"):
-                    results["المدارس (بنات)"] = _import_schools(
-                        form.cleaned_data["schools_girls"], "girls", rejected
+                elif rejected:
+                    messages.success(
+                        request,
+                        f"تمت عملية الاستيراد بنجاح ✅ (مرفوض: {len(rejected)})"
                     )
+                else:
+                    messages.success(request, "تمت عملية الاستيراد بنجاح ✅")
 
-                if form.cleaned_data.get("principals"):
-                    results["مديرو المدارس"] = _import_principals(form.cleaned_data["principals"], rejected)
-
-                if form.cleaned_data.get("supervisors"):
-                    results["المشرفون"] = _import_supervisors(form.cleaned_data["supervisors"], rejected)
-
-                if form.cleaned_data.get("assignments"):
-                    results["الإسنادات"] = _import_assignments(form.cleaned_data["assignments"], rejected)
-
-            # ✅ خزّن rejected في السيشن للتحميل
-            if rejected:
-                # اجمع الهيدرز من كل السجلات
-                keys = set()
-                for rr in rejected:
-                    keys |= set(rr.keys())
-                # رتّب: معلومات ثابتة بالأول
-                fixed = ["_importer", "_reason"]
-                headers = fixed + sorted([k for k in keys if k not in fixed])
-
-                request.session[SESSION_REJ_HEADERS] = headers
-                request.session[SESSION_REJ_ROWS] = rejected
-            else:
-                request.session.pop(SESSION_REJ_HEADERS, None)
-                request.session.pop(SESSION_REJ_ROWS, None)
-
-            messages.success(
-                request,
-                f"تمت عملية الاستيراد بنجاح ✅ (مرفوض: {len(rejected)})"
-                if rejected
-                else "تمت عملية الاستيراد بنجاح ✅"
-            )
+            except Exception as e:
+                messages.error(request, f"فشل الاستيراد: {e}")
         else:
             messages.error(request, "تحقق من الملفات المرفوعة (ارفع ملفًا واحدًا على الأقل).")
     else:
         form = ImportExcelForm()
         request.session.pop(SESSION_REJ_HEADERS, None)
         request.session.pop(SESSION_REJ_ROWS, None)
+        request.session.modified = True
 
-    return render(request, "visits/manager_import.html", {"form": form, "results": results})
+    return render(
+        request,
+        "visits/manager_import.html",
+        {
+            "form": form,
+            "results": {k: asdict(v) for k, v in results.items()},
+        },
+    )
 
 
 # ============================================================================
 # View: Download Rejected Excel
 # ============================================================================
+@staff_member_required
 def download_rejected_view(request: HttpRequest) -> HttpResponse:
-    """
-    تحميل ملف rejected.xlsx
-    ✅ يعتمد على rejected المحفوظ داخل session
-    """
     headers: list[str] = request.session.get(SESSION_REJ_HEADERS) or []
     rows: list[dict] = request.session.get(SESSION_REJ_ROWS) or []
 
@@ -448,11 +459,12 @@ def download_rejected_view(request: HttpRequest) -> HttpResponse:
         ws.append(["لا توجد سجلات مرفوضة حالياً ✅"])
     else:
         if not headers:
-            # استنتاج الهيدرز
             keys = set()
             for r in rows:
                 keys |= set(r.keys())
-            headers = ["_importer", "_reason"] + sorted([k for k in keys if k not in {"_importer", "_reason"}])
+            headers = ["_importer", "_reason"] + sorted(
+                [k for k in keys if k not in {"_importer", "_reason"}]
+            )
 
         ws.append(headers)
 

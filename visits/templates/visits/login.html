@@ -2,282 +2,626 @@
 {% extends "visits/base.html" %}
 {% load static %}
 
-{% block title %}تسجيل الدخول{% endblock %}
-{% block subtitle %}تسجيل دخول المشرف{% endblock %}
+{% block title %}بوابة الوصول{% endblock %}
+{% block subtitle %}منصة الزيارات{% endblock %}
 
-{# ✅ لا نعرض Hero ولا رسائل base #}
 {% block hero %}{% endblock %}
 {% block page_messages %}{% endblock %}
 
 {% block extra_css %}
 <style>
-  /* ✅ إخفاء الهيدر فقط في صفحة الدخول */
-  header.topbar{ display:none !important; }
+  header.topbar{display:none !important;}
+  footer{display:none !important;}
 
-  /* ✅ توحيد الخط + تخفيف السمك داخل صفحة الدخول فقط */
-  .login-wrap, .login-wrap *{
-    font-family: "Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif !important;
-    font-weight: 500; /* الأساس */
+  :root{
+    --bg:#f4f7fb;
+    --bg-2:#edf2f7;
+
+    --card:#ffffff;
+    --card-soft:#f8fbff;
+
+    --text:#0f172a;
+    --text-2:#334155;
+    --muted:#64748b;
+    --muted-2:#94a3b8;
+
+    --green-1:#17362b;
+    --green-2:#255243;
+    --green-3:#3d6b5a;
+
+    --line:#dde6f0;
+    --line-2:#cfd9e4;
+
+    --shadow-xl:0 20px 44px rgba(15,23,42,.08);
+    --shadow-sm:0 6px 16px rgba(15,23,42,.05);
+
+    --r-xl:26px;
+    --r-lg:18px;
+    --r-md:14px;
+    --r-sm:12px;
+
+    --fw-title:800;
+    --fw-strong:700;
+    --fw-mid:600;
+    --fw-normal:500;
+    --fw-light:400;
   }
 
-  /* تحسين تموضع الصفحة بعد إخفاء الهيدر */
-  .page{ margin-top: 26px; }
-  .shell{ padding: 26px; }
+  .access-page,
+  .access-page *{
+    box-sizing:border-box;
+    font-family:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif !important;
+  }
 
-  /* Login Card (هادئة وكلاسيكية) */
-  .login-wrap{
-    min-height: calc(100vh - 180px);
+  .page{
+    margin-top:0 !important;
+    min-height:100vh;
+    background:
+      radial-gradient(760px 240px at 0% 0%, rgba(37,82,67,.05), transparent 60%),
+      radial-gradient(620px 220px at 100% 100%, rgba(37,99,235,.05), transparent 58%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+  }
+
+  .shell{
+    max-width:none;
+    width:100%;
+    padding:0;
+    background:transparent;
+    border:0;
+    box-shadow:none;
+  }
+
+  .access-page{
+    min-height:100vh;
     display:grid;
     place-items:center;
-    padding: 14px 0 8px;
+    padding:18px;
   }
 
-  .login-card{
-    width:min(520px, 100%);
-    border-radius: 22px;
-    background: rgba(255,255,255,.86);
-    border: 1px solid rgba(148,163,184,.26);
-    box-shadow: 0 24px 60px rgba(2,6,23,.10);
-    backdrop-filter: blur(10px);
+  .access-card{
+    width:min(480px, 100%);
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,251,255,.97));
+    border:1px solid rgba(255,255,255,.96);
+    border-radius:var(--r-xl);
+    box-shadow:var(--shadow-xl);
     overflow:hidden;
+    position:relative;
   }
 
-  .login-head{
-    padding: 18px 18px 14px;
-    border-bottom: 1px solid rgba(226,232,240,.85);
-    background: linear-gradient(135deg, rgba(96,165,250,.12), rgba(34,197,94,.08));
+  .access-card::before{
+    content:"";
+    position:absolute;
+    inset:0 0 auto 0;
+    height:3px;
+    background:linear-gradient(90deg, var(--green-2), var(--green-3), #5b8def);
+  }
+
+  .access-head{
+    padding:22px 22px 14px;
+    border-bottom:1px solid var(--line);
+    text-align:right;
+    background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(249,251,255,.94));
+  }
+
+  .head-row{
     display:flex;
     align-items:center;
     justify-content:space-between;
     gap:12px;
+    flex-wrap:wrap;
   }
 
-  .login-brand{
+  .head-meta{
     display:flex;
     align-items:center;
-    gap:10px;
-  }
-  .login-brand .mark{
-    width:44px; height:44px;
-    border-radius: 16px;
-    display:grid; place-items:center;
-    font-weight: 700; /* كان 900 */
-    background: rgba(37,99,235,.10);
-    border:1px solid rgba(37,99,235,.18);
-    color: #1d4ed8;
-    user-select:none;
-  }
-  .login-brand .txt{ line-height:1.2; }
-  .login-brand .txt b{
-    display:block;
-    font-size:14px;
-    font-weight: 650; /* كان 900 */
-  }
-  .login-brand .txt small{
-    display:block;
-    font-size:12px;
-    color: var(--mut);
-    margin-top:2px;
-    font-weight: 500;
+    gap:8px;
+    flex-wrap:wrap;
   }
 
-  .status-pill{
+  .head-chip{
     display:inline-flex;
     align-items:center;
     gap:8px;
-    padding:8px 12px;
+    padding:7px 11px;
     border-radius:999px;
-    background: rgba(255,255,255,.80);
-    border:1px solid rgba(226,232,240,.85);
-    font-size:12px;
-    color: var(--text);
+    background:rgba(248,250,252,.95);
+    border:1px solid var(--line);
+    color:var(--muted);
+    font-size:11.5px;
+    font-weight:var(--fw-mid);
     white-space:nowrap;
-    font-weight: 600; /* إضافة */
-  }
-  .status-pill i{
-    width:10px; height:10px; border-radius:999px;
-    background: var(--ok);
-    box-shadow: 0 0 0 4px rgba(34,197,94,.16);
-    display:inline-block;
   }
 
-  .login-body{ padding: 18px; }
-
-  .login-title{
-    margin: 2px 0 2px;
-    font-size: 18px;
-    font-weight: 700; /* كان 900 */
-    letter-spacing: .2px;
-  }
-  .login-sub{
-    margin: 0 0 14px;
-    color: var(--mut);
-    font-size: 13px;
-    line-height: 1.9;
-    font-weight: 500;
+  .head-chip .dot{
+    width:8px;
+    height:8px;
+    border-radius:999px;
+    background:#f59e0b;
+    box-shadow:0 0 0 4px rgba(245,158,11,.12);
   }
 
-  .field{ margin: 12px 0; }
+  .head-chip .dot.ok{
+    background:#3b82f6;
+    box-shadow:0 0 0 4px rgba(59,130,246,.12);
+  }
+
+  .head-title{
+    margin:0;
+    color:var(--text);
+    font-size:24px;
+    line-height:1.1;
+    font-weight:var(--fw-title);
+    letter-spacing:-.2px;
+  }
+
+  .head-sub{
+    margin:7px 0 0;
+    color:var(--muted);
+    font-size:12.5px;
+    line-height:1.8;
+    font-weight:var(--fw-normal);
+  }
+
+  .access-body{
+    padding:16px 22px 20px;
+  }
+
+  .msg-wrap{
+    margin:0 0 12px;
+  }
+
+  .msg{
+    margin-bottom:8px;
+    padding:10px 12px;
+    border-radius:12px;
+    font-size:12px;
+    line-height:1.8;
+    font-weight:var(--fw-mid);
+    border:1px solid transparent;
+  }
+
+  .msg.error{ background:#fff5f5; color:#991b1b; border-color:#fecaca; }
+  .msg.success{ background:#f0fdf4; color:#166534; border-color:#bbf7d0; }
+  .msg.warning{ background:#fffbeb; color:#92400e; border-color:#fde68a; }
+  .msg.info{ background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe; }
+
+  .tabs{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    padding:5px;
+    margin-bottom:14px;
+    border-radius:16px;
+    background:linear-gradient(180deg, #f5f9ff, #eef4fb);
+    border:1px solid var(--line);
+  }
+
+  .tab-btn{
+    appearance:none;
+    border:1px solid transparent;
+    min-height:42px;
+    border-radius:12px;
+    background:transparent;
+    color:var(--text-2);
+    font-size:13px;
+    font-weight:var(--fw-mid);
+    cursor:pointer;
+    transition:.16s ease;
+  }
+
+  .tab-btn:hover{
+    background:rgba(255,255,255,.55);
+  }
+
+  .tab-btn.is-active{
+    color:var(--text);
+    background:linear-gradient(180deg, #ffffff, #f9fbfe);
+    border-color:#dbe4ef;
+    box-shadow:var(--shadow-sm);
+    font-weight:var(--fw-strong);
+  }
+
+  .panel{display:none;}
+  .panel.is-active{display:block;}
+
+  .section-title{
+    margin:0;
+    color:var(--text);
+    font-size:18px;
+    line-height:1.15;
+    font-weight:var(--fw-strong);
+  }
+
+  .section-sub{
+    margin:6px 0 0;
+    color:var(--muted);
+    font-size:12px;
+    line-height:1.75;
+    font-weight:var(--fw-normal);
+  }
+
+  .form-grid{
+    display:grid;
+    gap:12px;
+    margin-top:14px;
+  }
+
+  .field{
+    display:grid;
+    gap:6px;
+  }
+
   .label{
-    font-size: 12.5px;
-    color: var(--mut);
-    margin: 0 2px 6px;
-    font-weight: 650; /* كان 800 */
+    color:var(--text-2);
+    font-size:12px;
+    font-weight:var(--fw-mid);
   }
 
   .control{
-    position:relative;
+    min-height:50px;
     display:flex;
     align-items:center;
     gap:10px;
-    padding: 12px 12px;
-    border-radius: 16px;
-    background: rgba(248,250,252,.92);
-    border: 1px solid rgba(226,232,240,.95);
-    transition: .15s ease;
+    padding:0 12px;
+    border-radius:15px;
+    border:1px solid var(--line);
+    background:linear-gradient(180deg, #fcfdff, #f8fbff);
+    transition:border-color .16s ease, box-shadow .16s ease, background .16s ease;
   }
-  .control:focus-within{
-    border-color: rgba(37,99,235,.30); /* أخف */
-    box-shadow: 0 0 0 6px rgba(37,99,235,.08); /* أخف */
+
+  .control:hover{
+    border-color:var(--line-2);
     background:#fff;
   }
 
-  .control input{
+  .control:focus-within{
+    border-color:rgba(37,82,67,.24);
+    box-shadow:0 0 0 4px rgba(37,82,67,.06);
+    background:#fff;
+  }
+
+  .icon-box{
+    width:32px;
+    height:32px;
+    border-radius:10px;
+    display:grid;
+    place-items:center;
+    background:linear-gradient(180deg, #f6fafc, #eef4fb);
+    border:1px solid var(--line);
+    color:var(--green-2);
+    font-size:11px;
+    font-weight:var(--fw-strong);
+    flex:0 0 auto;
+  }
+
+  .control input,
+  .control select{
     width:100%;
     border:0;
     outline:0;
     background:transparent;
-    font: inherit;
     padding:0;
-    color: var(--text);
-    font-weight: 600; /* كان 700 */
-    letter-spacing: .2px;
+    color:var(--text);
+    font:inherit;
+    font-size:14px;
+    font-weight:var(--fw-mid);
   }
-  .hint{
-    margin-top:6px;
-    display:flex;
-    justify-content:space-between;
-    gap:10px;
-    color: var(--mut);
-    font-size: 12px;
-    font-weight: 500;
+
+  .control input{
+    direction:ltr;
+    text-align:left;
   }
-  .hint span{ opacity:.95; }
+
+  .control input::placeholder{
+    color:#99a6b6;
+    font-weight:var(--fw-normal);
+  }
+
+  .control select{
+    direction:rtl;
+    text-align:right;
+    appearance:none;
+    cursor:pointer;
+  }
+
+  .select-wrap{
+    position:relative;
+  }
+
+  .select-wrap::after{
+    content:"▾";
+    position:absolute;
+    inset-inline-start:12px;
+    top:50%;
+    transform:translateY(-50%);
+    color:var(--muted);
+    font-size:12px;
+    font-weight:var(--fw-mid);
+    pointer-events:none;
+  }
 
   .actions{
-    margin-top: 14px;
+    margin-top:14px;
     display:flex;
-    gap:10px;
+    gap:8px;
   }
+
   .btn{
-    height: 44px;
-    border-radius: 14px;
-    padding: 0 16px;
-    border: 1px solid rgba(226,232,240,.95);
-    background:#fff;
-    font-weight: 650; /* كان 900 */
+    height:44px;
+    border-radius:14px;
+    padding:0 16px;
+    border:1px solid var(--line);
+    background:linear-gradient(180deg, #ffffff, #f7fafc);
+    color:var(--text);
+    font-size:13px;
+    font-weight:var(--fw-mid);
     cursor:pointer;
-    transition: .15s ease;
+    transition:transform .14s ease, border-color .14s ease, background .14s ease;
+    box-shadow:var(--shadow-sm);
   }
-  .btn:hover{ transform: translateY(-1px); }
+
+  .btn:hover{
+    transform:translateY(-1px);
+    border-color:var(--line-2);
+  }
+
   .btn.primary{
     flex:1;
-    border: 0;
-    background: linear-gradient(135deg, rgba(37,99,235,.92), rgba(59,130,246,.85));
+    border-color:transparent;
     color:#fff;
-    box-shadow: 0 16px 34px rgba(37,99,235,.18);
-    font-weight: 700; /* تأكيد */
+    background:linear-gradient(135deg, var(--green-1), var(--green-2) 64%, var(--green-3));
+    box-shadow:0 12px 24px rgba(23,56,45,.15);
   }
 
-  .login-foot{
-    padding: 12px 18px;
-    border-top: 1px solid rgba(226,232,240,.85);
-    color: var(--mut);
-    font-size: 12px;
-    display:flex;
-    justify-content:space-between;
-    gap:10px;
-    flex-wrap:wrap;
-    font-weight: 500;
+  .btn.ghost{
+    min-width:98px;
   }
 
-  /* موبايل */
-  @media (max-width: 520px){
-    .shell{ padding: 16px; }
-    .login-body{ padding: 16px; }
+  .helper-box{
+    margin-top:14px;
+    padding:11px 12px;
+    border-radius:14px;
+    border:1px solid var(--line);
+    background:linear-gradient(180deg, #fbfdff, #f8fbff);
+    color:var(--muted);
+    font-size:11.8px;
+    line-height:1.8;
+    font-weight:var(--fw-normal);
+  }
+
+  .helper-box b{
+    color:var(--text-2);
+    font-weight:var(--fw-mid);
+  }
+
+  .card-foot{
+    padding:12px 18px 14px;
+    border-top:1px solid var(--line);
+    color:var(--muted);
+    font-size:11px;
+    font-weight:var(--fw-mid);
+    text-align:center;
+    background:rgba(250,252,255,.75);
+  }
+
+  @media (max-width: 620px){
+    .access-page{ padding:12px; }
+
+    .access-head,
+    .access-body,
+    .card-foot{
+      padding-left:14px;
+      padding-right:14px;
+    }
+
+    .tabs{
+      grid-template-columns:1fr;
+    }
+
+    .actions{
+      flex-direction:column-reverse;
+    }
+
+    .btn,
+    .btn.primary,
+    .btn.ghost{
+      width:100%;
+    }
+
+    .head-title{ font-size:21px; }
+    .section-title{ font-size:17px; }
+    .head-row{ align-items:flex-start; }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="login-wrap">
+<div class="access-page">
+  <section class="access-card">
 
-  <div class="login-card">
+    <div class="access-head">
+      <div class="head-row">
+        <div>
+          <h1 class="head-title">بوابة الوصول</h1>
+          <p class="head-sub">الدخول إلى المنصة أو طباعة خطاب التكليف</p>
+        </div>
 
-    <div class="login-head">
-      <div class="login-brand">
-        <div class="mark">VP</div>
-        <div class="txt">
-          <b>منصة الزيارات</b>
-          <small>بوابة المشرف</small>
+        <div class="head-meta">
+          <span class="head-chip"><span class="dot"></span> اليوم: {{ today|date:"Y-m-d" }}</span>
+          <span class="head-chip"><span class="dot ok"></span> النظام يعمل</span>
         </div>
       </div>
-
-      <div class="status-pill"><i></i> يعمل الآن</div>
     </div>
 
-    <div class="login-body">
-      <div class="login-title">تسجيل الدخول</div>
-      <div class="login-sub">ادخل رقم الهوية + آخر 4 أرقام من الجوال المسجل في النظام.</div>
+    <div class="access-body">
 
-      {# ✅ رسائل الدخول فقط (وليس رسائل base) #}
       {% if messages %}
-        <div class="msgs" style="margin:0 0 10px;">
+        <div class="msg-wrap">
           {% for message in messages %}
             <div class="msg {{ message.tags }}">{{ message }}</div>
           {% endfor %}
         </div>
       {% endif %}
 
-      <form method="post" novalidate>
-        {% csrf_token %}
+      <div class="tabs" role="tablist" aria-label="الخدمات">
+        <button
+          type="button"
+          class="tab-btn is-active"
+          id="tab-login-btn"
+          data-target="tab-login"
+          role="tab"
+          aria-controls="tab-login"
+          aria-selected="true">
+          دخول المنصة
+        </button>
 
-        <div class="field">
-          <div class="label">رقم الهوية</div>
-          <div class="control">
-            <input name="national_id" inputmode="numeric" autocomplete="username"
-                   maxlength="10" placeholder="مثال: 1020103717" required>
-          </div>
-          <div class="hint">
-            <span>10 أرقام فقط</span>
-            <span>تحقق مباشر</span>
-          </div>
-        </div>
+        <button
+          type="button"
+          class="tab-btn"
+          id="tab-letter-btn"
+          data-target="tab-letter"
+          role="tab"
+          aria-controls="tab-letter"
+          aria-selected="false">
+          طباعة الخطاب
+        </button>
+      </div>
 
-        <div class="field">
-          <div class="label">آخر 4 أرقام من الجوال</div>
-          <div class="control">
-            <input name="phone_last4" inputmode="numeric" autocomplete="current-password"
-                   maxlength="4" placeholder="مثال: 3717" required>
-          </div>
-          <div class="hint">
-            <span>4 أرقام فقط</span>
-            <span>تحقق مباشر</span>
-          </div>
-        </div>
+      <div class="panel is-active" id="tab-login" role="tabpanel" aria-labelledby="tab-login-btn">
+        <h2 class="section-title">تسجيل الدخول</h2>
+        <p class="section-sub">أدخل رقم الهوية وآخر 4 أرقام من الجوال</p>
 
-        <div class="actions">
-          <button type="reset" class="btn">مسح</button>
-          <button type="submit" class="btn primary">دخول</button>
-        </div>
-      </form>
+        <form method="post" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="form_type" value="login">
+
+          <div class="form-grid">
+            <div class="field">
+              <label class="label" for="id_national_id">رقم الهوية</label>
+              <div class="control">
+                <div class="icon-box">ID</div>
+                <input
+                  id="id_national_id"
+                  name="national_id"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="username"
+                  maxlength="10"
+                  pattern="[0-9]{10}"
+                  placeholder="1020103717"
+                  required>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label" for="id_phone_last4">آخر 4 أرقام من الجوال</label>
+              <div class="control">
+                <div class="icon-box">4+</div>
+                <input
+                  id="id_phone_last4"
+                  name="phone_last4"
+                  type="text"
+                  inputmode="numeric"
+                  autocomplete="current-password"
+                  maxlength="4"
+                  pattern="[0-9]{4}"
+                  placeholder="3717"
+                  required>
+              </div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="reset" class="btn ghost">مسح</button>
+            <button type="submit" class="btn primary">دخول</button>
+          </div>
+
+          <div class="helper-box">
+            <b>ملاحظة:</b> يتم التحقق من الهوية وربطها بآخر 4 أرقام من الجوال المسجل للمشرف.
+          </div>
+        </form>
+      </div>
+
+      <div class="panel" id="tab-letter" role="tabpanel" aria-labelledby="tab-letter-btn">
+        <h2 class="section-title">طباعة الخطاب</h2>
+        <p class="section-sub">أدخل السجل المدني ثم اختر الأسبوع المطلوب</p>
+
+        <form method="get" action="{% url 'visits:print_assignment_letter' %}" novalidate>
+          <div class="form-grid">
+            <div class="field">
+              <label class="label" for="id_print_nid">السجل المدني</label>
+              <div class="control">
+                <div class="icon-box">ID</div>
+                <input
+                  id="id_print_nid"
+                  name="nid"
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="10"
+                  pattern="[0-9]{10}"
+                  placeholder="1020103717"
+                  required>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label" for="id_week">الأسبوع</label>
+              <div class="select-wrap">
+                <div class="control">
+                  <div class="icon-box">W</div>
+                  <select id="id_week" name="week" required>
+                    <option value="">اختر الأسبوع</option>
+                    {% for w, label in week_choices %}
+                      <option value="{{ w }}">{{ label }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="reset" class="btn ghost">مسح</button>
+            <button type="submit" class="btn primary">عرض الخطاب</button>
+          </div>
+
+          <div class="helper-box">
+            <b>تنبيه:</b> اختيار الأسبوع مطلوب لعرض خطاب التكليف المرتبط بالمشرف، وتظهر هنا الأسابيع الديناميكية من النظام مباشرة.
+          </div>
+        </form>
+      </div>
+
     </div>
 
-    <div class="login-foot">
-      <div>© منصة خطة الزيارات — جميع الحقوق محفوظة</div>
-      <div>الإصدار: 2026</div>
+    <div class="card-foot">
+      منصة الزيارات 2026
     </div>
 
-  </div>
+  </section>
 </div>
+
+<script>
+  (function () {
+    const buttons = document.querySelectorAll('.tab-btn');
+    const panels = document.querySelectorAll('.panel');
+
+    function activateTab(targetId){
+      buttons.forEach((b) => {
+        const active = b.getAttribute('data-target') === targetId;
+        b.classList.toggle('is-active', active);
+        b.setAttribute('aria-selected', active ? 'true' : 'false');
+      });
+
+      panels.forEach((p) => {
+        p.classList.toggle('is-active', p.id === targetId);
+      });
+    }
+
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', function () {
+        activateTab(this.getAttribute('data-target'));
+      });
+    });
+  })();
+</script>
 {% endblock %}

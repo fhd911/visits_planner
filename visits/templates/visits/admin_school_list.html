@@ -1,0 +1,581 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}إدارة المدارس{% endblock %}
+{% block page_messages %}{% endblock %}
+
+{% block header_title %}إدارة المدارس{% endblock %}
+{% block header_subtitle %}عرض المدارس حسب الجنس والقطاع مع الإضافة والتعديل والتعطيل{% endblock %}
+
+{% block extra_css %}
+<style>
+  .school-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+    --fw-hero:800;
+    --fw-title:700;
+    --fw-strong:600;
+    --fw-normal:500;
+
+    --card:rgba(255,255,255,.97);
+    --soft:rgba(248,250,252,.95);
+
+    --txt:#0f172a;
+    --mut:#64748b;
+    --mut2:#94a3b8;
+
+    --line:rgba(148,163,184,.18);
+    --line2:rgba(148,163,184,.10);
+
+    --ok:#16a34a;
+    --blue:#2563eb;
+    --pink:#db2777;
+    --warn:#f59e0b;
+    --danger:#dc2626;
+
+    --shadow:0 12px 28px rgba(15,23,42,.06);
+    --shadow2:0 6px 16px rgba(15,23,42,.045);
+  }
+
+  .school-page *{ box-sizing:border-box; font-family:var(--ff) !important; }
+  .school-page .wrap{ display:grid; gap:10px; }
+
+  .school-page .head,
+  .school-page .form-card,
+  .school-page .table-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:20px;
+    box-shadow:var(--shadow);
+  }
+
+  .school-page .head{
+    padding:12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .school-page .head h1{
+    margin:0;
+    color:var(--txt);
+    font-size:15px;
+    line-height:1.5;
+    font-weight:var(--fw-hero);
+  }
+
+  .school-page .head p{
+    margin:3px 0 0;
+    color:var(--mut);
+    font-size:11.8px;
+    line-height:1.8;
+    font-weight:var(--fw-normal);
+  }
+
+  .school-page .head-right{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  .school-page .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    min-height:31px;
+    padding:6px 10px;
+    border-radius:999px;
+    background:var(--soft);
+    border:1px solid var(--line);
+    color:var(--mut);
+    font-size:11.2px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+  }
+
+  .school-page .dot{
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:var(--ok);
+    box-shadow:0 0 0 3px rgba(22,163,74,.10);
+    flex:0 0 auto;
+  }
+
+  .school-page .form-card{
+    padding:12px;
+    display:grid;
+    gap:8px;
+  }
+
+  .school-page .form-title{
+    margin:0;
+    color:var(--txt);
+    font-size:12.5px;
+    font-weight:var(--fw-title);
+  }
+
+  .school-page .form-grid{
+    display:grid;
+    grid-template-columns:1fr 1.3fr 1fr 1fr auto;
+    gap:8px;
+    align-items:end;
+  }
+
+  .school-page .filters-grid{
+    display:grid;
+    grid-template-columns:1.1fr 1fr 1fr auto auto;
+    gap:8px;
+    align-items:end;
+  }
+
+  .school-page .field label{
+    display:block;
+    margin-bottom:5px;
+    color:var(--mut);
+    font-size:11px;
+    font-weight:var(--fw-normal);
+  }
+
+  .school-page .input,
+  .school-page .select{
+    width:100%;
+    height:36px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:rgba(248,250,252,.95);
+    padding:0 11px;
+    outline:none;
+    color:var(--txt);
+    font-size:11.8px;
+    font-weight:var(--fw-strong);
+  }
+
+  .school-page .input:focus,
+  .school-page .select:focus{
+    border-color:rgba(59,130,246,.30);
+    box-shadow:0 0 0 4px rgba(59,130,246,.06);
+    background:#fff;
+  }
+
+  .school-page .btn{
+    height:36px;
+    padding:0 13px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--txt);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    text-decoration:none;
+    cursor:pointer;
+    white-space:nowrap;
+    font-size:11.5px;
+    font-weight:var(--fw-strong);
+    box-shadow:0 5px 12px rgba(15,23,42,.045);
+  }
+
+  .school-page .btn.primary{
+    background:linear-gradient(135deg, rgba(37,99,235,.95), rgba(96,165,250,.95));
+    border-color:rgba(37,99,235,.14);
+    color:#fff;
+  }
+
+  .school-page .table-head{
+    padding:10px 12px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(248,250,252,.95), rgba(255,255,255,.92));
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .school-page .hint{
+    color:var(--mut);
+    font-size:11.1px;
+    font-weight:var(--fw-normal);
+  }
+
+  .school-page .table-wrap{ overflow:auto; }
+
+  .school-page table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    table-layout:fixed;
+  }
+
+  .school-page thead th{
+    position:sticky;
+    top:0;
+    z-index:2;
+    background:rgba(248,250,252,.985);
+    border-bottom:1px solid var(--line);
+    padding:10px;
+    text-align:right;
+    color:var(--mut);
+    font-size:11px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+  }
+
+  .school-page thead th:nth-child(1){ width:17%; }
+  .school-page thead th:nth-child(2){ width:29%; }
+  .school-page thead th:nth-child(3){ width:14%; }
+  .school-page thead th:nth-child(4){ width:18%; }
+  .school-page thead th:nth-child(5){ width:10%; }
+  .school-page thead th:nth-child(6){ width:12%; }
+
+  .school-page tbody td{
+    padding:10px;
+    border-bottom:1px solid var(--line2);
+    color:var(--txt);
+    font-size:12px;
+    vertical-align:middle;
+  }
+
+  .school-page tbody tr:nth-child(even){ background:rgba(2,6,23,.012); }
+  .school-page tbody tr:hover{ background:rgba(37,99,235,.025); }
+
+  .school-page .school-name{
+    font-size:12.5px;
+    font-weight:var(--fw-strong);
+    color:var(--txt);
+    line-height:1.6;
+  }
+
+  .school-page .sub{
+    margin-top:4px;
+    color:var(--mut2);
+    font-size:10.9px;
+    line-height:1.7;
+  }
+
+  .school-page .badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:28px;
+    min-width:68px;
+    padding:5px 9px;
+    border-radius:999px;
+    font-size:11px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+    border:1px solid transparent;
+  }
+
+  .school-page .badge.boys{
+    background:rgba(37,99,235,.08);
+    border-color:rgba(37,99,235,.14);
+    color:#1d4ed8;
+  }
+
+  .school-page .badge.girls{
+    background:rgba(219,39,119,.08);
+    border-color:rgba(219,39,119,.14);
+    color:#be185d;
+  }
+
+  .school-page .badge.active{
+    background:rgba(22,163,74,.10);
+    border-color:rgba(22,163,74,.18);
+    color:#166534;
+  }
+
+  .school-page .badge.inactive{
+    background:rgba(245,158,11,.10);
+    border-color:rgba(245,158,11,.18);
+    color:#92400e;
+  }
+
+  .school-page .actions{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    justify-content:flex-start;
+  }
+
+  .school-page .a-btn{
+    height:28px;
+    padding:0 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--txt);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    text-decoration:none;
+    cursor:pointer;
+    font-size:10.8px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+    box-shadow:0 4px 10px rgba(15,23,42,.04);
+  }
+
+  .school-page .a-btn.edit{
+    background:rgba(37,99,235,.08);
+    border-color:rgba(37,99,235,.14);
+    color:#1d4ed8;
+  }
+
+  .school-page .a-btn.toggle{
+    background:rgba(245,158,11,.10);
+    border-color:rgba(245,158,11,.18);
+    color:#92400e;
+  }
+
+  .school-page .empty{
+    padding:18px;
+    color:var(--mut);
+    font-size:11.5px;
+    font-weight:var(--fw-normal);
+  }
+
+  @media (max-width: 980px){
+    .school-page .form-grid,
+    .school-page .filters-grid{
+      grid-template-columns:1fr 1fr;
+    }
+    .school-page table{
+      table-layout:auto;
+    }
+    .school-page thead th:nth-child(n){
+      width:auto;
+    }
+  }
+
+  @media (max-width: 560px){
+    .school-page .form-grid,
+    .school-page .filters-grid{
+      grid-template-columns:1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="school-page">
+  <div class="wrap">
+
+    <div class="head">
+      <div>
+        <h1>إدارة المدارس</h1>
+        <p>إضافة المدارس وتحديثها وتعطيلها مع استعراض البيانات حسب القطاع والجنس.</p>
+      </div>
+      <div class="head-right">
+        <span class="chip"><span class="dot"></span> النتائج: <b>{{ rows|length }}</b></span>
+      </div>
+    </div>
+
+    <form class="form-card" method="post" action="{% url 'visits:admin_school_save' %}">
+      {% csrf_token %}
+      <input type="hidden" name="school_id" id="schoolIdInput">
+
+      <h3 class="form-title">إضافة / تعديل مدرسة</h3>
+
+      <div class="form-grid">
+        <div class="field">
+          <label>الرقم الإحصائي</label>
+          <input class="input" type="text" name="stat_code" id="schoolStatCodeInput" placeholder="الرقم الإحصائي">
+        </div>
+
+        <div class="field">
+          <label>اسم المدرسة</label>
+          <input class="input" type="text" name="name" id="schoolNameInput" placeholder="اسم المدرسة">
+        </div>
+
+        <div class="field">
+          <label>الجنس</label>
+          <select class="select" name="gender" id="schoolGenderInput">
+            <option value="boys">بنين</option>
+            <option value="girls">بنات</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>القطاع</label>
+          <select class="select" name="sector_id" id="schoolSectorInput">
+            <option value="">بدون قطاع</option>
+            {% for s in sectors %}
+              <option value="{{ s.id }}">{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn primary" type="submit">حفظ</button>
+          <button class="btn" type="button" id="resetSchoolBtn">إعادة ضبط</button>
+        </div>
+      </div>
+    </form>
+
+    <form class="form-card" method="get">
+      <div class="filters-grid">
+        <div class="field">
+          <label>بحث</label>
+          <input class="input" type="text" name="q" value="{{ q }}" placeholder="اسم المدرسة أو الرقم الإحصائي">
+        </div>
+
+        <div class="field">
+          <label>الجنس</label>
+          <select class="select" name="gender">
+            <option value="">الكل</option>
+            <option value="boys" {% if gender == "boys" %}selected{% endif %}>بنين</option>
+            <option value="girls" {% if gender == "girls" %}selected{% endif %}>بنات</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>القطاع</label>
+          <select class="select" name="sector">
+            <option value="">كل القطاعات</option>
+            {% for s in sectors %}
+              <option value="{{ s.id }}" {% if sector_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label>العرض</label>
+          <select class="select" name="inactive">
+            <option value="0" {% if not show_inactive %}selected{% endif %}>النشطة فقط</option>
+            <option value="1" {% if show_inactive %}selected{% endif %}>الكل</option>
+          </select>
+        </div>
+
+        <div style="display:flex;gap:6px;align-items:end;flex-wrap:wrap">
+          <button class="btn primary" type="submit">تطبيق</button>
+          <a class="btn" href="{% url 'visits:admin_school_list' %}">إعادة ضبط</a>
+        </div>
+      </div>
+    </form>
+
+    <div class="table-card">
+      <div class="table-head">
+        <div class="hint">إدارة مرجعية لجميع المدارس داخل النظام.</div>
+        <div class="hint">عدد النتائج: <b>{{ rows|length }}</b></div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>الرقم الإحصائي</th>
+              <th>المدرسة</th>
+              <th>الجنس</th>
+              <th>القطاع</th>
+              <th>الحالة</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for school in rows %}
+              <tr>
+                <td>{{ school.stat_code }}</td>
+                <td>
+                  <div class="school-name">{{ school.name }}</div>
+                  {% if school.principal %}
+                    <div class="sub">المدير: {{ school.principal.full_name }}</div>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if school.gender == "boys" %}
+                    <span class="badge boys">بنين</span>
+                  {% else %}
+                    <span class="badge girls">بنات</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if school.sector %}
+                    {{ school.sector.name }}
+                  {% else %}
+                    <span style="color:var(--mut2)">—</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if school.is_active %}
+                    <span class="badge active">نشطة</span>
+                  {% else %}
+                    <span class="badge inactive">معطلة</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="actions">
+                    <button
+                      class="a-btn edit"
+                      type="button"
+                      data-school-id="{{ school.id }}"
+                      data-school-stat="{{ school.stat_code }}"
+                      data-school-name="{{ school.name }}"
+                      data-school-gender="{{ school.gender }}"
+                      data-school-sector="{% if school.sector_id %}{{ school.sector_id }}{% endif %}"
+                    >
+                      ✏️ تعديل
+                    </button>
+
+                    <form method="post" action="{% url 'visits:admin_school_toggle_active' school.id %}" style="margin:0">
+                      {% csrf_token %}
+                      <button class="a-btn toggle" type="submit">
+                        {% if school.is_active %}⛔ تعطيل{% else %}✅ تفعيل{% endif %}
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="empty">لا توجد مدارس مطابقة.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const schoolIdInput = document.getElementById("schoolIdInput");
+  const schoolStatCodeInput = document.getElementById("schoolStatCodeInput");
+  const schoolNameInput = document.getElementById("schoolNameInput");
+  const schoolGenderInput = document.getElementById("schoolGenderInput");
+  const schoolSectorInput = document.getElementById("schoolSectorInput");
+  const resetSchoolBtn = document.getElementById("resetSchoolBtn");
+
+  document.addEventListener("click", function(e){
+    const btn = e.target.closest("[data-school-id]");
+    if(!btn) return;
+
+    schoolIdInput.value = btn.getAttribute("data-school-id") || "";
+    schoolStatCodeInput.value = btn.getAttribute("data-school-stat") || "";
+    schoolNameInput.value = btn.getAttribute("data-school-name") || "";
+    schoolGenderInput.value = btn.getAttribute("data-school-gender") || "boys";
+    schoolSectorInput.value = btn.getAttribute("data-school-sector") || "";
+    schoolNameInput.focus();
+    schoolNameInput.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
+  if (resetSchoolBtn){
+    resetSchoolBtn.addEventListener("click", function(){
+      schoolIdInput.value = "";
+      schoolStatCodeInput.value = "";
+      schoolNameInput.value = "";
+      schoolGenderInput.value = "boys";
+      schoolSectorInput.value = "";
+      schoolStatCodeInput.focus();
+    });
+  }
+</script>
+{% endblock %}

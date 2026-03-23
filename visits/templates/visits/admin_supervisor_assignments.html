@@ -1,0 +1,652 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}إدارة إسناد المدارس{% endblock %}
+{% block page_messages %}{% endblock %}
+
+{% block header_title %}إدارة الإسناد{% endblock %}
+{% block header_subtitle %}إدارة مدارس المشرف وإسنادها بصورة واضحة ومنظمة{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'visits:admin_dashboard' %}">لوحة الإدارة</a>
+  <a href="{% url 'visits:admin_export_supervisor_assignments_excel' sup.id %}">تصدير الإسناد</a>
+  <a href="{% url 'visits:logout' %}" class="logout-link">خروج</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .asg-page{
+    --asg-bg:#f6f8fc;
+    --asg-card:#ffffff;
+    --asg-card-soft:#fbfcfe;
+    --asg-line:rgba(148,163,184,.18);
+    --asg-line-strong:rgba(148,163,184,.26);
+
+    --asg-text:#0f172a;
+    --asg-text-soft:#334155;
+    --asg-muted:#64748b;
+    --asg-muted-2:#94a3b8;
+
+    --asg-brand:#166534;
+    --asg-brand-soft:#ecfdf5;
+    --asg-brand-border:#bbf7d0;
+
+    --asg-blue:#1d4ed8;
+    --asg-blue-soft:#eff6ff;
+    --asg-blue-border:#bfdbfe;
+
+    --asg-danger:#991b1b;
+    --asg-danger-soft:#fef2f2;
+    --asg-danger-border:#fecaca;
+
+    --asg-shadow:0 10px 28px rgba(15,23,42,.05);
+    --asg-radius-xl:20px;
+    --asg-radius-lg:16px;
+    --asg-radius-md:12px;
+    --asg-radius-sm:10px;
+  }
+
+  .asg-page{
+    padding:4px 0 16px;
+  }
+
+  .asg-page .wrap{
+    display:grid;
+    gap:14px;
+  }
+
+  .asg-page .msgs{
+    display:grid;
+    gap:8px;
+  }
+
+  .asg-page .msg{
+    border-radius:14px;
+    padding:10px 12px;
+    font-size:13px;
+    line-height:1.8;
+    border:1px solid var(--asg-line);
+    background:#fff;
+  }
+
+  .asg-page .msg.success{
+    background:#ecfdf5;
+    border-color:#bbf7d0;
+    color:#166534;
+  }
+
+  .asg-page .msg.warning{
+    background:#fffbeb;
+    border-color:#fde68a;
+    color:#92400e;
+  }
+
+  .asg-page .msg.error{
+    background:#fef2f2;
+    border-color:#fecaca;
+    color:#991b1b;
+  }
+
+  .asg-page .msg.info{
+    background:#eff6ff;
+    border-color:#bfdbfe;
+    color:#1d4ed8;
+  }
+
+  .asg-page .hero{
+    background:linear-gradient(180deg,#f8fafc 0%,#ffffff 100%);
+    border:1px solid var(--asg-line);
+    border-radius:var(--asg-radius-xl);
+    box-shadow:var(--asg-shadow);
+    padding:16px 18px;
+    display:grid;
+    gap:14px;
+  }
+
+  .asg-page .hero-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:16px;
+    flex-wrap:wrap;
+  }
+
+  .asg-page .hero-text{
+    display:grid;
+    gap:6px;
+    min-width:260px;
+    flex:1;
+  }
+
+  .asg-page .hero-title{
+    margin:0;
+    font-size:18px;
+    line-height:1.7;
+    font-weight:700;
+    color:var(--asg-text);
+  }
+
+  .asg-page .hero-subtitle{
+    margin:0;
+    font-size:13px;
+    line-height:1.9;
+    font-weight:500;
+    color:var(--asg-muted);
+  }
+
+  .asg-page .kpis{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(120px, 1fr));
+    gap:10px;
+    min-width:390px;
+  }
+
+  .asg-page .kpi{
+    background:var(--asg-card-soft);
+    border:1px solid var(--asg-line);
+    border-radius:14px;
+    padding:10px 12px;
+  }
+
+  .asg-page .kpi-label{
+    font-size:11px;
+    color:var(--asg-muted);
+    font-weight:700;
+    margin-bottom:4px;
+  }
+
+  .asg-page .kpi-value{
+    font-size:18px;
+    color:var(--asg-text);
+    font-weight:700;
+    line-height:1.2;
+  }
+
+  .asg-page .hero-pills{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .asg-page .pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:34px;
+    padding:0 12px;
+    border-radius:999px;
+    border:1px solid var(--asg-line);
+    background:#fff;
+    color:var(--asg-text-soft);
+    font-size:12px;
+    font-weight:700;
+    white-space:nowrap;
+  }
+
+  .asg-page .pill.brand{
+    background:var(--asg-brand-soft);
+    color:var(--asg-brand);
+    border-color:var(--asg-brand-border);
+  }
+
+  .asg-page .layout{
+    display:grid;
+    grid-template-columns:minmax(0,1.45fr) minmax(320px,.85fr);
+    gap:14px;
+    align-items:start;
+  }
+
+  .asg-page .panel{
+    background:var(--asg-card);
+    border:1px solid var(--asg-line);
+    border-radius:var(--asg-radius-xl);
+    box-shadow:var(--asg-shadow);
+    overflow:hidden;
+  }
+
+  .asg-page .panel-head{
+    padding:14px 16px;
+    border-bottom:1px solid var(--asg-line);
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+    flex-wrap:wrap;
+    background:#fcfdff;
+  }
+
+  .asg-page .panel-title-wrap{
+    display:grid;
+    gap:4px;
+  }
+
+  .asg-page .panel-title{
+    margin:0;
+    font-size:15px;
+    line-height:1.6;
+    font-weight:700;
+    color:var(--asg-text);
+  }
+
+  .asg-page .panel-subtitle{
+    margin:0;
+    font-size:12.5px;
+    line-height:1.8;
+    font-weight:500;
+    color:var(--asg-muted);
+  }
+
+  .asg-page .panel-body{
+    padding:16px;
+  }
+
+  .asg-page .btn{
+    height:38px;
+    padding:0 14px;
+    border-radius:12px;
+    border:1px solid var(--asg-line-strong);
+    background:#fff;
+    color:var(--asg-text);
+    font-family:inherit;
+    font-size:13px;
+    font-weight:700;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    transition:.18s ease;
+    white-space:nowrap;
+  }
+
+  .asg-page .btn:hover{
+    transform:translateY(-1px);
+    box-shadow:0 8px 20px rgba(15,23,42,.04);
+  }
+
+  .asg-page .btn.primary{
+    background:#166534;
+    color:#fff;
+    border-color:#166534;
+  }
+
+  .asg-page .btn.soft{
+    background:var(--asg-blue-soft);
+    color:var(--asg-blue);
+    border-color:var(--asg-blue-border);
+  }
+
+  .asg-page .btn.danger{
+    background:var(--asg-danger-soft);
+    color:var(--asg-danger);
+    border-color:var(--asg-danger-border);
+  }
+
+  .asg-page .table-shell{
+    border:1px solid var(--asg-line);
+    border-radius:16px;
+    overflow:hidden;
+    background:#fff;
+  }
+
+  .asg-page .table-wrap{
+    max-height:560px;
+    overflow:auto;
+  }
+
+  .asg-page table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+  }
+
+  .asg-page th,
+  .asg-page td{
+    padding:12px 14px;
+    text-align:right;
+    vertical-align:middle;
+    border-bottom:1px solid #edf2f7;
+    font-size:13px;
+  }
+
+  .asg-page th{
+    background:#f8fafc;
+    color:#475569;
+    font-weight:700;
+    position:sticky;
+    top:0;
+    z-index:1;
+    white-space:nowrap;
+  }
+
+  .asg-page tbody tr:hover td{
+    background:#fcfdff;
+  }
+
+  .asg-page tbody tr:last-child td{
+    border-bottom:none;
+  }
+
+  .asg-page .school-cell{
+    display:grid;
+    gap:3px;
+  }
+
+  .asg-page .school-name{
+    font-size:13.5px;
+    line-height:1.7;
+    font-weight:700;
+    color:var(--asg-text);
+  }
+
+  .asg-page .school-meta{
+    font-size:11.5px;
+    color:var(--asg-muted);
+    font-weight:500;
+  }
+
+  .asg-page .empty{
+    text-align:center;
+    padding:28px 16px;
+    color:var(--asg-muted);
+    font-size:13px;
+    line-height:1.9;
+  }
+
+  .asg-page .side{
+    display:grid;
+    gap:14px;
+    position:sticky;
+    top:16px;
+  }
+
+  .asg-page .card{
+    border:1px solid var(--asg-line);
+    border-radius:16px;
+    background:var(--asg-card-soft);
+    padding:14px;
+    display:grid;
+    gap:10px;
+  }
+
+  .asg-page .card-title{
+    margin:0;
+    font-size:14px;
+    line-height:1.6;
+    font-weight:700;
+    color:var(--asg-text);
+  }
+
+  .asg-page .card-note{
+    margin:0;
+    font-size:12px;
+    line-height:1.8;
+    font-weight:500;
+    color:var(--asg-muted);
+  }
+
+  .asg-page .search-row{
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:8px;
+  }
+
+  .asg-page .input,
+  .asg-page .select{
+    width:100%;
+    height:42px;
+    border-radius:12px;
+    border:1px solid #dbe4ec;
+    background:#fff;
+    color:var(--asg-text);
+    padding:0 14px;
+    font-family:inherit;
+    font-size:13px;
+    font-weight:500;
+    outline:none;
+    transition:.18s ease;
+  }
+
+  .asg-page .input:focus,
+  .asg-page .select:focus{
+    border-color:#86c4ab;
+    box-shadow:0 0 0 4px rgba(22,101,52,.08);
+  }
+
+  .asg-page .stack{
+    display:grid;
+    gap:10px;
+  }
+
+  .asg-page .two{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+
+  .asg-page .footer-note{
+    color:var(--asg-muted);
+    font-size:12px;
+    line-height:1.8;
+    font-weight:500;
+  }
+
+  @media (max-width:1180px){
+    .asg-page .layout{
+      grid-template-columns:1fr;
+    }
+
+    .asg-page .side{
+      position:static;
+    }
+  }
+
+  @media (max-width:920px){
+    .asg-page .hero-top{
+      flex-direction:column;
+    }
+
+    .asg-page .kpis{
+      grid-template-columns:1fr;
+      min-width:unset;
+      width:100%;
+    }
+  }
+
+  @media (max-width:760px){
+    .asg-page .hero,
+    .asg-page .panel-head,
+    .asg-page .panel-body{
+      padding:14px;
+    }
+
+    .asg-page .hero-title{
+      font-size:17px;
+    }
+
+    .asg-page .search-row,
+    .asg-page .two{
+      grid-template-columns:1fr;
+    }
+
+    .asg-page .btn{
+      width:100%;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="asg-page">
+  <div class="wrap">
+
+    {% if messages %}
+      <div class="msgs">
+        {% for message in messages %}
+          <div class="msg {{ message.tags|default:'info' }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <div class="hero">
+      <div class="hero-top">
+        <div class="hero-text">
+          <h1 class="hero-title">إدارة إسناد المدارس للمشرف {{ sup.full_name }}</h1>
+          <p class="hero-subtitle">
+            صفحة مخصصة لاستعراض المدارس المسندة للمشرف، وإسناد مدرسة متاحة أو إضافة مدرسة جديدة ثم ربطها مباشرة.
+          </p>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi">
+            <div class="kpi-label">الهوية</div>
+            <div class="kpi-value">{{ sup.national_id }}</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">المدارس المسندة</div>
+            <div class="kpi-value">{{ stats.assigned_count }}</div>
+          </div>
+          <div class="kpi">
+            <div class="kpi-label">المدارس المتاحة</div>
+            <div class="kpi-value">{{ stats.available_count }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-pills">
+        <span class="pill brand">الإسناد المباشر</span>
+        <span class="pill">إدارة المدارس المسندة</span>
+        <span class="pill">إضافة مدرسة جديدة</span>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title-wrap">
+            <h2 class="panel-title">المدارس المسندة حاليًا</h2>
+            <p class="panel-subtitle">عرض المدارس النشطة المسندة للمشرف مع إمكانية إلغاء الإسناد.</p>
+          </div>
+
+          <a class="btn soft" href="{% url 'visits:admin_export_supervisor_assignments_excel' sup.id %}">
+            تصدير Excel
+          </a>
+        </div>
+
+        <div class="panel-body">
+          <div class="table-shell">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>المدرسة</th>
+                    <th>الرقم الإحصائي</th>
+                    <th>الجنس</th>
+                    <th>الإجراء</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for item in assigned_items %}
+                    {% with school=item.school %}
+                    <tr>
+                      <td>
+                        <div class="school-cell">
+                          <div class="school-name">{{ school.name }}</div>
+                          <div class="school-meta">{{ school.get_gender_display|default:school.gender }}</div>
+                        </div>
+                      </td>
+                      <td>{{ school.stat_code|default:"—" }}</td>
+                      <td>{{ school.get_gender_display|default:school.gender }}</td>
+                      <td>
+                        <form method="post" action="{% url 'visits:admin_delete_assignment' item.id %}" style="display:inline">
+                          {% csrf_token %}
+                          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                          <button class="btn danger" type="submit" onclick="return confirm('تأكيد إلغاء الإسناد؟');">
+                            إلغاء الإسناد
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                    {% endwith %}
+                  {% empty %}
+                    <tr>
+                      <td colspan="4" class="empty">لا توجد مدارس مسندة لهذا المشرف حاليًا.</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="side">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="panel-title-wrap">
+              <h2 class="panel-title">البحث والإسناد</h2>
+              <p class="panel-subtitle">واجهة جانبية مختصرة ومتوافقة مع بقية صفحات النظام.</p>
+            </div>
+          </div>
+
+          <div class="panel-body">
+            <div class="stack">
+              <form method="get" class="search-row">
+                <input class="input" type="text" name="q" value="{{ q }}" placeholder="ابحث باسم المدرسة أو الرقم الإحصائي">
+                <button class="btn" type="submit">بحث</button>
+              </form>
+
+              <div class="card">
+                <h3 class="card-title">إسناد مدرسة موجودة</h3>
+                <p class="card-note">اختر مدرسة من المدارس المتاحة ثم نفذ الإسناد مباشرة.</p>
+
+                <form method="post" action="{% url 'visits:admin_add_assignment' sup.id %}" class="stack">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="add_existing">
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+                  <select class="select" name="school_id" required>
+                    <option value="">اختر مدرسة متاحة</option>
+                    {% for school in available_schools %}
+                      <option value="{{ school.id }}">{{ school.name }} — {{ school.stat_code|default:"بدون رقم" }}</option>
+                    {% endfor %}
+                  </select>
+
+                  <button class="btn primary" type="submit">إسناد المدرسة المحددة</button>
+                </form>
+              </div>
+
+              <div class="card">
+                <h3 class="card-title">إضافة مدرسة جديدة وإسنادها</h3>
+                <p class="card-note">يمكنك إنشاء مدرسة جديدة من نفس الصفحة ثم إسنادها فورًا.</p>
+
+                <form method="post" action="{% url 'visits:admin_add_assignment' sup.id %}" class="stack">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="create_school">
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+                  <div class="two">
+                    <input class="input" type="text" name="school_name" placeholder="اسم المدرسة" required>
+                    <input class="input" type="text" name="stat_code" placeholder="الرقم الإحصائي" required>
+                  </div>
+
+                  <select class="select" name="gender">
+                    <option value="boys">بنين</option>
+                    <option value="girls">بنات</option>
+                  </select>
+
+                  <button class="btn primary" type="submit">إضافة المدرسة وإسنادها</button>
+                </form>
+              </div>
+
+              <div class="footer-note">
+                نتائج البحث الحالية: {{ stats.search_count }} مدرسة ضمن العرض الحالي.
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+{% endblock %}

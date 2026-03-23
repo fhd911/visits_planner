@@ -1,1136 +1,1576 @@
 {% extends "visits/base.html" %}
 {% load dict_extras %}
-{% load static %}
+{% load hijri_extras %}
 
-{% block title %}تفاصيل خطة الأسبوع{% endblock %}
+{% block title %}تفاصيل الخطة — لوحة الإدارة{% endblock %}
 {% block page_messages %}{% endblock %}
 
-{% block content %}
+{% block extra_css %}
 <style>
-  /* =========================================================
-     Admin Plan Detail (FINAL+++):
-     ✅ Timeline
-     ✅ Day Cards color by state
-     ✅ Sticky Admin Decisions
-     ✅ Progress Bar
-     ✅ Days Slider
-     ✅ Badge فوق كل يوم + عداد الأيام الناقصة بالأعلى
-     ✅ Fonts calm (no heavy bold)
-  ========================================================= */
-  .apd{
+  .detail-page{
     --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
 
-    --bg1:#f6fbff;
+    --fw-hero:800;
+    --fw-title:700;
+    --fw-strong:600;
+    --fw-normal:500;
+    --fw-muted:400;
+
+    --bg1:#f4f7fb;
     --bg2:#fbfdff;
 
-    --card: rgba(255,255,255,.96);
-    --soft: rgba(248,250,252,.92);
+    --card:rgba(255,255,255,.96);
+    --soft:rgba(248,250,252,.94);
 
     --txt:#0f172a;
     --mut:#64748b;
     --mut2:#94a3b8;
 
-    --line: rgba(148,163,184,.22);
-    --line2: rgba(148,163,184,.14);
+    --line:rgba(148,163,184,.20);
+    --line2:rgba(148,163,184,.12);
 
-    --b1:#2563eb;
-    --b2:#60a5fa;
+    --ok-bg:rgba(22,163,74,.10);
+    --ok-br:rgba(22,163,74,.20);
+    --ok-tx:#166534;
 
-    --ok:#16a34a;
-    --warn:#f59e0b;
-    --bad:#ef4444;
+    --warn-bg:rgba(245,158,11,.12);
+    --warn-br:rgba(245,158,11,.22);
+    --warn-tx:#7c2d12;
 
-    --shadow: 0 18px 46px rgba(15,23,42,.10);
-    --shadow2: 0 10px 28px rgba(15,23,42,.08);
+    --pri-bg:rgba(37,99,235,.10);
+    --pri-br:rgba(37,99,235,.16);
+    --pri-tx:#0c4a6e;
 
-    /* calm weights */
-    --fw-hero: 700;
-    --fw-title: 650;
-    --fw-strong: 600;
-    --fw-normal: 500;
-    --fw-muted: 450;
+    --danger-bg:rgba(220,38,38,.08);
+    --danger-br:rgba(220,38,38,.18);
+    --danger-tx:#991b1b;
 
-    font-family: var(--ff);
-    direction: rtl;
-    color: var(--txt);
+    --teal-bg:rgba(14,165,164,.10);
+    --teal-br:rgba(14,165,164,.18);
+    --teal-tx:#0f766e;
+
+    --shadow:0 16px 38px rgba(15,23,42,.08);
+    --shadow2:0 8px 22px rgba(15,23,42,.06);
+    --shadow3:0 24px 60px rgba(15,23,42,.12);
+
+    font-family:var(--ff);
+    direction:rtl;
+    color:var(--txt);
   }
 
-  .apd .shell{
-    min-height: calc(100vh - 80px);
-    padding: 14px 12px 26px;
+  .detail-page *{
+    font-family:var(--ff) !important;
+    letter-spacing:.05px;
+    box-sizing:border-box;
+  }
+
+  .detail-page .shell{
+    min-height:calc(100vh - 80px);
+    padding:12px 12px 22px;
     background:
-      radial-gradient(1050px 430px at 12% 0%, rgba(37,99,235,.08), transparent 58%),
-      radial-gradient(1050px 430px at 88% 0%, rgba(16,185,129,.08), transparent 58%),
+      radial-gradient(1050px 430px at 12% 0%, rgba(37,99,235,.07), transparent 58%),
+      radial-gradient(1050px 430px at 88% 0%, rgba(16,185,129,.07), transparent 58%),
       linear-gradient(180deg, var(--bg1), var(--bg2));
   }
 
-  .apd .wrap{
-    max-width: 1320px;
-    margin: 0 auto;
+  .detail-page .wrap{
+    max-width:1360px;
+    margin:0 auto;
     display:grid;
-    gap: 12px;
+    gap:10px;
   }
 
-  /* ===== Top header ===== */
-  .apd .top{
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 22px;
-    box-shadow: var(--shadow);
-    padding: 14px 16px;
+  .detail-page .hero{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:26px;
+    box-shadow:var(--shadow);
+    padding:16px;
     display:flex;
-    align-items:center;
+    align-items:flex-start;
     justify-content:space-between;
-    gap: 12px;
+    gap:14px;
     flex-wrap:wrap;
   }
 
-  .apd .top .title{
+  .detail-page .hero-main{
     display:grid;
-    gap: 4px;
-    min-width: 260px;
+    gap:6px;
+    min-width:300px;
   }
 
-  .apd h1{
+  .detail-page .hero-title{
     margin:0;
-    font-size: 16px;
-    font-weight: var(--fw-hero);
-    color: var(--txt);
-    letter-spacing:.2px;
+    font-size:21px;
+    font-weight:var(--fw-hero);
+    color:var(--txt);
+    line-height:1.15;
   }
 
-  .apd .sub{
+  .detail-page .hero-sub{
     margin:0;
-    font-size: 12.6px;
-    font-weight: var(--fw-normal);
-    color: var(--mut);
-    line-height: 1.7;
+    font-size:12.9px;
+    font-weight:var(--fw-normal);
+    color:var(--mut);
+    line-height:1.9;
   }
 
-  .apd .top .actions{
+  .detail-page .hero-sub b{
+    color:var(--txt);
+    font-weight:var(--fw-title);
+  }
+
+  .detail-page .hero-side{
     display:flex;
-    gap: 8px;
+    gap:8px;
     align-items:center;
     flex-wrap:wrap;
     justify-content:flex-end;
   }
 
-  .apd .chip{
+  .detail-page .chip{
     display:inline-flex;
     align-items:center;
     gap:8px;
-    padding: 8px 12px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: var(--soft);
-    color: var(--mut);
-    font-size: 12px;
-    font-weight: var(--fw-strong);
+    padding:8px 12px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--soft);
+    color:var(--mut);
+    font-size:12px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
   }
 
-  .apd .dot{
-    width:9px;height:9px;border-radius:50%;
-    background: rgba(37,99,235,.95);
-    box-shadow: 0 0 0 4px rgba(37,99,235,.10);
-  }
-  .apd .dot.ok{
-    background: rgba(16,185,129,.95);
-    box-shadow: 0 0 0 4px rgba(16,185,129,.12);
-  }
-  .apd .dot.warn{
-    background: rgba(245,158,11,.95);
-    box-shadow: 0 0 0 4px rgba(245,158,11,.14);
+  .detail-page .chip b{
+    color:var(--txt);
+    font-weight:var(--fw-title);
   }
 
-  .apd .btn{
-    height: 36px;
-    padding: 0 12px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
+  .detail-page .dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#94a3b8;
+    box-shadow:0 0 0 4px rgba(148,163,184,.12);
+    flex:0 0 auto;
+  }
+
+  .detail-page .dot.ok{
+    background:#16a34a;
+    box-shadow:0 0 0 4px rgba(22,163,74,.10);
+  }
+
+  .detail-page .dot.warn{
+    background:#f59e0b;
+    box-shadow:0 0 0 4px rgba(245,158,11,.10);
+  }
+
+  .detail-page .dot.pri{
+    background:#2563eb;
+    box-shadow:0 0 0 4px rgba(37,99,235,.10);
+  }
+
+  .detail-page .btn{
+    height:36px;
+    padding:0 12px;
+    border-radius:999px;
+    border:1px solid var(--line);
     background:#fff;
-    color: var(--txt);
-    font-weight: var(--fw-strong);
-    font-size: 12.5px;
+    color:var(--txt);
+    font-weight:var(--fw-strong);
+    font-size:12.5px;
     cursor:pointer;
     text-decoration:none;
     display:inline-flex;
     align-items:center;
     gap:8px;
-    box-shadow: 0 10px 18px rgba(15,23,42,.06);
-    transition: transform .12s ease, box-shadow .12s ease;
+    box-shadow:0 8px 16px rgba(15,23,42,.05);
+    transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease, opacity .12s ease;
     user-select:none;
+    white-space:nowrap;
   }
-  .apd .btn:hover{
-    transform: translateY(-1px);
-    box-shadow: 0 14px 26px rgba(15,23,42,.10);
+
+  .detail-page .btn:hover{
+    transform:translateY(-1px);
+    box-shadow:0 12px 22px rgba(15,23,42,.08);
   }
-  .apd .btn.primary{
-    background: linear-gradient(135deg, rgba(37,99,235,.95), rgba(96,165,250,.95));
-    border-color: rgba(37,99,235,.18);
+
+  .detail-page .btn.primary{
+    background:linear-gradient(135deg, rgba(37,99,235,.96), rgba(96,165,250,.96));
+    border-color:rgba(37,99,235,.16);
     color:#fff;
   }
 
-  /* ===== Layout ===== */
-  .apd .grid{
-    display:grid;
-    grid-template-columns: 1.35fr .9fr;
-    gap: 12px;
-    align-items:start;
-  }
-
-  /* ===== Cards ===== */
-  .apd .card{
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 22px;
-    box-shadow: var(--shadow2);
-    overflow:hidden;
-  }
-
-  .apd .card-h{
-    padding: 12px 14px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap: 10px;
-    border-bottom: 1px solid var(--line);
-    background: linear-gradient(180deg, rgba(248,250,252,.95), rgba(255,255,255,.92));
-  }
-
-  .apd .card-title{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    font-size: 13px;
-    font-weight: var(--fw-title);
-    color: var(--txt);
-  }
-
-  .apd .hint{
-    font-size: 12px;
-    font-weight: var(--fw-normal);
-    color: var(--mut);
-    display:flex;
-    align-items:center;
-    gap: 8px;
-    line-height:1.6;
-  }
-
-  .apd .pad{ padding: 12px 14px; }
-
-  /* ===== Status pill ===== */
-  .apd .pill{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    padding: 7px 10px;
-    border-radius: 999px;
-    font-weight: var(--fw-strong);
-    font-size: 12px;
-    border: 1px solid transparent;
-    white-space:nowrap;
-  }
-  .apd .pill.approved{
-    background: rgba(22,163,74,.10);
-    border-color: rgba(22,163,74,.22);
-    color:#166534;
-  }
-  .apd .pill.draft{
-    background: rgba(37,99,235,.10);
-    border-color: rgba(37,99,235,.18);
-    color:#0c4a6e;
-  }
-  .apd .pill.unlock{
-    background: rgba(245,158,11,.12);
-    border-color: rgba(245,158,11,.22);
-    color:#7c2d12;
-  }
-
-  /* ===== Right Summary ===== */
-  .apd .summary{
-    display:grid;
-    gap: 10px;
-  }
-
-  .apd .rows{ display:grid; gap: 8px; }
-  .apd .row{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap: 10px;
-    padding: 10px 12px;
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    background: rgba(248,250,252,.92);
-  }
-  .apd .row .k{
-    font-size: 12px;
-    font-weight: var(--fw-normal);
-    color: var(--mut);
-  }
-  .apd .row .v{
-    font-size: 12.8px;
-    font-weight: var(--fw-title);
-    color: var(--txt);
-  }
-
-  /* ===== Progress ===== */
-  .apd .progress{
-    display:grid;
-    gap: 8px;
-    padding: 12px;
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    background: rgba(248,250,252,.92);
-  }
-  .apd .progress-top{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap: 10px;
-    flex-wrap:wrap;
-  }
-  .apd .progress-top .txt{
-    font-size: 12px;
-    font-weight: var(--fw-normal);
-    color: var(--mut);
-  }
-  .apd .progress-top .ratio{
-    font-size: 12.5px;
-    font-weight: var(--fw-title);
-    color: var(--txt);
-  }
-  .apd .bar{
-    height: 10px;
-    border-radius: 999px;
-    background: rgba(2,6,23,.06);
-    overflow:hidden;
-  }
-  .apd .bar > span{
-    display:block;
-    height: 100%;
-    width: 0%;
-    border-radius: 999px;
-    background: linear-gradient(90deg, rgba(16,185,129,.95), rgba(34,197,94,.95));
-    transition: width .35s ease;
-  }
-  .apd .progress-note{
-    font-size: 12px;
-    font-weight: var(--fw-normal);
-    color: var(--mut);
-    display:flex;
-    align-items:center;
-    gap: 8px;
-  }
-  .apd .mini-ico{
-    width: 18px; height: 18px;
-    border-radius: 7px;
-    display:grid;
-    place-items:center;
-    border: 1px solid rgba(16,185,129,.22);
-    background: rgba(16,185,129,.10);
-    color: #166534;
-    font-weight: var(--fw-title);
-    font-size: 12px;
-  }
-
-  /* ===== Timeline ===== */
-  .apd .timeline{
-    display:grid;
-    gap: 10px;
-    padding: 12px;
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    background: rgba(248,250,252,.92);
-  }
-  .apd .tl-track{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap: 10px;
-    position: relative;
-  }
-  .apd .tl-track::before{
-    content:"";
-    position:absolute;
-    top: 14px;
-    right: 16px;
-    left: 16px;
-    height: 2px;
-    background: rgba(148,163,184,.35);
-    border-radius: 999px;
-  }
-  .apd .tl-step{
-    position: relative;
-    width: 33.33%;
-    display:grid;
-    justify-items:center;
-    gap: 6px;
-  }
-  .apd .tl-dot{
-    width: 28px; height: 28px;
-    border-radius: 999px;
-    display:grid;
-    place-items:center;
-    border: 1px solid rgba(148,163,184,.40);
-    background: #fff;
-    z-index: 2;
-    box-shadow: 0 10px 18px rgba(15,23,42,.06);
-    font-size: 13px;
-  }
-  .apd .tl-title{
-    font-size: 12.2px;
-    font-weight: var(--fw-title);
-    color: var(--txt);
-  }
-  .apd .tl-sub{
-    font-size: 12px;
-    font-weight: var(--fw-normal);
-    color: var(--mut);
-    text-align:center;
-    line-height:1.5;
-  }
-
-  /* States */
-  .apd .tl-step.done .tl-dot{
-    border-color: rgba(22,163,74,.35);
-    background: rgba(22,163,74,.12);
-    color:#166534;
-  }
-  .apd .tl-step.wait .tl-dot{
-    border-color: rgba(245,158,11,.35);
-    background: rgba(245,158,11,.12);
-    color:#7c2d12;
-  }
-  .apd .tl-step.off .tl-dot{
-    border-color: rgba(148,163,184,.35);
-    background: rgba(248,250,252,.92);
-    color:#64748b;
-  }
-
-  /* ===== Sticky admin decisions ===== */
-  .apd .sticky{
-    position: sticky;
-    top: 12px;
-    z-index: 3;
-  }
-
-  .apd .decision-box{
-    display:grid;
-    gap: 10px;
-  }
-
-  .apd .d-actions{
-    display:flex;
-    gap: 8px;
-    flex-wrap:wrap;
-  }
-
-  .apd .act{
-    height: 34px;
-    padding: 0 12px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
+  .detail-page .btn.soft{
     background:#fff;
-    color: var(--txt);
-    font-weight: var(--fw-strong);
-    font-size: 12px;
-    cursor:pointer;
-    box-shadow: 0 10px 16px rgba(15,23,42,.06);
-    transition: transform .12s ease, box-shadow .12s ease;
   }
-  .apd .act:hover{
-    transform: translateY(-1px);
-    box-shadow: 0 14px 22px rgba(15,23,42,.10);
-  }
-  .apd .act.approve{
-    background: rgba(22,163,74,.12);
-    border-color: rgba(22,163,74,.25);
-    color:#166534;
-  }
-  .apd .act.draft{
-    background: rgba(245,158,11,.12);
-    border-color: rgba(245,158,11,.25);
-    color:#7c2d12;
-  }
-  .apd .act:disabled{
-    opacity: .55;
+
+  .detail-page .btn:disabled{
+    opacity:.6;
     cursor:not-allowed;
     transform:none;
     box-shadow:none;
   }
 
-  /* ===== Days slider ===== */
-  .apd .days-head{
+  .detail-page .action-strip{
+    background:linear-gradient(180deg, rgba(255,255,255,.97), rgba(248,250,252,.94));
+    border:1px solid var(--line);
+    border-radius:24px;
+    box-shadow:var(--shadow2);
+    padding:14px;
+    display:grid;
+    gap:10px;
+  }
+
+  .detail-page .action-strip-head{
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap: 10px;
-    flex-wrap:wrap;
-  }
-  .apd .nav{
-    display:flex;
-    gap: 8px;
-    align-items:center;
+    gap:12px;
     flex-wrap:wrap;
   }
 
-  .apd .nav-btn{
-    height: 32px;
-    padding: 0 10px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
+  .detail-page .action-strip-title{
+    margin:0;
+    font-size:14px;
+    font-weight:var(--fw-title);
+    color:var(--txt);
+  }
+
+  .detail-page .action-strip-sub{
+    margin:3px 0 0;
+    font-size:12px;
+    color:var(--mut);
+    font-weight:var(--fw-normal);
+  }
+
+  .detail-page .action-strip-right{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .detail-page .exec-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  .detail-page .exec-btn{
+    min-width:116px;
+    height:34px;
+    padding:0 12px;
+    border-radius:999px;
+    border:1px solid var(--line);
     background:#fff;
-    font-weight: var(--fw-strong);
-    font-size: 12px;
+    font-size:12.3px;
+    font-weight:var(--fw-strong);
+    color:var(--txt);
     cursor:pointer;
     display:inline-flex;
     align-items:center;
-    gap: 6px;
-    box-shadow: 0 8px 14px rgba(15,23,42,.05);
+    justify-content:center;
+    gap:6px;
+    box-shadow:0 8px 16px rgba(15,23,42,.05);
+    transition:.12s ease;
   }
 
-  .apd .slider{ padding: 12px 14px 14px; }
-
-  .apd .track{
-    display:flex;
-    gap: 10px;
-    overflow:auto;
-    scroll-behavior:smooth;
-    padding-bottom: 8px;
-  }
-  .apd .track::-webkit-scrollbar{ height: 10px; }
-  .apd .track::-webkit-scrollbar-thumb{
-    background: rgba(148,163,184,.35);
-    border-radius: 999px;
+  .detail-page .exec-btn:hover{
+    transform:translateY(-1px);
+    box-shadow:0 12px 22px rgba(15,23,42,.08);
   }
 
-  /* ===== Day card states ===== */
-  .apd .day-card{
-    min-width: 320px;
-    max-width: 360px;
-    flex: 0 0 auto;
-    border: 1px solid var(--line);
-    border-radius: 20px;
-    background: rgba(248,250,252,.92);
-    box-shadow: 0 12px 22px rgba(15,23,42,.06);
+  .detail-page .exec-btn:disabled{
+    opacity:.55;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+
+  .detail-page .exec-btn.approve{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok-tx);
+  }
+
+  .detail-page .exec-btn.draft{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn-tx);
+  }
+
+  .detail-page .exec-btn.unlock{
+    background:var(--teal-bg);
+    border-color:var(--teal-br);
+    color:var(--teal-tx);
+  }
+
+  .detail-page .exec-btn.reject{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:var(--danger-tx);
+  }
+
+  .detail-page .exec-note{
+    border:1px dashed rgba(245,158,11,.25);
+    background:rgba(245,158,11,.06);
+    border-radius:18px;
+    padding:12px 14px;
+    color:#7c2d12;
+    font-size:12.5px;
+    line-height:1.85;
+  }
+
+  .detail-page .grid{
+    display:grid;
+    grid-template-columns:minmax(0, 1.08fr) minmax(320px, .92fr);
+    gap:12px;
+    align-items:start;
+  }
+
+  .detail-page .panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:22px;
+    box-shadow:var(--shadow2);
     overflow:hidden;
-    position: relative;
   }
 
-  /* colored strip (state) */
-  .apd .day-card::before{
-    content:"";
-    position:absolute;
-    top:0; right:0; left:0;
-    height: 4px;
-    background: rgba(148,163,184,.40);
+  .detail-page .panel-head{
+    padding:12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(248,250,252,.94), rgba(255,255,255,.92));
+    flex-wrap:wrap;
   }
 
-  .apd .day-card.state-ok{
-    border-color: rgba(22,163,74,.20);
-    background: linear-gradient(180deg, rgba(22,163,74,.05), rgba(248,250,252,.92));
-  }
-  .apd .day-card.state-ok::before{
-    background: linear-gradient(90deg, rgba(22,163,74,.95), rgba(34,197,94,.95));
-  }
-
-  .apd .day-card.state-missing{
-    border-color: rgba(245,158,11,.22);
-    background: linear-gradient(180deg, rgba(245,158,11,.06), rgba(248,250,252,.92));
-  }
-  .apd .day-card.state-missing::before{
-    background: linear-gradient(90deg, rgba(245,158,11,.95), rgba(251,191,36,.95));
+  .detail-page .panel-title{
+    margin:0;
+    font-size:13px;
+    font-weight:var(--fw-title);
+    color:var(--txt);
   }
 
-  .apd .day-card.state-remote{
-    border-color: rgba(37,99,235,.22);
-    background: linear-gradient(180deg, rgba(37,99,235,.06), rgba(248,250,252,.92));
-  }
-  .apd .day-card.state-remote::before{
-    background: linear-gradient(90deg, rgba(37,99,235,.95), rgba(96,165,250,.95));
+  .detail-page .panel-sub{
+    margin:3px 0 0;
+    font-size:12px;
+    color:var(--mut);
+    font-weight:var(--fw-normal);
   }
 
-  .apd .day-top{
-    padding: 12px 12px 10px;
+  .detail-page .stats{
+    padding:14px;
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:10px;
+  }
+
+  .detail-page .stat{
+    border:1px solid var(--line);
+    background:rgba(248,250,252,.86);
+    border-radius:18px;
+    padding:12px 14px;
+    display:grid;
+    gap:4px;
+    min-height:76px;
+  }
+
+  .detail-page .stat-label{
+    font-size:12px;
+    color:var(--mut);
+    font-weight:var(--fw-normal);
+  }
+
+  .detail-page .stat-value{
+    font-size:18px;
+    color:var(--txt);
+    font-weight:var(--fw-title);
+  }
+
+  .detail-page .meta-list{
+    padding:14px;
+    display:grid;
+    gap:10px;
+  }
+
+  .detail-page .meta-item{
     display:flex;
     align-items:flex-start;
     justify-content:space-between;
-    gap: 10px;
-    border-bottom: 1px solid var(--line);
-    background: rgba(255,255,255,.72);
+    gap:14px;
+    padding:12px 14px;
+    border:1px solid var(--line2);
+    border-radius:16px;
+    background:rgba(248,250,252,.82);
   }
 
-  .apd .day-name{ display:grid; gap: 6px; }
-  .apd .day-name .d{
-    font-weight: var(--fw-title);
-    font-size: 13px;
-    color: var(--txt);
-  }
-  .apd .day-name .dt{
-    font-weight: var(--fw-normal);
-    font-size: 12px;
-    color: var(--mut2);
+  .detail-page .meta-item .name{
+    font-size:12.3px;
+    color:var(--mut);
+    font-weight:var(--fw-normal);
+    min-width:90px;
   }
 
-  .apd .right-tags{
-    display:flex;
-    flex-direction:column;
-    align-items:flex-end;
-    gap: 6px;
-    min-width: 120px;
+  .detail-page .meta-item .value{
+    font-size:13px;
+    color:var(--txt);
+    font-weight:var(--fw-strong);
+    text-align:left;
+    line-height:1.8;
   }
 
-  .apd .tag{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    padding: 6px 10px;
-    border-radius: 999px;
-    font-size: 12px;
-    font-weight: var(--fw-strong);
-    border: 1px solid transparent;
-    white-space:nowrap;
-  }
-  .apd .tag.in{
-    background: rgba(22,163,74,.10);
-    border-color: rgba(22,163,74,.22);
-    color:#166534;
-  }
-  .apd .tag.remote{
-    background: rgba(37,99,235,.10);
-    border-color: rgba(37,99,235,.18);
-    color:#0c4a6e;
-  }
-  .apd .tag.none{
-    background: rgba(148,163,184,.16);
-    border-color: rgba(148,163,184,.22);
-    color:#475569;
-  }
-
-  /* ✅ Badge state فوق كل يوم */
-  .apd .badge{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    padding: 5px 10px;
-    border-radius: 999px;
-    font-size: 11.7px;
-    font-weight: var(--fw-strong);
-    border: 1px solid transparent;
-    white-space:nowrap;
-  }
-  .apd .badge.ok{
-    background: rgba(22,163,74,.10);
-    border-color: rgba(22,163,74,.22);
-    color:#166534;
-  }
-  .apd .badge.missing{
-    background: rgba(245,158,11,.12);
-    border-color: rgba(245,158,11,.22);
+  .detail-page .note-box{
+    margin:0 14px 14px;
+    padding:12px 14px;
+    border-radius:16px;
+    border:1px solid rgba(245,158,11,.16);
+    background:rgba(245,158,11,.08);
     color:#7c2d12;
-  }
-  .apd .badge.remote{
-    background: rgba(37,99,235,.10);
-    border-color: rgba(37,99,235,.18);
-    color:#0c4a6e;
+    font-size:12.2px;
+    font-weight:var(--fw-normal);
+    line-height:1.85;
   }
 
-  .apd .day-body{
-    padding: 12px;
-    display:grid;
-    gap: 10px;
-  }
-
-  .apd .school-name{
-    font-size: 13px;
-    font-weight: var(--fw-title);
-    color: var(--txt);
-    line-height: 1.6;
-  }
-  .apd .muted{
-    color: var(--mut2);
-    font-weight: var(--fw-normal);
-    font-size: 12px;
-  }
-
-  .apd .meta-grid{ display:grid; gap: 8px; }
-  .apd .meta{
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    padding: 10px 12px;
-    background: rgba(255,255,255,.80);
-    display:flex;
+  .detail-page .pill{
+    display:inline-flex;
     align-items:center;
-    justify-content:space-between;
-    gap: 10px;
-  }
-  .apd .meta .k{
-    font-size: 12px;
-    font-weight: var(--fw-normal);
-    color: var(--mut);
-  }
-  .apd .meta .v{
-    font-size: 12.6px;
-    font-weight: var(--fw-title);
-    color: var(--txt);
+    justify-content:center;
+    padding:7px 10px;
+    border-radius:999px;
+    font-weight:var(--fw-strong);
+    font-size:12px;
+    border:1px solid transparent;
+    white-space:nowrap;
   }
 
-  /* ===== Toast ===== */
-  .apd .toast-wrap{
-    position: fixed;
-    bottom: 16px;
-    left: 16px;
-    z-index: 9999;
-    display:grid;
-    gap: 8px;
+  .detail-page .pill.approved{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok-tx);
   }
-  .apd .toast{
-    min-width: 240px;
-    max-width: 380px;
-    background: rgba(15,23,42,.92);
+
+  .detail-page .pill.draft{
+    background:var(--pri-bg);
+    border-color:var(--pri-br);
+    color:var(--pri-tx);
+  }
+
+  .detail-page .pill.unlock{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn-tx);
+  }
+
+  .detail-page .days-wrap{
+    padding:14px;
+  }
+
+  .detail-page .table-box{
+    border:1px solid var(--line);
+    border-radius:18px;
+    overflow:hidden;
+    background:#fff;
+  }
+
+  .detail-page .table-scroll{
+    overflow:auto;
+  }
+
+  .detail-page table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+  }
+
+  .detail-page thead th{
+    position:sticky;
+    top:0;
+    z-index:1;
+    background:rgba(248,250,252,.98);
+    border-bottom:1px solid var(--line);
+    padding:12px;
+    font-size:12px;
+    font-weight:var(--fw-strong);
+    color:var(--mut);
+    text-align:right;
+    white-space:nowrap;
+  }
+
+  .detail-page tbody td{
+    border-bottom:1px solid var(--line2);
+    padding:12px;
+    font-size:13px;
+    font-weight:var(--fw-normal);
+    color:var(--txt);
+    vertical-align:middle;
+    line-height:1.8;
+  }
+
+  .detail-page tbody tr:last-child td{
+    border-bottom:none;
+  }
+
+  .detail-page tbody tr:nth-child(even){
+    background:rgba(2,6,23,.01);
+  }
+
+  .detail-page tbody tr:hover{
+    background:rgba(37,99,235,.03);
+  }
+
+  .detail-page .day-name{
+    font-weight:var(--fw-title);
+    color:var(--txt);
+  }
+
+  .detail-page .school-name{
+    font-weight:var(--fw-strong);
+    color:var(--txt);
+  }
+
+  .detail-page .mini-pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:rgba(248,250,252,.92);
+    color:var(--txt);
+    font-size:11.9px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+  }
+
+  .detail-page .mini-pill.ok{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok-tx);
+  }
+
+  .detail-page .mini-pill.warn{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn-tx);
+  }
+
+  .detail-page .mini-pill.pri{
+    background:var(--pri-bg);
+    border-color:var(--pri-br);
+    color:var(--pri-tx);
+  }
+
+  .detail-page .muted{
+    color:var(--mut);
+    font-weight:var(--fw-normal);
+  }
+
+  .detail-page .day-note{
+    color:var(--mut);
+    font-size:12px;
+    line-height:1.8;
+  }
+
+  .detail-page .empty{
+    padding:18px;
+    text-align:center;
+    color:var(--mut);
+    font-size:12.8px;
+    font-weight:var(--fw-normal);
+    line-height:1.85;
+  }
+
+  .detail-page .side-stack{
+    display:grid;
+    gap:12px;
+  }
+
+  .detail-page .visit-kpis{
+    padding:14px;
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:10px;
+  }
+
+  .detail-page .visit-kpi{
+    border:1px solid var(--line);
+    background:rgba(248,250,252,.86);
+    border-radius:18px;
+    padding:12px 14px;
+    display:grid;
+    gap:4px;
+    min-height:76px;
+  }
+
+  .detail-page .visit-kpi .label{
+    font-size:12px;
+    color:var(--mut);
+    font-weight:var(--fw-normal);
+  }
+
+  .detail-page .visit-kpi .value{
+    font-size:18px;
+    font-weight:var(--fw-title);
+    color:var(--txt);
+  }
+
+  .detail-page .visit-kpi.ok{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+  }
+
+  .detail-page .visit-kpi.ok .value{
+    color:var(--ok-tx);
+  }
+
+  .detail-page .visit-kpi.warn{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+  }
+
+  .detail-page .visit-kpi.warn .value{
+    color:var(--warn-tx);
+  }
+
+  .detail-page .visit-kpi.pri{
+    background:var(--pri-bg);
+    border-color:var(--pri-br);
+  }
+
+  .detail-page .visit-kpi.pri .value{
+    color:var(--pri-tx);
+  }
+
+  .detail-page .toast-wrap{
+    position:fixed;
+    bottom:16px;
+    left:16px;
+    z-index:10000;
+    display:grid;
+    gap:8px;
+  }
+
+  .detail-page .toast{
+    min-width:240px;
+    max-width:380px;
+    background:rgba(15,23,42,.92);
     color:#fff;
-    padding: 10px 12px;
-    border-radius: 16px;
-    box-shadow: 0 18px 50px rgba(15,23,42,.24);
-    font-weight: var(--fw-strong);
-    font-size: 12.5px;
+    padding:10px 12px;
+    border-radius:16px;
+    box-shadow:0 18px 50px rgba(15,23,42,.24);
+    font-weight:var(--fw-strong);
+    font-size:12.5px;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap: 10px;
+    gap:10px;
   }
-  .apd .toast .x{
+
+  .detail-page .toast .x{
     border:0;
-    background: transparent;
+    background:transparent;
     color:#fff;
     cursor:pointer;
-    font-weight: 900;
-    opacity: .85;
+    font-weight:900;
+    opacity:.85;
   }
 
-  /* ===== Responsive ===== */
-  @media (max-width: 1100px){
-    .apd .grid{ grid-template-columns: 1fr; }
-    .apd .sticky{ position: static; }
-    .apd .day-card{ min-width: 290px; }
+  .detail-page .modal{
+    position:fixed;
+    inset:0;
+    z-index:10050;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    background:rgba(15,23,42,.38);
+    backdrop-filter:blur(3px);
+  }
+
+  .detail-page .modal.show{
+    display:flex;
+  }
+
+  .detail-page .modal-card{
+    width:min(560px, 100%);
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:24px;
+    box-shadow:var(--shadow3);
+    overflow:hidden;
+  }
+
+  .detail-page .modal-head{
+    padding:14px 16px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+
+  .detail-page .modal-head h3{
+    margin:0;
+    font-size:15px;
+    font-weight:var(--fw-title);
+    color:var(--txt);
+  }
+
+  .detail-page .modal-close{
+    width:34px;
+    height:34px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:#fff;
+    cursor:pointer;
+    font-size:18px;
+    color:var(--txt);
+  }
+
+  .detail-page .modal-body{
+    padding:16px;
+    display:grid;
+    gap:12px;
+  }
+
+  .detail-page .modal-text{
+    margin:0;
+    color:var(--mut);
+    font-size:12.8px;
+    line-height:1.8;
+    font-weight:var(--fw-normal);
+  }
+
+  .detail-page .textarea{
+    width:100%;
+    border-radius:14px;
+    border:1px solid var(--line);
+    background:rgba(248,250,252,.92);
+    min-height:120px;
+    padding:12px;
+    outline:none;
+    font-weight:var(--fw-strong);
+    color:var(--txt);
+    line-height:1.8;
+    resize:vertical;
+    transition:border-color .12s ease, box-shadow .12s ease, background .12s ease;
+  }
+
+  .detail-page .textarea:focus{
+    border-color:rgba(59,130,246,.35);
+    box-shadow:0 0 0 4px rgba(59,130,246,.07);
+    background:#fff;
+  }
+
+  .detail-page .modal-actions{
+    padding:0 16px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  @media (max-width: 1080px){
+    .detail-page .grid{
+      grid-template-columns:1fr;
+    }
+
+    .detail-page .stats{
+      grid-template-columns:repeat(2, 1fr);
+    }
+
+    .detail-page .visit-kpis{
+      grid-template-columns:repeat(3, 1fr);
+    }
+  }
+
+  @media (max-width: 640px){
+    .detail-page .stats{
+      grid-template-columns:1fr 1fr;
+    }
+
+    .detail-page .visit-kpis{
+      grid-template-columns:1fr;
+    }
+
+    .detail-page .hero{
+      padding:14px;
+    }
+
+    .detail-page .hero-side{
+      justify-content:flex-start;
+      width:100%;
+    }
+
+    .detail-page .meta-item{
+      flex-direction:column;
+      gap:6px;
+    }
+
+    .detail-page .action-strip{
+      padding:12px;
+    }
   }
 </style>
+{% endblock %}
 
-<section class="apd">
+{% block content %}
+<section class="detail-page">
   <div class="shell">
     <div class="wrap">
 
-      <!-- ===== Top Header ===== -->
-      <div class="top">
-        <div class="title">
-          <h1>تفاصيل خطة الأسبوع</h1>
-          <p class="sub">
-            المشرف: <b style="font-weight:var(--fw-title)">{{ sup.full_name }}</b>
-            — هوية: <b style="font-weight:var(--fw-title)">{{ sup.national_id }}</b>
-            — الأسبوع: <b style="font-weight:var(--fw-title)">#{{ week }}</b>
-            — رقم الخطة: <b style="font-weight:var(--fw-title)">#{{ plan.id }}</b>
+      <div class="hero">
+        <div class="hero-main">
+          <h1 class="hero-title">تفاصيل الخطة — الأسبوع {{ week }}</h1>
+          <p class="hero-sub">
+            المشرف: <b>{{ sup.full_name }}</b>
+            — الهوية: <b>{{ sup.national_id }}</b>
           </p>
         </div>
 
-        {% comment %} ✅ عداد الأيام الناقصة بالأعلى (FIXED) {% endcomment %}
-        {% widthratio filled 1 -1 as neg_filled %}
-        {% with missing=5|add:neg_filled %}
-        <div class="actions">
-          <span class="chip"><span class="dot ok"></span> النظام يعمل</span>
-
-          {% if missing > 0 %}
-            <span class="chip" style="border-color:rgba(245,158,11,.22);background:rgba(245,158,11,.10);color:#7c2d12">
-              <span class="dot warn"></span> الأيام الناقصة: <b style="color:var(--txt);font-weight:var(--fw-title)">{{ missing }}</b>
-            </span>
-          {% else %}
-            <span class="chip" style="border-color:rgba(22,163,74,.22);background:rgba(22,163,74,.10);color:#166534">
-              <span class="dot ok"></span> مكتملة بالكامل ✅
-            </span>
-          {% endif %}
-
+        <div class="hero-side">
           {% if plan.status == plan.STATUS_APPROVED %}
-            <span class="chip" style="border-color:rgba(22,163,74,.22);background:rgba(22,163,74,.10);color:#166534">
-              ✅ الحالة: معتمدة
-            </span>
+            <span class="chip" id="statusChip"><span class="dot ok" id="statusDot"></span> الحالة: <b id="statusChipText">معتمدة</b></span>
           {% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}
-            <span class="chip" style="border-color:rgba(245,158,11,.22);background:rgba(245,158,11,.10);color:#7c2d12">
-              🔓 الحالة: طلب فك اعتماد
-            </span>
+            <span class="chip" id="statusChip"><span class="dot warn" id="statusDot"></span> الحالة: <b id="statusChipText">طلب فك اعتماد</b></span>
           {% else %}
-            <span class="chip" style="border-color:rgba(37,99,235,.18);background:rgba(37,99,235,.08);color:#0c4a6e">
-              📝 الحالة: مسودة
-            </span>
+            <span class="chip" id="statusChip"><span class="dot pri" id="statusDot"></span> الحالة: <b id="statusChipText">مسودة</b></span>
           {% endif %}
 
-          <a class="btn" href="{% url 'visits:admin_dashboard' %}?week={{ week }}">↩ رجوع للوحة الإدارة</a>
-          <a class="btn primary" href="{% url 'visits:admin_plan_export_excel' plan.id %}">⬇ Excel</a>
+          <span class="chip">الامتلاء: <b id="filledTop">{{ filled }}/5</b></span>
+
+          <a class="btn soft" href="{{ next_url|default:'#' }}">↩ العودة للوحة</a>
+          <a class="btn primary" href="{% url 'visits:admin_plan_export_excel' plan.id %}">⬇ تصدير Excel</a>
         </div>
-        {% endwith %}
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3 class="panel-title">مؤشرات تنفيذ الزيارات</h3>
+            <p class="panel-sub">هذه الأرقام تخص المشرف الحالي فقط لهذا الأسبوع.</p>
+          </div>
+        </div>
+
+        <div class="visit-kpis">
+          <div class="visit-kpi pri">
+            <div class="label">إجمالي المدارس المسندة</div>
+            <div class="value" id="assignedCount">{{ assigned_count|default:"0" }}</div>
+          </div>
+
+          <div class="visit-kpi ok">
+            <div class="label">المدارس التي تمت زيارتها</div>
+            <div class="value" id="visitedCount">{{ visited_count|default:"0" }}</div>
+          </div>
+
+          <div class="visit-kpi warn">
+            <div class="label">المدارس المتبقية</div>
+            <div class="value" id="remainingCount">{{ remaining_count|default:"0" }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-strip" id="actionStrip" data-plan-id="{{ plan.id }}" data-filled="{{ filled }}">
+        <div class="action-strip-head">
+          <div>
+            <h3 class="action-strip-title">الإجراءات الإدارية التنفيذية</h3>
+            <p class="action-strip-sub">نفّذ القرار مباشرة من صفحة التفاصيل بدون الرجوع إلى الجدول الرئيسي.</p>
+          </div>
+
+          <div class="action-strip-right">
+            <span class="chip" id="statusBadgeWrap">
+              {% if plan.status == plan.STATUS_APPROVED %}
+                <span class="pill approved" id="statusBadge">معتمدة</span>
+              {% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}
+                <span class="pill unlock" id="statusBadge">طلب فك اعتماد</span>
+              {% else %}
+                <span class="pill draft" id="statusBadge">مسودة</span>
+              {% endif %}
+            </span>
+          </div>
+        </div>
+
+        <div class="exec-actions" id="execActions">
+          <button
+            class="exec-btn approve"
+            id="approveBtn"
+            data-action="approve"
+            data-url="{% url 'visits:admin_plan_approve' plan.id %}"
+            type="button"
+            {% if plan.status == plan.STATUS_APPROVED %}disabled{% endif %}
+            {% if filled != 5 %}disabled{% endif %}
+          >✅ اعتماد</button>
+
+          <button
+            class="exec-btn draft"
+            id="draftBtn"
+            data-action="draft"
+            data-url="{% url 'visits:admin_plan_back_to_draft' plan.id %}"
+            type="button"
+            {% if plan.status == plan.STATUS_DRAFT %}disabled{% endif %}
+          >↩ إرجاع إلى مسودة</button>
+
+          {% if plan.status == plan.STATUS_UNLOCK_REQUESTED %}
+            <button
+              class="exec-btn unlock"
+              id="unlockApproveBtn"
+              data-action="unlock-approve"
+              data-url="{% url 'visits:admin_unlock_approve' plan.id %}"
+              type="button"
+            >🔓 قبول فك الاعتماد</button>
+
+            <button
+              class="exec-btn reject"
+              id="unlockRejectBtn"
+              data-action="unlock-reject"
+              data-url="{% url 'visits:admin_unlock_reject' plan.id %}"
+              type="button"
+            >⛔ رفض فك الاعتماد</button>
+          {% endif %}
+        </div>
+
+        {% if plan.admin_note %}
+          <div class="exec-note" id="adminNoteBox">
+            <b>ملاحظة الإدارة:</b>
+            <span id="adminNoteText">{{ plan.admin_note }}</span>
+          </div>
+        {% else %}
+          <div class="exec-note" id="adminNoteBox" style="display:none">
+            <b>ملاحظة الإدارة:</b>
+            <span id="adminNoteText"></span>
+          </div>
+        {% endif %}
       </div>
 
       <div class="grid">
 
-        <!-- ===============================
-             LEFT: Days Slider
-        ================================ -->
-        <div class="card">
-          <div class="card-h">
-            <div class="days-head">
-              <div class="card-title">📅 الأيام (سلايدر)</div>
-              <div class="hint">اسحب يمين/يسار أو استخدم الأسهم</div>
-            </div>
-
-            <div class="nav">
-              <button type="button" class="nav-btn" id="prevDay">◀ السابق</button>
-              <button type="button" class="nav-btn" id="nextDay">التالي ▶</button>
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3 class="panel-title">تفاصيل الأيام</h3>
+              <p class="panel-sub">عرض تفصيلي لخطة المشرف خلال الأسبوع المحدد.</p>
             </div>
           </div>
 
-          <div class="slider">
-            <div class="track" id="daysTrack">
+          <div class="days-wrap">
+            <div class="table-box">
+              <div class="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="min-width:110px">اليوم</th>
+                      <th style="min-width:130px">التاريخ (ميلادي)</th>
+                      <th style="min-width:130px">التاريخ (هجري)</th>
+                      <th style="min-width:260px">المدرسة / السبب</th>
+                      <th style="min-width:130px">نوع اليوم</th>
+                      <th style="min-width:160px">تنفيذ الزيارة</th>
+                      <th style="min-width:180px">ملاحظة</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for wd, day_name in weekdays %}
+                      {% with d=day_map|get_item:wd %}
+                      {% with dt=day_dates|get_item:wd %}
+                      <tr>
+                        <td>
+                          <span class="day-name">{{ day_name }}</span>
+                        </td>
 
-              {% for wd,name in weekdays %}
-                {% with d=day_map|get_item:wd %}
-                <div class="day-card
-                  {% if not d or not d.school %}state-missing{% else %}
-                    {% if d.visit_type == 'remote' %}state-remote{% else %}state-ok{% endif %}
-                  {% endif %}
-                ">
-                  <div class="day-top">
-                    <div class="day-name">
-                      <div class="d">{{ name }}</div>
+                        <td>
+                          {% if dt %}
+                            <span class="mini-pill">{{ dt|date:"Y-m-d" }}</span>
+                          {% else %}
+                            <span class="muted">—</span>
+                          {% endif %}
+                        </td>
 
-                      {% comment %} ✅ Badge فوق كل يوم {% endcomment %}
-                      {% if not d or not d.school %}
-                        <span class="badge missing">ناقص</span>
-                      {% else %}
-                        {% if d.visit_type == 'remote' %}
-                          <span class="badge remote">عن بعد</span>
-                        {% else %}
-                          <span class="badge ok">مكتمل</span>
-                        {% endif %}
-                      {% endif %}
+                        <td>
+                          {% if dt %}
+                            <span class="mini-pill">{{ dt|to_hijri }}</span>
+                          {% else %}
+                            <span class="muted">—</span>
+                          {% endif %}
+                        </td>
 
-                      <div class="dt">
-                        {% if day_dates and day_dates|get_item:wd %}
-                          {{ day_dates|get_item:wd|date:"Y-m-d" }}
-                        {% else %}
-                          —
-                        {% endif %}
-                      </div>
-                    </div>
-
-                    <div class="right-tags">
-                      {% if d %}
-                        {% if d.visit_type == "in" %}
-                          <span class="tag in">حضوري</span>
-                        {% elif d.visit_type == "remote" %}
-                          <span class="tag remote">عن بعد</span>
-                        {% else %}
-                          <span class="tag none">—</span>
-                        {% endif %}
-                      {% else %}
-                        <span class="tag none">لا يوجد</span>
-                      {% endif %}
-                    </div>
-                  </div>
-
-                  <div class="day-body">
-                    {% if d and d.school %}
-                      <div class="school-name">{{ d.school.name }}</div>
-
-                      <div class="meta-grid">
-                        <div class="meta">
-                          <div class="k">رقم المدرسة</div>
-                          <div class="v">{{ d.school.stat_code|default:"—" }}</div>
-                        </div>
-
-                        <div class="meta">
-                          <div class="k">المدير</div>
-                          <div class="v">
-                            {% if d.school.principal %}
-                              {{ d.school.principal.full_name|default:"—" }}
+                        <td>
+                          {% if d %}
+                            {% if d.visit_type == d.VISIT_NONE %}
+                              {% if d.no_visit_reason %}
+                                <span class="muted">{{ d.get_no_visit_reason_display }}</span>
+                              {% else %}
+                                <span class="muted">بدون زيارة</span>
+                              {% endif %}
+                            {% elif d.school %}
+                              <span class="school-name">{{ d.school.name }}</span>
                             {% else %}
-                              —
+                              <span class="muted">—</span>
                             {% endif %}
-                          </div>
-                        </div>
+                          {% else %}
+                            <span class="muted">—</span>
+                          {% endif %}
+                        </td>
 
-                        <div class="meta">
-                          <div class="k">جوال المدير</div>
-                          <div class="v">
-                            {% if d.school.principal %}
-                              {{ d.school.principal.mobile|default:"—" }}
+                        <td>
+                          {% if d %}
+                            {% if d.visit_type == d.VISIT_IN %}
+                              <span class="mini-pill ok">حضوري</span>
+                            {% elif d.visit_type == d.VISIT_REMOTE %}
+                              <span class="mini-pill pri">عن بُعد</span>
+                            {% elif d.visit_type == d.VISIT_NONE %}
+                              <span class="mini-pill warn">بدون زيارة</span>
                             {% else %}
-                              —
+                              <span class="mini-pill">—</span>
                             {% endif %}
-                          </div>
-                        </div>
-                      </div>
+                          {% else %}
+                            <span class="mini-pill">—</span>
+                          {% endif %}
+                        </td>
 
-                    {% else %}
-                      <div class="school-name" style="color:#475569">لا يوجد مدرسة لهذا اليوم</div>
-                      <div class="muted">اليوم ناقص — اختر مدرسة ليصبح مكتمل.</div>
-                    {% endif %}
-                  </div>
-                </div>
-                {% endwith %}
-              {% endfor %}
+                        <td>
+                          {% if d and d.visit_type == d.VISIT_IN and d.school %}
+                            {% if d.visited %}
+                              <span class="mini-pill ok">تمت الزيارة</span>
+                            {% else %}
+                              <span class="mini-pill warn">لم تتم</span>
+                            {% endif %}
+                          {% else %}
+                            <span class="muted">—</span>
+                          {% endif %}
+                        </td>
 
+                        <td>
+                          {% if d and d.note %}
+                            <div class="day-note">{{ d.note }}</div>
+                          {% else %}
+                            <span class="muted">—</span>
+                          {% endif %}
+                        </td>
+                      </tr>
+                      {% endwith %}
+                      {% endwith %}
+                    {% empty %}
+                      <tr>
+                        <td colspan="7" class="empty">لا توجد بيانات أيام لهذه الخطة.</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- ===============================
-             RIGHT: Summary + Timeline + Sticky Decisions
-        ================================ -->
-        <div class="summary">
-
-          <!-- Quick Summary -->
-          <div class="card">
-            <div class="card-h">
-              <div class="card-title">📌 ملخص الحالة</div>
-              <div class="hint">
-                {% if plan.saved_at %}
-                  آخر حفظ: <b style="font-weight:var(--fw-title);color:var(--txt)">{{ plan.saved_at|date:"Y-m-d" }} — {{ plan.saved_at|time:"H:i" }}</b>
-                {% else %}
-                  آخر حفظ: <b style="font-weight:var(--fw-title);color:var(--txt)">—</b>
-                {% endif %}
+        <div class="side-stack">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h3 class="panel-title">ملخص الخطة</h3>
+                <p class="panel-sub">قراءة سريعة لمؤشرات هذه الخطة.</p>
               </div>
             </div>
 
-            <div class="pad">
-              <div class="rows">
-                <div class="row">
-                  <div class="k">الأسبوع</div>
-                  <div class="v">#{{ week }}</div>
-                </div>
-
-                <div class="row">
-                  <div class="k">رقم الخطة</div>
-                  <div class="v">#{{ plan.id }}</div>
-                </div>
-
-                <div class="row">
-                  <div class="k">الامتلاء</div>
-                  <div class="v">{{ filled }}/5</div>
-                </div>
-
-                <div class="row">
-                  <div class="k">الحالة الحالية</div>
-                  <div class="v">
-                    {% if plan.status == plan.STATUS_APPROVED %}
-                      <span class="pill approved">معتمدة</span>
-                    {% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}
-                      <span class="pill unlock">طلب فك اعتماد</span>
-                    {% else %}
-                      <span class="pill draft">مسودة</span>
-                    {% endif %}
-                  </div>
-                </div>
-              </div>
-
-              <!-- Progress -->
-              <div class="progress" style="margin-top:12px">
-                <div class="progress-top">
-                  <div class="txt">نسبة اكتمال الخطة</div>
-                  <div class="ratio"><span id="ratioTxt">0%</span></div>
-                </div>
-                <div class="bar"><span id="barFill"></span></div>
-                <div class="progress-note">
-                  <span class="mini-ico">✓</span>
-                  {% if filled == 5 %}
-                    الخطة مكتملة ويمكن اعتمادها ✅
+            <div class="stats">
+              <div class="stat">
+                <div class="stat-label">الحالة</div>
+                <div class="stat-value">
+                  {% if plan.status == plan.STATUS_APPROVED %}
+                    <span class="pill approved" id="statusSummaryPill">معتمدة</span>
+                  {% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}
+                    <span class="pill unlock" id="statusSummaryPill">طلب فك اعتماد</span>
                   {% else %}
-                    الخطة غير مكتملة — يلزم إكمال الأيام المتبقية قبل الاعتماد.
+                    <span class="pill draft" id="statusSummaryPill">مسودة</span>
                   {% endif %}
                 </div>
               </div>
 
-              <!-- Timeline -->
-              <div class="timeline" style="margin-top:12px">
-                <div class="hint" style="justify-content:space-between">
-                  <span><b style="font-weight:var(--fw-title);color:var(--txt)">Timeline</b> (حفظ → اعتماد → فك اعتماد)</span>
-                  <span style="color:var(--mut2)">يتغير تلقائيًا حسب الحالة</span>
-                </div>
-
-                <div class="tl-track">
-                  <div class="tl-step {% if plan.saved_at %}done{% else %}off{% endif %}">
-                    <div class="tl-dot">💾</div>
-                    <div class="tl-title">آخر حفظ</div>
-                    <div class="tl-sub">
-                      {% if plan.saved_at %}
-                        {{ plan.saved_at|date:"Y-m-d" }}<br>{{ plan.saved_at|time:"H:i" }}
-                      {% else %}
-                        —
-                      {% endif %}
-                    </div>
-                  </div>
-
-                  <div class="tl-step {% if plan.status == plan.STATUS_APPROVED %}done{% else %}off{% endif %}">
-                    <div class="tl-dot">✅</div>
-                    <div class="tl-title">الاعتماد</div>
-                    <div class="tl-sub">
-                      {% if plan.status == plan.STATUS_APPROVED %}
-                        تم اعتمادها
-                      {% else %}
-                        لم تعتمد بعد
-                      {% endif %}
-                    </div>
-                  </div>
-
-                  <div class="tl-step {% if plan.status == plan.STATUS_UNLOCK_REQUESTED %}wait{% else %}off{% endif %}">
-                    <div class="tl-dot">🔓</div>
-                    <div class="tl-title">فك الاعتماد</div>
-                    <div class="tl-sub">
-                      {% if plan.status == plan.STATUS_UNLOCK_REQUESTED %}
-                        يوجد طلب
-                      {% else %}
-                        لا يوجد طلب
-                      {% endif %}
-                    </div>
-                  </div>
-                </div>
+              <div class="stat">
+                <div class="stat-label">الامتلاء</div>
+                <div class="stat-value" id="filledSummary">{{ filled }}/5</div>
               </div>
 
-            </div>
-          </div>
-
-          <!-- Sticky Decisions -->
-          <div class="card sticky" id="stickyDecisions">
-            <div class="card-h">
-              <div class="card-title">⚙️ قرارات الإدارة</div>
-              <div class="hint">اعتماد / إرجاع لمسودة</div>
-            </div>
-
-            <div class="pad decision-box">
-              <div class="d-actions">
-                <button
-                  type="button"
-                  class="act approve"
-                  data-action="approve"
-                  data-url="{% url 'visits:admin_plan_approve' plan.id %}"
-                  {% if plan.status == plan.STATUS_APPROVED %}disabled{% endif %}
-                  {% if filled != 5 %}disabled{% endif %}
-                >✅ اعتماد</button>
-
-                <button
-                  type="button"
-                  class="act draft"
-                  data-action="draft"
-                  data-url="{% url 'visits:admin_plan_back_to_draft' plan.id %}"
-                  {% if plan.status == plan.STATUS_DRAFT %}disabled{% endif %}
-                >↩ إرجاع لمسودة</button>
+              <div class="stat">
+                <div class="stat-label">الأسبوع</div>
+                <div class="stat-value">{{ week }}</div>
               </div>
 
-              <div class="hint" style="border:1px dashed var(--line);border-radius:16px;padding:10px 12px;background:rgba(248,250,252,.78)">
-                ✅ الاعتماد متاح فقط إذا كانت الخطة <b style="font-weight:var(--fw-title);color:var(--txt)">5/5</b>.
-                <br>
-                ↩ إرجاع لمسودة يلغي الاعتماد ويسمح بالتعديل.
+              <div class="stat">
+                <div class="stat-label">الخطة</div>
+                <div class="stat-value">#{{ plan.id }}</div>
               </div>
             </div>
           </div>
 
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h3 class="panel-title">بيانات إضافية</h3>
+                <p class="panel-sub">تفاصيل زمنية وإدارية مرتبطة بالخطة.</p>
+              </div>
+            </div>
+
+            <div class="meta-list">
+              <div class="meta-item">
+                <div class="name">اسم المشرف</div>
+                <div class="value">{{ sup.full_name }}</div>
+              </div>
+
+              <div class="meta-item">
+                <div class="name">رقم الهوية</div>
+                <div class="value">{{ sup.national_id }}</div>
+              </div>
+
+              <div class="meta-item">
+                <div class="name">رقم الأسبوع</div>
+                <div class="value">{{ week }}</div>
+              </div>
+
+              <div class="meta-item">
+                <div class="name">بداية الأسبوع</div>
+                <div class="value">
+                  {% if week_obj.start_sunday %}
+                    {{ week_obj.start_sunday|date:"Y-m-d" }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="meta-item">
+                <div class="name">آخر حفظ</div>
+                <div class="value">
+                  {% if plan.saved_at %}
+                    {{ plan.saved_at|date:"Y-m-d" }} — {{ plan.saved_at|time:"H:i" }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+              </div>
+
+              <div class="meta-item">
+                <div class="name">وقت الاعتماد</div>
+                <div class="value">
+                  {% if plan.approved_at %}
+                    {{ plan.approved_at|date:"Y-m-d" }} — {{ plan.approved_at|time:"H:i" }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            {% if plan.admin_note %}
+              <div class="note-box" id="adminNoteSide">
+                <b>ملاحظة الإدارة:</b>
+                <span id="adminNoteSideText">{{ plan.admin_note }}</span>
+              </div>
+            {% else %}
+              <div class="note-box" id="adminNoteSide" style="display:none">
+                <b>ملاحظة الإدارة:</b>
+                <span id="adminNoteSideText"></span>
+              </div>
+            {% endif %}
+          </div>
         </div>
 
       </div>
-
     </div>
   </div>
 
-  <!-- Toast -->
   <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
+
+  <div class="modal" id="noteModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="modalTitle">ملاحظة إدارية</h3>
+        <button class="modal-close" type="button" id="modalCloseBtn">×</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-text" id="modalText">أدخل الملاحظة الإدارية.</p>
+        <textarea class="textarea" id="adminNoteInput" placeholder="اكتب الملاحظة هنا..."></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn" type="button" id="modalCancelBtn">إلغاء</button>
+        <button class="btn primary" type="button" id="modalSubmitBtn">تأكيد</button>
+      </div>
+    </div>
+  </div>
 </section>
 
 <script>
-  // ===== Toast =====
+  const currentFilters = {
+    week: "{{ week|default:'' }}",
+    q: "{{ q|default:''|escapejs }}",
+    status: "{{ status|default:'all'|escapejs }}",
+    ps: "{{ page_size|default:'' }}",
+    page: "{{ page_number|default:'1' }}",
+    all: "{% if show_all %}1{% else %}0{% endif %}",
+    next: "{{ next_url|default:''|escapejs }}",
+    back_to: "{{ back_to|default:'detail'|escapejs }}"
+  };
+
+  function getCookie(name){
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if(parts.length === 2) return parts.pop().split(";").shift();
+    return "";
+  }
+
   function showToast(msg){
     const wrap = document.getElementById("toastWrap");
+    if(!wrap) return;
+
     const el = document.createElement("div");
     el.className = "toast";
     el.innerHTML = `<span>${msg}</span><button class="x" type="button">✕</button>`;
     wrap.appendChild(el);
-    el.querySelector(".x").addEventListener("click", ()=> el.remove());
-    setTimeout(()=>{ if(el.parentNode) el.remove(); }, 2600);
+
+    const closeBtn = el.querySelector(".x");
+    if(closeBtn){
+      closeBtn.addEventListener("click", ()=> el.remove());
+    }
+
+    setTimeout(() => {
+      if(el.parentNode){
+        el.remove();
+      }
+    }, 2800);
   }
 
-  // ===== Cookie helper =====
-  function getCookie(name){
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if(parts.length === 2) return parts.pop().split(';').shift();
-    return "";
+  function openModal({title, text, submitText = "تأكيد", defaultValue = ""}){
+    return new Promise((resolve) => {
+      const modal = document.getElementById("noteModal");
+      const titleEl = document.getElementById("modalTitle");
+      const textEl = document.getElementById("modalText");
+      const inputEl = document.getElementById("adminNoteInput");
+      const submitBtn = document.getElementById("modalSubmitBtn");
+      const cancelBtn = document.getElementById("modalCancelBtn");
+      const closeBtn = document.getElementById("modalCloseBtn");
+
+      titleEl.textContent = title || "ملاحظة إدارية";
+      textEl.textContent = text || "";
+      inputEl.value = defaultValue || "";
+      submitBtn.textContent = submitText || "تأكيد";
+
+      modal.classList.add("show");
+      modal.setAttribute("aria-hidden", "false");
+
+      setTimeout(() => inputEl.focus(), 10);
+
+      function cleanup(result){
+        modal.classList.remove("show");
+        modal.setAttribute("aria-hidden", "true");
+
+        submitBtn.removeEventListener("click", onSubmit);
+        cancelBtn.removeEventListener("click", onCancel);
+        closeBtn.removeEventListener("click", onCancel);
+        modal.removeEventListener("click", onBackdrop);
+        document.removeEventListener("keydown", onEsc);
+
+        resolve(result);
+      }
+
+      function onSubmit(){
+        cleanup({ ok: true, note: inputEl.value.trim() });
+      }
+
+      function onCancel(){
+        cleanup({ ok: false, note: "" });
+      }
+
+      function onBackdrop(e){
+        if(e.target === modal) onCancel();
+      }
+
+      function onEsc(e){
+        if(e.key === "Escape") onCancel();
+      }
+
+      submitBtn.addEventListener("click", onSubmit);
+      cancelBtn.addEventListener("click", onCancel);
+      closeBtn.addEventListener("click", onCancel);
+      modal.addEventListener("click", onBackdrop);
+      document.addEventListener("keydown", onEsc);
+    });
   }
 
-  // ===== POST Ajax =====
-  async function postAction(url){
+  async function postAction(url, payload = {}){
     const csrf = getCookie("csrftoken");
+    const formData = new FormData();
+    const mergedPayload = { ...currentFilters, ...payload };
+
+    Object.entries(mergedPayload).forEach(([key, value]) => {
+      formData.append(key, value ?? "");
+    });
+
     const res = await fetch(url, {
       method: "POST",
       headers: {
         "X-CSRFToken": csrf,
         "X-Requested-With": "XMLHttpRequest"
-      }
+      },
+      body: formData
     });
-    const data = await res.json().catch(()=> ({}));
+
+    const data = await res.json().catch(() => ({}));
     if(!res.ok){
-      throw new Error((data && data.message) ? data.message : "حدث خطأ أثناء التنفيذ.");
+      throw new Error(data.message || "حدث خطأ أثناء التنفيذ.");
     }
     return data;
   }
 
-  // ===== Actions buttons =====
-  document.addEventListener("click", async (e)=>{
-    const btn = e.target.closest("button[data-action][data-url]");
-    if(!btn) return;
-    e.preventDefault();
-    if(btn.disabled) return;
+  function setAdminNote(note){
+    const topBox = document.getElementById("adminNoteBox");
+    const topText = document.getElementById("adminNoteText");
+    const sideBox = document.getElementById("adminNoteSide");
+    const sideText = document.getElementById("adminNoteSideText");
 
-    const url = btn.getAttribute("data-url");
-    const oldText = btn.textContent;
+    if(note && note.trim()){
+      if(topBox) topBox.style.display = "";
+      if(topText) topText.textContent = note;
 
-    btn.disabled = true;
-    btn.textContent = "جارٍ التنفيذ…";
+      if(sideBox) sideBox.style.display = "";
+      if(sideText) sideText.textContent = note;
+    } else {
+      if(topBox) topBox.style.display = "none";
+      if(topText) topText.textContent = "";
 
-    try{
-      const data = await postAction(url);
-      showToast(data.message || "تم ✅");
-      setTimeout(()=> window.location.reload(), 450);
-    }catch(err){
-      showToast(err.message || "فشل ❌");
-      btn.disabled = false;
-      btn.textContent = oldText;
+      if(sideBox) sideBox.style.display = "none";
+      if(sideText) sideText.textContent = "";
     }
-  });
+  }
 
-  // ===== Days slider arrows =====
-  const track = document.getElementById("daysTrack");
-  const prevBtn = document.getElementById("prevDay");
-  const nextBtn = document.getElementById("nextDay");
+  function setStatusVisuals(statusCode, statusLabel){
+    const statusBadge = document.getElementById("statusBadge");
+    const statusSummaryPill = document.getElementById("statusSummaryPill");
+    const statusChipText = document.getElementById("statusChipText");
+    const statusDot = document.getElementById("statusDot");
 
-  if(track && prevBtn && nextBtn){
-    const step = () => Math.min(360, track.clientWidth * 0.9);
+    const cls = statusCode === "approved" ? "approved" : (statusCode === "unlock" ? "unlock" : "draft");
 
-    prevBtn.addEventListener("click", ()=>{
-      track.scrollBy({ left: step(), behavior: "smooth" });
-    });
+    if(statusBadge){
+      statusBadge.className = `pill ${cls}`;
+      statusBadge.textContent = statusLabel || "—";
+    }
 
-    nextBtn.addEventListener("click", ()=>{
-      track.scrollBy({ left: -step(), behavior: "smooth" });
+    if(statusSummaryPill){
+      statusSummaryPill.className = `pill ${cls}`;
+      statusSummaryPill.textContent = statusLabel || "—";
+    }
+
+    if(statusChipText){
+      statusChipText.textContent = statusLabel || "—";
+    }
+
+    if(statusDot){
+      statusDot.classList.remove("ok", "warn", "pri");
+      if(statusCode === "approved"){
+        statusDot.classList.add("ok");
+      } else if(statusCode === "unlock"){
+        statusDot.classList.add("warn");
+      } else {
+        statusDot.classList.add("pri");
+      }
+    }
+  }
+
+  function setFilledValue(filled){
+    const text = `${filled}/5`;
+    const filledTop = document.getElementById("filledTop");
+    const filledSummary = document.getElementById("filledSummary");
+    const actionStrip = document.getElementById("actionStrip");
+
+    if(filledTop) filledTop.textContent = text;
+    if(filledSummary) filledSummary.textContent = text;
+    if(actionStrip) actionStrip.setAttribute("data-filled", String(filled));
+  }
+
+  function setVisitCounters(data){
+    const assignedEl = document.getElementById("assignedCount");
+    const visitedEl = document.getElementById("visitedCount");
+    const remainingEl = document.getElementById("remainingCount");
+
+    if(assignedEl && typeof data.assigned_count !== "undefined"){
+      assignedEl.textContent = data.assigned_count;
+    }
+    if(visitedEl && typeof data.visited_count !== "undefined"){
+      visitedEl.textContent = data.visited_count;
+    }
+    if(remainingEl && typeof data.remaining_count !== "undefined"){
+      remainingEl.textContent = data.remaining_count;
+    }
+  }
+
+  function ensureUnlockButtonsVisible(){
+    const actionsWrap = document.getElementById("execActions");
+    if(!actionsWrap) return;
+
+    if(!document.getElementById("unlockApproveBtn")){
+      const approveBtn = document.createElement("button");
+      approveBtn.className = "exec-btn unlock";
+      approveBtn.id = "unlockApproveBtn";
+      approveBtn.setAttribute("data-action", "unlock-approve");
+      approveBtn.setAttribute("data-url", "{% url 'visits:admin_unlock_approve' plan.id %}");
+      approveBtn.setAttribute("type", "button");
+      approveBtn.textContent = "🔓 قبول فك الاعتماد";
+      actionsWrap.appendChild(approveBtn);
+    }
+
+    if(!document.getElementById("unlockRejectBtn")){
+      const rejectBtn = document.createElement("button");
+      rejectBtn.className = "exec-btn reject";
+      rejectBtn.id = "unlockRejectBtn";
+      rejectBtn.setAttribute("data-action", "unlock-reject");
+      rejectBtn.setAttribute("data-url", "{% url 'visits:admin_unlock_reject' plan.id %}");
+      rejectBtn.setAttribute("type", "button");
+      rejectBtn.textContent = "⛔ رفض فك الاعتماد";
+      actionsWrap.appendChild(rejectBtn);
+    }
+  }
+
+  function removeUnlockButtons(){
+    const unlockApproveBtn = document.getElementById("unlockApproveBtn");
+    const unlockRejectBtn = document.getElementById("unlockRejectBtn");
+    if(unlockApproveBtn) unlockApproveBtn.remove();
+    if(unlockRejectBtn) unlockRejectBtn.remove();
+  }
+
+  function updateButtons(statusCode, filled){
+    const approveBtn = document.getElementById("approveBtn");
+    const draftBtn = document.getElementById("draftBtn");
+
+    const isApproved = statusCode === "approved";
+    const isDraft = statusCode === "draft";
+    const isUnlock = statusCode === "unlock";
+
+    if(approveBtn){
+      approveBtn.disabled = isApproved ? true : !(filled === 5);
+      approveBtn.textContent = "✅ اعتماد";
+    }
+
+    if(draftBtn){
+      draftBtn.disabled = isDraft;
+      draftBtn.textContent = "↩ إرجاع إلى مسودة";
+    }
+
+    if(isUnlock){
+      ensureUnlockButtonsVisible();
+    } else {
+      removeUnlockButtons();
+    }
+
+    const unlockApproveBtn = document.getElementById("unlockApproveBtn");
+    const unlockRejectBtn = document.getElementById("unlockRejectBtn");
+
+    if(unlockApproveBtn){
+      unlockApproveBtn.disabled = !isUnlock;
+      unlockApproveBtn.textContent = "🔓 قبول فك الاعتماد";
+    }
+
+    if(unlockRejectBtn){
+      unlockRejectBtn.disabled = !isUnlock;
+      unlockRejectBtn.textContent = "⛔ رفض فك الاعتماد";
+    }
+  }
+
+  function applyJsonUpdate(data){
+    const statusCode = data.status_code || "draft";
+    const statusLabel = data.status_label || "مسودة";
+    const filled = parseInt(data.filled || 0, 10);
+
+    setStatusVisuals(statusCode, statusLabel);
+    setFilledValue(filled);
+    setAdminNote(typeof data.admin_note !== "undefined" ? (data.admin_note || "") : "");
+    setVisitCounters(data);
+    updateButtons(statusCode, filled);
+  }
+
+  function lockAllExecButtons(locked = true){
+    document.querySelectorAll(".exec-actions button[data-action]").forEach(btn => {
+      if(locked){
+        btn.dataset.prevDisabled = btn.disabled ? "1" : "0";
+        btn.disabled = true;
+      } else {
+        if(btn.dataset.prevDisabled === "0"){
+          btn.disabled = false;
+        }
+        delete btn.dataset.prevDisabled;
+      }
     });
   }
 
-  // ===== Progress =====
-  (function(){
-    const filled = parseInt("{{ filled|default:0 }}", 10) || 0;
-    const pct = Math.max(0, Math.min(100, Math.round((filled / 5) * 100)));
+  function setBusy(btn, text = "جارٍ التنفيذ…"){
+    if(!btn) return;
+    btn.dataset.oldText = btn.textContent;
+    btn.textContent = text;
+    btn.disabled = true;
+  }
 
-    const bar = document.getElementById("barFill");
-    const txt = document.getElementById("ratioTxt");
+  function restoreBtn(btn){
+    if(!btn || !document.body.contains(btn)) return;
+    if(btn.dataset.oldText){
+      btn.textContent = btn.dataset.oldText;
+      delete btn.dataset.oldText;
+    }
+  }
 
-    if(txt) txt.textContent = pct + "%";
-    if(bar) bar.style.width = pct + "%";
-  })();
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-action][data-url]");
+    if(!btn) return;
+    if(btn.disabled) return;
+
+    e.preventDefault();
+
+    const action = btn.getAttribute("data-action");
+    const url = btn.getAttribute("data-url");
+
+    let payload = {};
+
+    if(action === "draft"){
+      const modalResult = await openModal({
+        title: "إرجاع الخطة إلى مسودة",
+        text: "يمكنك كتابة ملاحظة إدارية ستظهر للمشرف مع الإشعار.",
+        submitText: "إرجاع إلى مسودة"
+      });
+
+      if(!modalResult.ok) return;
+      payload.note = modalResult.note || "";
+    }
+
+    if(action === "unlock-reject"){
+      const modalResult = await openModal({
+        title: "رفض طلب فك الاعتماد",
+        text: "أدخل ملاحظة توضح سبب رفض طلب فك الاعتماد.",
+        submitText: "رفض الطلب"
+      });
+
+      if(!modalResult.ok) return;
+      payload.note = modalResult.note || "";
+    }
+
+    lockAllExecButtons(true);
+    setBusy(btn);
+
+    try{
+      const data = await postAction(url, payload);
+      applyJsonUpdate(data);
+      lockAllExecButtons(false);
+      restoreBtn(btn);
+      showToast(data.message || "تم ✅");
+    }catch(err){
+      lockAllExecButtons(false);
+      restoreBtn(btn);
+      showToast(err.message || "فشل ❌");
+      return;
+    }
+  });
 </script>
 {% endblock %}

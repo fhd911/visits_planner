@@ -22,3 +22,5 @@ venv/
 private_data/
 *.xlsx
 *.xls
+secrets/
+test_google_drive.py

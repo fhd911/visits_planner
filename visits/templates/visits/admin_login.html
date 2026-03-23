@@ -1,0 +1,261 @@
+{% load static %}
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>دخول الإدارة</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --green-950:#053b2b;
+      --green-900:#064e3b;
+      --green-800:#0b5a43;
+      --bg:#eef5ff;
+      --bg-2:#f8fafc;
+      --text:#0f172a;
+      --mut:#64748b;
+      --line:rgba(203,213,225,.9);
+      --shadow:0 20px 40px rgba(15,23,42,.10);
+      --r-xl:28px;
+      --r-lg:20px;
+      --r-md:14px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:"Cairo",system-ui,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(900px 500px at 10% 0%, rgba(96,165,250,.16), transparent 55%),
+        radial-gradient(900px 600px at 90% 10%, rgba(34,197,94,.12), transparent 55%),
+        linear-gradient(180deg, var(--bg), var(--bg-2));
+      display:grid;
+      place-items:center;
+      padding:24px;
+    }
+
+    .login-shell{
+      width:min(460px, 100%);
+    }
+
+    .brand{
+      margin-bottom:16px;
+      text-align:center;
+      color:#fff;
+      background:linear-gradient(180deg, rgba(5,59,43,.97), rgba(5,59,43,.93));
+      border-radius:24px;
+      padding:18px 20px;
+      box-shadow:var(--shadow);
+    }
+
+    .brand .logo{
+      width:56px;
+      height:56px;
+      margin:0 auto 12px;
+      border-radius:18px;
+      display:grid;
+      place-items:center;
+      font-weight:800;
+      font-size:24px;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.16);
+    }
+
+    .brand h1{
+      margin:0;
+      font-size:24px;
+      font-weight:800;
+    }
+
+    .brand p{
+      margin:6px 0 0;
+      font-size:14px;
+      opacity:.92;
+    }
+
+    .card{
+      background:rgba(255,255,255,.92);
+      border:1px solid rgba(203,213,225,.8);
+      border-radius:var(--r-xl);
+      padding:24px;
+      box-shadow:var(--shadow);
+      backdrop-filter:blur(10px);
+    }
+
+    .title{
+      margin:0 0 6px;
+      font-size:22px;
+      font-weight:800;
+      text-align:center;
+    }
+
+    .subtitle{
+      margin:0 0 20px;
+      text-align:center;
+      color:var(--mut);
+      font-size:14px;
+      line-height:1.8;
+    }
+
+    .field{
+      margin-bottom:14px;
+    }
+
+    .field label{
+      display:block;
+      margin-bottom:6px;
+      font-size:13px;
+      font-weight:700;
+      color:var(--text);
+    }
+
+    .input{
+      width:100%;
+      height:48px;
+      border-radius:16px;
+      border:1px solid var(--line);
+      background:#fff;
+      padding:0 14px;
+      font-family:"Cairo",system-ui,sans-serif;
+      font-size:14px;
+      outline:none;
+      transition:.15s ease;
+    }
+
+    .input:focus{
+      border-color:rgba(37,99,235,.45);
+      box-shadow:0 0 0 4px rgba(37,99,235,.08);
+    }
+
+    .btn{
+      width:100%;
+      height:50px;
+      border:0;
+      border-radius:16px;
+      cursor:pointer;
+      font-family:"Cairo",system-ui,sans-serif;
+      font-size:15px;
+      font-weight:800;
+      color:#fff;
+      background:linear-gradient(135deg, var(--green-900), var(--green-800));
+      box-shadow:0 14px 24px rgba(5,59,43,.18);
+      transition:.15s ease;
+    }
+
+    .btn:hover{
+      transform:translateY(-1px);
+    }
+
+    .links{
+      margin-top:14px;
+      text-align:center;
+    }
+
+    .links a{
+      color:var(--green-900);
+      text-decoration:none;
+      font-weight:700;
+      font-size:13px;
+    }
+
+    .msgs{
+      margin-bottom:14px;
+      display:grid;
+      gap:8px;
+    }
+
+    .msg{
+      border-radius:14px;
+      padding:10px 12px;
+      font-size:13px;
+      line-height:1.8;
+      border:1px solid rgba(226,232,240,.9);
+      background:#fff;
+    }
+
+    .msg.success{
+      background:rgba(34,197,94,.08);
+      border-color:rgba(34,197,94,.18);
+    }
+
+    .msg.error{
+      background:rgba(239,68,68,.08);
+      border-color:rgba(239,68,68,.18);
+    }
+
+    .msg.warning{
+      background:rgba(245,158,11,.10);
+      border-color:rgba(245,158,11,.18);
+    }
+
+    .msg.info{
+      background:rgba(59,130,246,.08);
+      border-color:rgba(59,130,246,.18);
+    }
+  </style>
+</head>
+<body>
+  <div class="login-shell">
+    <div class="brand">
+      <div class="logo">ز</div>
+      <h1>نظام زيارات المشرفين</h1>
+      <p>قسم الإدارة المدرسية — تعليم عسير</p>
+    </div>
+
+    <div class="card">
+      <h2 class="title">دخول الإدارة</h2>
+      <p class="subtitle">أدخل اسم المستخدم وكلمة المرور الخاصة بحساب الإدارة.</p>
+
+      {% if messages %}
+        <div class="msgs">
+          {% for message in messages %}
+            <div class="msg {{ message.tags|default:'info' }}">{{ message }}</div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="field">
+          <label for="id_username">اسم المستخدم</label>
+          <input
+            class="input"
+            id="id_username"
+            type="text"
+            name="username"
+            value="{{ username|default:'' }}"
+            autocomplete="username"
+            required
+          >
+        </div>
+
+        <div class="field">
+          <label for="id_password">كلمة المرور</label>
+          <input
+            class="input"
+            id="id_password"
+            type="password"
+            name="password"
+            autocomplete="current-password"
+            required
+          >
+        </div>
+
+        <button class="btn" type="submit">دخول الإدارة</button>
+      </form>
+
+      <div class="links">
+        <a href="{% url 'visits:login' %}">العودة إلى دخول المشرف</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

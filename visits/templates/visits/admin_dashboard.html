@@ -4,110 +4,95 @@
 {% block title %}لوحة الإدارة — خطط الزيارات{% endblock %}
 {% block page_messages %}{% endblock %}
 
-{% block content %}
+{% block header_title %}لوحة الإدارة{% endblock %}
+{% block header_subtitle %}إدارة خطط الزيارات ومتابعة الاعتماد{% endblock %}
+
+{% block topbar_actions %}{% endblock %}
+{% block page_actions %}{% endblock %}
+
+{% block extra_css %}
 <style>
-  /* =========================================================
-     Admin Dashboard (Unified Fonts FINAL)
-     ✅ Typography system موحّد
-     ✅ بدون سماكات مزعجة
-  ========================================================= */
   .admin-page{
     --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+    --fw-hero:800;
+    --fw-title:700;
+    --fw-strong:600;
+    --fw-normal:500;
+    --fw-muted:400;
 
-    /* Typography (Unified) */
-    --fw-hero: 650;
-    --fw-title: 650;
-    --fw-strong: 600;
-    --fw-normal: 500;
-    --fw-muted: 450;
-
-    --bg1:#f6f9ff;
-    --bg2:#fbfdff;
-
-    --card: rgba(255,255,255,.96);
-    --soft: rgba(248,250,252,.92);
+    --card:rgba(255,255,255,.97);
+    --soft:rgba(248,250,252,.95);
 
     --txt:#0f172a;
     --mut:#64748b;
     --mut2:#94a3b8;
 
-    --line: rgba(148,163,184,.22);
-    --line2: rgba(148,163,184,.14);
-
-    --b1:#2563eb;
-    --b2:#60a5fa;
+    --line:rgba(148,163,184,.18);
+    --line2:rgba(148,163,184,.10);
 
     --ok:#16a34a;
     --warn:#f59e0b;
+    --danger:#dc2626;
+    --danger-bg:rgba(220,38,38,.07);
+    --danger-br:rgba(220,38,38,.15);
 
-    --shadow: 0 18px 46px rgba(15,23,42,.10);
-    --shadow2: 0 10px 28px rgba(15,23,42,.08);
+    --shadow:0 12px 28px rgba(15,23,42,.06);
+    --shadow2:0 6px 16px rgba(15,23,42,.045);
 
-    font-family: var(--ff);
-    direction: rtl;
-    color: var(--txt);
+    font-family:var(--ff);
+    direction:rtl;
+    color:var(--txt);
   }
 
-  /* ✅ قاعدة عامة: كل العناصر داخل الصفحة على نفس الفونت */
   .admin-page *{
-    font-family: var(--ff) !important;
-    letter-spacing: .1px;
-  }
-
-  .admin-page .shell{
-    min-height: calc(100vh - 80px);
-    padding: 14px 12px 24px;
-    background:
-      radial-gradient(1050px 430px at 12% 0%, rgba(37,99,235,.08), transparent 58%),
-      radial-gradient(1050px 430px at 88% 0%, rgba(16,185,129,.08), transparent 58%),
-      linear-gradient(180deg, var(--bg1), var(--bg2));
+    font-family:var(--ff) !important;
+    letter-spacing:.03px;
+    box-sizing:border-box;
   }
 
   .admin-page .wrap{
-    max-width: 1320px;
-    margin: 0 auto;
-    display: grid;
-    gap: 12px;
+    display:grid;
+    gap:8px;
   }
 
-  /* ===== Header ===== */
   .admin-page .head{
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 22px;
-    box-shadow: var(--shadow);
-    padding: 14px 16px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    box-shadow:var(--shadow);
+    padding:11px 13px;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap: 12px;
+    gap:10px;
     flex-wrap:wrap;
   }
 
   .admin-page .head .title{
     display:grid;
-    gap: 3px;
-    min-width: 260px;
+    gap:3px;
+    min-width:240px;
   }
 
   .admin-page .head h1{
     margin:0;
-    font-size: 16px;
-    font-weight: var(--fw-hero);
-    color: var(--txt);
+    font-size:14px;
+    font-weight:var(--fw-hero);
+    color:var(--txt);
+    line-height:1.5;
   }
 
   .admin-page .head p{
     margin:0;
-    font-size: 12.6px;
-    font-weight: var(--fw-normal);
-    color: var(--mut);
-    line-height: 1.6;
+    font-size:11.7px;
+    font-weight:var(--fw-normal);
+    color:var(--mut);
+    line-height:1.7;
   }
 
   .admin-page .head .right{
     display:flex;
-    gap: 8px;
+    gap:6px;
     align-items:center;
     flex-wrap:wrap;
     justify-content:flex-end;
@@ -116,254 +101,464 @@
   .admin-page .chip{
     display:inline-flex;
     align-items:center;
-    gap:8px;
-    padding: 8px 12px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: var(--soft);
-    color: var(--mut);
-    font-size: 12px;
-    font-weight: var(--fw-strong);
+    gap:7px;
+    padding:6px 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--soft);
+    color:var(--mut);
+    font-size:11.2px;
+    font-weight:var(--fw-strong);
+    min-height:30px;
   }
 
   .admin-page .dot{
-    width:9px;height:9px;border-radius:50%;
-    background: rgba(37,99,235,.95);
-    box-shadow: 0 0 0 4px rgba(37,99,235,.10);
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:rgba(37,99,235,.95);
+    box-shadow:0 0 0 3px rgba(37,99,235,.08);
+    flex:0 0 auto;
   }
+
   .admin-page .dot.ok{
-    background: rgba(16,185,129,.95);
-    box-shadow: 0 0 0 4px rgba(16,185,129,.12);
+    background:rgba(16,185,129,.95);
+    box-shadow:0 0 0 3px rgba(16,185,129,.08);
   }
 
   .admin-page .btn{
-    height: 36px;
-    padding: 0 12px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
+    height:32px;
+    padding:0 11px;
+    border-radius:999px;
+    border:1px solid var(--line);
     background:#fff;
-    color: var(--txt);
-    font-weight: var(--fw-strong);
-    font-size: 12.5px;
+    color:var(--txt);
+    font-weight:var(--fw-strong);
+    font-size:11.5px;
     cursor:pointer;
     text-decoration:none;
     display:inline-flex;
     align-items:center;
-    gap:8px;
-    box-shadow: 0 10px 18px rgba(15,23,42,.06);
-    transition: transform .12s ease, box-shadow .12s ease;
+    gap:7px;
+    box-shadow:0 5px 12px rgba(15,23,42,.045);
+    transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease, opacity .12s ease;
     user-select:none;
-  }
-  .admin-page .btn:hover{
-    transform: translateY(-1px);
-    box-shadow: 0 14px 26px rgba(15,23,42,.10);
-  }
-  .admin-page .btn.primary{
-    background: linear-gradient(135deg, rgba(37,99,235,.95), rgba(96,165,250,.95));
-    border-color: rgba(37,99,235,.18);
-    color:#fff;
-  }
-  .admin-page .btn.soft{
-    background: rgba(14,165,164,.10);
-    border-color: rgba(14,165,164,.18);
-    color: var(--txt);
+    white-space:nowrap;
   }
 
-  /* ===== KPI ===== */
+  .admin-page .btn:hover{
+    transform:translateY(-1px);
+    box-shadow:0 9px 18px rgba(15,23,42,.07);
+  }
+
+  .admin-page .btn.primary{
+    background:linear-gradient(135deg, rgba(37,99,235,.95), rgba(96,165,250,.95));
+    border-color:rgba(37,99,235,.14);
+    color:#fff;
+  }
+
+  .admin-page .btn.soft{
+    background:rgba(14,165,164,.08);
+    border-color:rgba(14,165,164,.15);
+    color:var(--txt);
+  }
+
+  .admin-page .btn:disabled{
+    opacity:.6;
+    cursor:not-allowed;
+    transform:none;
+    box-shadow:none;
+  }
+
   .admin-page .kpis{
     display:grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 10px;
+    grid-template-columns:repeat(6, 1fr);
+    gap:8px;
   }
+
   .admin-page .kpi{
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    box-shadow: var(--shadow2);
-    padding: 12px 14px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:15px;
+    box-shadow:var(--shadow2);
+    padding:10px 11px;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap: 10px;
-    min-height: 62px;
-  }
-  .admin-page .kpi .meta{ display:grid; gap:3px; }
-  .admin-page .kpi .label{
-    font-size:12px;
-    font-weight: var(--fw-normal);
-    color: var(--mut);
-  }
-  .admin-page .kpi .value{
-    font-size:18px;
-    font-weight: var(--fw-title);
-    color: var(--txt);
-  }
-  .admin-page .kpi .icon{
-    width: 36px; height: 36px; border-radius: 14px;
-    display:grid; place-items:center;
-    border: 1px solid var(--line);
-    background: var(--soft);
-    font-size: 16px;
+    gap:8px;
+    min-height:54px;
   }
 
-  /* ===== Filters ===== */
-  .admin-page .filters{
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 22px;
-    box-shadow: var(--shadow2);
-    padding: 12px;
+  .admin-page .kpi .meta{
     display:grid;
-    gap: 10px;
+    gap:2px;
   }
+
+  .admin-page .kpi .label{
+    font-size:11px;
+    font-weight:var(--fw-normal);
+    color:var(--mut);
+  }
+
+  .admin-page .kpi .value{
+    font-size:16px;
+    font-weight:var(--fw-title);
+    color:var(--txt);
+    line-height:1.2;
+  }
+
+  .admin-page .kpi .icon{
+    width:32px;
+    height:32px;
+    border-radius:12px;
+    display:grid;
+    place-items:center;
+    border:1px solid var(--line);
+    background:var(--soft);
+    font-size:14px;
+    flex:0 0 auto;
+  }
+
+  .admin-page .analytics{
+    display:grid;
+    grid-template-columns:1.08fr .92fr;
+    gap:10px;
+  }
+
+  .admin-page .panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    box-shadow:var(--shadow2);
+    overflow:hidden;
+  }
+
+  .admin-page .panel-head{
+    padding:10px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(246,250,253,.98), rgba(255,255,255,.94));
+    flex-wrap:wrap;
+  }
+
+  .admin-page .panel-title{
+    margin:0;
+    font-size:12px;
+    font-weight:var(--fw-title);
+    color:var(--txt);
+    line-height:1.5;
+  }
+
+  .admin-page .panel-sub{
+    margin:2px 0 0;
+    font-size:11.2px;
+    color:var(--mut);
+    font-weight:var(--fw-normal);
+    line-height:1.6;
+  }
+
+  .admin-page .chart-box{
+    padding:10px 12px 12px;
+    height:280px;
+  }
+
+  .admin-page .summary-grid{
+    padding:10px 12px 12px;
+    display:grid;
+    gap:8px;
+  }
+
+  .admin-page .summary-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 11px;
+    border-radius:14px;
+    background:rgba(248,250,252,.86);
+    border:1px solid var(--line2);
+  }
+
+  .admin-page .summary-item .s-right{
+    display:flex;
+    align-items:center;
+    gap:9px;
+    min-width:0;
+  }
+
+  .admin-page .summary-badge{
+    width:32px;
+    height:32px;
+    border-radius:12px;
+    display:grid;
+    place-items:center;
+    font-size:13px;
+    border:1px solid var(--line);
+    background:#fff;
+    flex:0 0 auto;
+  }
+
+  .admin-page .summary-item .name{
+    font-size:11.2px;
+    color:var(--mut);
+    font-weight:var(--fw-normal);
+    line-height:1.5;
+  }
+
+  .admin-page .summary-item .num{
+    font-size:15px;
+    color:var(--txt);
+    font-weight:var(--fw-title);
+    line-height:1.2;
+  }
+
+  .admin-page .filters{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    box-shadow:var(--shadow2);
+    padding:10px;
+    display:grid;
+    gap:8px;
+  }
+
   .admin-page .filters-grid{
     display:grid;
-    grid-template-columns: 1.05fr 1fr 1fr 1fr auto;
-    gap: 10px;
+    grid-template-columns:1.05fr 1fr 1fr 1fr auto;
+    gap:8px;
     align-items:end;
   }
+
   .admin-page .field label{
     display:block;
-    font-size:12px;
-    font-weight: var(--fw-normal);
-    color: var(--mut);
-    margin-bottom: 6px;
+    font-size:11.1px;
+    font-weight:var(--fw-normal);
+    color:var(--mut);
+    margin-bottom:5px;
   }
+
+  .admin-page .input,
+  .admin-page .select,
+  .admin-page .textarea{
+    width:100%;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:rgba(248,250,252,.94);
+    padding:0 11px;
+    outline:none;
+    font-weight:var(--fw-strong);
+    color:var(--txt);
+    transition:border-color .12s ease, box-shadow .12s ease, background .12s ease;
+  }
+
+  .admin-page .input:focus,
+  .admin-page .select:focus,
+  .admin-page .textarea:focus{
+    border-color:rgba(59,130,246,.30);
+    box-shadow:0 0 0 4px rgba(59,130,246,.06);
+    background:#fff;
+  }
+
   .admin-page .input,
   .admin-page .select{
-    width:100%;
-    height: 38px;
-    border-radius: 14px;
-    border: 1px solid var(--line);
-    background: rgba(248,250,252,.92);
-    padding: 0 12px;
-    outline: none;
-    font-weight: var(--fw-strong);
-    color: var(--txt);
+    height:34px;
+    font-size:11.7px;
   }
-  .admin-page .select{ cursor:pointer; }
+
+  .admin-page .textarea{
+    min-height:96px;
+    padding:10px 11px;
+    resize:vertical;
+    line-height:1.8;
+    font-size:12px;
+  }
+
+  .admin-page .select{
+    cursor:pointer;
+  }
 
   .admin-page .filters-actions{
     display:flex;
-    gap: 8px;
+    gap:6px;
     justify-content:flex-end;
     align-items:center;
     flex-wrap:wrap;
   }
 
-  /* ===== Table Card ===== */
   .admin-page .table-card{
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 26px;
-    box-shadow: var(--shadow);
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:20px;
+    box-shadow:var(--shadow);
     overflow:hidden;
   }
 
   .admin-page .table-head{
-    padding: 12px 14px;
+    padding:10px 12px;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap: 10px;
-    border-bottom: 1px solid var(--line);
-    background: linear-gradient(180deg, rgba(248,250,252,.94), rgba(255,255,255,.90));
+    gap:8px;
+    border-bottom:1px solid rgba(148,163,184,.18);
+    background:linear-gradient(180deg, rgba(245,248,252,.98), rgba(255,255,255,.95));
+    flex-wrap:wrap;
   }
+
   .admin-page .hint{
-    font-size:12px;
-    font-weight: var(--fw-normal);
-    color: var(--mut);
+    font-size:11.1px;
+    font-weight:var(--fw-normal);
+    color:var(--mut);
     display:flex;
     align-items:center;
-    gap: 8px;
+    gap:7px;
+    flex-wrap:wrap;
   }
+
   .admin-page .mini{
-    width: 18px; height: 18px;
-    border-radius: 7px;
+    width:16px;
+    height:16px;
+    border-radius:6px;
     display:grid;
     place-items:center;
-    border: 1px solid rgba(16,185,129,.22);
-    background: rgba(16,185,129,.10);
-    color: #166534;
-    font-weight: var(--fw-title);
-    font-size: 12px;
+    border:1px solid rgba(16,185,129,.18);
+    background:rgba(16,185,129,.10);
+    color:#166534;
+    font-weight:var(--fw-title);
+    font-size:10px;
+    flex:0 0 auto;
+  }
+
+  .admin-page .table-wrap{
+    overflow:auto;
   }
 
   .admin-page table{
     width:100%;
     border-collapse:separate;
     border-spacing:0;
+    table-layout:auto;
   }
 
   .admin-page thead th{
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    background: rgba(248,250,252,.98);
-    border-bottom: 1px solid var(--line);
-    padding: 12px 12px;
-    font-size: 12px;
-    font-weight: var(--fw-strong);
-    color: var(--mut);
+    position:sticky;
+    top:0;
+    z-index:2;
+    background:rgba(246,249,252,.99);
+    border-bottom:1px solid rgba(148,163,184,.18);
+    padding:11px 12px;
+    font-size:11px;
+    font-weight:var(--fw-strong);
+    color:var(--mut);
     text-align:right;
     white-space:nowrap;
   }
 
+  .admin-page thead th:nth-child(1){ width:34%; }
+  .admin-page thead th:nth-child(2){ width:12%; }
+  .admin-page thead th:nth-child(3){ width:10%; }
+  .admin-page thead th:nth-child(4){ width:12%; }
+  .admin-page thead th:nth-child(5){ width:32%; }
+
   .admin-page tbody td{
-    border-bottom: 1px solid var(--line2);
-    padding: 12px 12px;
-    font-size: 13px;
-    font-weight: var(--fw-strong);
-    color: var(--txt);
+    border-bottom:1px solid var(--line2);
+    padding:12px 12px;
+    font-size:12px;
+    font-weight:var(--fw-normal);
+    color:var(--txt);
     vertical-align:middle;
   }
 
-  .admin-page tbody tr:nth-child(even){ background: rgba(2,6,23,.012); }
-  .admin-page tbody tr:hover{ background: rgba(37,99,235,.04); }
+  .admin-page tbody tr:nth-child(even){
+    background:rgba(2,6,23,.012);
+  }
 
-  /* ✅ اسم المشرف كرابط للتفاصيل */
+  .admin-page tbody tr:hover{
+    background:rgba(37,99,235,.028);
+  }
+
   .admin-page .sup-link{
-    color: var(--txt);
-    font-weight: var(--fw-title);
-    text-decoration: none;
+    color:var(--txt);
+    font-weight:var(--fw-title);
+    text-decoration:none;
     display:inline-flex;
     align-items:center;
-    gap:8px;
+    gap:5px;
+    line-height:1.55;
+    font-size:12.6px;
   }
+
   .admin-page .sup-link:hover{
-    text-decoration: underline;
+    text-decoration:underline;
   }
+
   .admin-page .sup-sub{
-    margin-top: 4px;
-    font-size: 12px;
-    font-weight: var(--fw-muted);
-    color: var(--mut2);
+    margin-top:4px;
+    font-size:10.9px;
+    font-weight:var(--fw-normal);
+    color:var(--mut2);
+    line-height:1.6;
+  }
+
+  .admin-page .assign-chip{
+    margin-top:6px;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:4px 8px;
+    border-radius:999px;
+    border:1px solid rgba(37,99,235,.12);
+    background:rgba(37,99,235,.06);
+    color:#0c4a6e;
+    font-size:10.7px;
+    font-weight:var(--fw-strong);
+    min-height:24px;
+  }
+
+  .admin-page .note-box{
+    margin-top:7px;
+    font-size:10.9px;
+    font-weight:var(--fw-normal);
+    color:#7c2d12;
+    background:rgba(245,158,11,.07);
+    border:1px solid rgba(245,158,11,.14);
+    border-radius:10px;
+    padding:7px 9px;
+    line-height:1.7;
+    max-width:420px;
   }
 
   .admin-page .pill{
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    padding: 7px 10px;
-    border-radius: 999px;
-    font-weight: var(--fw-strong);
-    font-size: 12px;
-    border: 1px solid transparent;
+    padding:5px 9px;
+    border-radius:999px;
+    font-weight:var(--fw-strong);
+    font-size:11px;
+    border:1px solid transparent;
     white-space:nowrap;
+    min-width:74px;
+    min-height:28px;
   }
+
   .admin-page .pill.approved{
-    background: rgba(22,163,74,.10);
-    border-color: rgba(22,163,74,.22);
+    background:rgba(22,163,74,.10);
+    border-color:rgba(22,163,74,.18);
     color:#166534;
   }
+
   .admin-page .pill.draft{
-    background: rgba(37,99,235,.10);
-    border-color: rgba(37,99,235,.18);
+    background:rgba(37,99,235,.10);
+    border-color:rgba(37,99,235,.15);
     color:#0c4a6e;
   }
+
   .admin-page .pill.unlock{
-    background: rgba(245,158,11,.12);
-    border-color: rgba(245,158,11,.22);
+    background:rgba(245,158,11,.12);
+    border-color:rgba(245,158,11,.18);
     color:#7c2d12;
   }
 
@@ -371,407 +566,1000 @@
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    padding: 7px 10px;
+    padding:5px 9px;
     border-radius:999px;
-    font-weight: var(--fw-strong);
-    font-size:12px;
+    font-weight:var(--fw-strong);
+    font-size:11px;
     border:1px solid var(--line);
-    background: rgba(248,250,252,.92);
+    background:rgba(248,250,252,.94);
+    min-width:60px;
+    min-height:28px;
   }
+
   .admin-page .count.ok{
-    border-color: rgba(22,163,74,.25);
-    background: rgba(22,163,74,.10);
+    border-color:rgba(22,163,74,.20);
+    background:rgba(22,163,74,.10);
     color:#166534;
   }
+
   .admin-page .count.bad{
-    border-color: rgba(245,158,11,.30);
-    background: rgba(245,158,11,.10);
+    border-color:rgba(245,158,11,.22);
+    background:rgba(245,158,11,.10);
     color:#7c2d12;
+  }
+
+  .admin-page .saved-cell{
+    color:#475569;
+    font-weight:var(--fw-normal);
+    font-size:11.2px;
+    line-height:1.55;
+    white-space:nowrap;
+    text-align:center;
+  }
+
+  .admin-page .saved-cell .date{
+    display:block;
+    color:#334155;
+    font-weight:var(--fw-strong);
+  }
+
+  .admin-page .saved-cell .time{
+    display:block;
+    color:var(--mut);
+    margin-top:2px;
+  }
+
+  .admin-page .status-cell,
+  .admin-page .fill-cell{
+    text-align:center;
+  }
+
+  .admin-page .actions-cell{
+    text-align:left;
   }
 
   .admin-page .actions{
     display:flex;
-    gap: 8px;
-    justify-content:flex-end;
     flex-wrap:wrap;
+    gap:5px;
+    justify-content:flex-start;
+    align-items:center;
   }
 
   .admin-page .a-btn{
-    height: 32px;
-    padding: 0 10px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
+    height:30px;
+    padding:0 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
     background:#fff;
-    font-weight: var(--fw-strong);
-    font-size: 12px;
+    font-weight:var(--fw-strong);
+    font-size:10.9px;
     cursor:pointer;
     text-decoration:none;
     display:inline-flex;
     align-items:center;
-    gap: 6px;
-    transition: transform .12s ease, box-shadow .12s ease;
+    justify-content:center;
+    gap:5px;
+    transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease, opacity .12s ease;
     user-select:none;
-    box-shadow: 0 8px 14px rgba(15,23,42,.05);
+    box-shadow:0 4px 10px rgba(15,23,42,.04);
+    white-space:nowrap;
   }
+
   .admin-page .a-btn:hover{
-    transform: translateY(-1px);
-    box-shadow: 0 12px 20px rgba(15,23,42,.09);
+    transform:translateY(-1px);
+    box-shadow:0 8px 14px rgba(15,23,42,.06);
   }
-  .admin-page .a-btn.ghost{
-    background: rgba(37,99,235,.08);
-    border-color: rgba(37,99,235,.15);
-    color:#0c4a6e;
+
+  .admin-page .a-btn.notify{
+    background:rgba(99,102,241,.10);
+    border-color:rgba(99,102,241,.16);
+    color:#4338ca;
   }
+
+  .admin-page .a-btn.export{
+    background:rgba(37,99,235,.08);
+    border-color:rgba(37,99,235,.14);
+    color:#1d4ed8;
+  }
+
   .admin-page .a-btn.approve{
-    background: rgba(22,163,74,.12);
-    border-color: rgba(22,163,74,.24);
+    background:rgba(22,163,74,.14);
+    border-color:rgba(22,163,74,.22);
     color:#166534;
+    font-weight:800;
   }
+
   .admin-page .a-btn.draft{
-    background: rgba(245,158,11,.12);
-    border-color: rgba(245,158,11,.24);
+    background:rgba(245,158,11,.13);
+    border-color:rgba(245,158,11,.22);
     color:#7c2d12;
+    font-weight:800;
   }
+
+  .admin-page .a-btn.unlock{
+    background:rgba(14,165,164,.10);
+    border-color:rgba(14,165,164,.16);
+    color:#0f766e;
+  }
+
+  .admin-page .a-btn.reject{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:#991b1b;
+  }
+
   .admin-page .a-btn:disabled{
-    opacity: .55;
-    cursor: not-allowed;
+    opacity:.55;
+    cursor:not-allowed;
     transform:none;
     box-shadow:none;
   }
 
-  /* ===== Pager ===== */
   .admin-page .pager{
-    padding: 12px 14px;
+    padding:10px 12px;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap: 10px;
+    gap:8px;
     flex-wrap:wrap;
-    background: rgba(248,250,252,.78);
-    border-top: 1px solid var(--line);
-    color: var(--mut);
-    font-size: 12px;
-    font-weight: var(--fw-normal);
-  }
-  .admin-page .pbtn{
-    height: 32px;
-    padding: 0 12px;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background:#fff;
-    text-decoration:none;
-    color: var(--txt);
-    font-weight: var(--fw-strong);
-    font-size: 12px;
-    display:inline-flex;
-    align-items:center;
-    box-shadow: 0 8px 14px rgba(15,23,42,.05);
-  }
-  .admin-page .pbtn.disabled{
-    opacity:.5;
-    pointer-events:none;
+    background:rgba(248,250,252,.82);
+    border-top:1px solid var(--line);
+    color:var(--mut);
+    font-size:11px;
+    font-weight:var(--fw-normal);
   }
 
-  /* ===== Toast ===== */
+  .admin-page .pager-actions{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+
+  .admin-page .pbtn{
+    height:28px;
+    padding:0 10px;
+    border-radius:999px;
+    border:1px solid rgba(148,163,184,.22);
+    background:#fff;
+    text-decoration:none;
+    color:var(--txt);
+    font-weight:var(--fw-strong);
+    font-size:10.8px;
+    display:inline-flex;
+    align-items:center;
+    box-shadow:0 4px 10px rgba(15,23,42,.04);
+    white-space:nowrap;
+  }
+
+  .admin-page .pbtn.disabled{
+    opacity:.48;
+    pointer-events:none;
+    background:rgba(248,250,252,.85);
+  }
+
   .admin-page .toast-wrap{
-    position: fixed;
-    bottom: 16px;
-    left: 16px;
-    z-index: 10000;
+    position:fixed;
+    bottom:16px;
+    left:16px;
+    z-index:10000;
     display:grid;
     gap:8px;
   }
+
   .admin-page .toast{
-    min-width: 240px;
-    max-width: 360px;
-    background: rgba(15,23,42,.92);
+    min-width:220px;
+    max-width:340px;
+    background:rgba(15,23,42,.93);
     color:#fff;
-    padding: 10px 12px;
-    border-radius: 16px;
-    box-shadow: 0 18px 50px rgba(15,23,42,.24);
-    font-weight: var(--fw-strong);
-    font-size: 12.5px;
+    padding:9px 11px;
+    border-radius:14px;
+    box-shadow:0 18px 50px rgba(15,23,42,.24);
+    font-weight:var(--fw-strong);
+    font-size:11.7px;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap: 10px;
+    gap:10px;
   }
+
   .admin-page .toast .x{
     border:0;
-    background: transparent;
+    background:transparent;
     color:#fff;
     cursor:pointer;
-    font-weight: 900;
-    opacity: .85;
+    font-weight:900;
+    opacity:.85;
   }
 
-  @media (max-width: 1050px){
-    .admin-page .kpis{ grid-template-columns: repeat(3, 1fr); }
-    .admin-page .filters-grid{ grid-template-columns: 1fr 1fr; }
-    .admin-page .filters-actions{ justify-content:flex-start; }
+  .admin-page .modal{
+    position:fixed;
+    inset:0;
+    z-index:10050;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    background:rgba(15,23,42,.38);
+    backdrop-filter:blur(3px);
   }
+
+  .admin-page .modal.show{
+    display:flex;
+  }
+
+  .admin-page .modal-card{
+    width:min(540px, 100%);
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:20px;
+    box-shadow:0 30px 80px rgba(15,23,42,.18);
+    overflow:hidden;
+  }
+
+  .admin-page .modal-head{
+    padding:12px 14px;
+    border-bottom:1px solid var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+
+  .admin-page .modal-head h3{
+    margin:0;
+    font-size:13px;
+    font-weight:var(--fw-title);
+    color:var(--txt);
+  }
+
+  .admin-page .modal-close{
+    width:32px;
+    height:32px;
+    border-radius:11px;
+    border:1px solid var(--line);
+    background:#fff;
+    cursor:pointer;
+    font-size:17px;
+    color:var(--txt);
+  }
+
+  .admin-page .modal-body{
+    padding:14px;
+    display:grid;
+    gap:10px;
+  }
+
+  .admin-page .modal-text{
+    margin:0;
+    color:var(--mut);
+    font-size:11.8px;
+    line-height:1.8;
+    font-weight:var(--fw-normal);
+  }
+
+  .admin-page .modal-actions{
+    padding:0 14px 14px;
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  @media (max-width: 1150px){
+    .admin-page .kpis{
+      grid-template-columns:repeat(3, 1fr);
+    }
+
+    .admin-page .analytics{
+      grid-template-columns:1fr;
+    }
+
+    .admin-page .filters-grid{
+      grid-template-columns:1fr 1fr;
+    }
+
+    .admin-page .filters-actions{
+      justify-content:flex-start;
+    }
+  }
+
+  @media (max-width: 980px){
+    .admin-page table{
+      table-layout:auto;
+    }
+
+    .admin-page thead th:nth-child(1),
+    .admin-page thead th:nth-child(2),
+    .admin-page thead th:nth-child(3),
+    .admin-page thead th:nth-child(4),
+    .admin-page thead th:nth-child(5){
+      width:auto;
+    }
+
+    .admin-page .saved-cell{
+      white-space:normal;
+    }
+  }
+
+  @media (max-width: 700px){
+    .admin-page .chart-box{
+      height:245px;
+    }
+  }
+
   @media (max-width: 560px){
-    .admin-page .kpis{ grid-template-columns: repeat(2, 1fr); }
+    .admin-page .kpis{
+      grid-template-columns:repeat(2, 1fr);
+    }
+
+    .admin-page .filters-grid{
+      grid-template-columns:1fr;
+    }
+
+    .admin-page .head{
+      padding:10px 11px;
+    }
+
+    .admin-page .table-head,
+    .admin-page .pager{
+      padding:9px 10px;
+    }
   }
 </style>
+{% endblock %}
+
+{% block content %}
+{{ chart_labels|json_script:"chart-labels" }}
+{{ chart_in_values|json_script:"chart-in-values" }}
+{{ chart_remote_values|json_script:"chart-remote-values" }}
+{{ chart_none_values|json_script:"chart-none-values" }}
 
 <section class="admin-page">
-  <div class="shell">
-    <div class="wrap">
+  <div class="wrap">
 
-      <!-- ===== Header ===== -->
-      <div class="head">
-        <div class="title">
-          <h1>لوحة الإدارة — خطط الزيارات</h1>
-          <p>إدارة خطط المشرفين حسب الأسبوع — افتح تفاصيل الخطة بالنقر على اسم المشرف + اعتماد/مسودة + تصدير Excel.</p>
+    <div class="head">
+      <div class="title">
+        <h1>لوحة الإدارة — خطط الزيارات</h1>
+        <p>إدارة خطط المشرفين حسب الأسبوع مع تحليل بصري للحركة وإجراءات اعتماد الخطط أو إعادتها للمراجعة أو معالجة طلبات فك الاعتماد وإرسال تنبيهات إدارية.</p>
+      </div>
+
+      <div class="right">
+        <span class="chip"><span class="dot ok"></span> النظام يعمل</span>
+        <span class="chip"><span class="dot"></span> الأسبوع: <b style="color:var(--txt);font-weight:var(--fw-title)">{{ week }}</b></span>
+        <span class="chip">النتائج: <b style="color:var(--txt);font-weight:var(--fw-title)">{{ kpi_total }}</b></span>
+
+        <button class="btn soft" id="bulkNotifyBtn" type="button">🔔 تنبيه عام</button>
+        <a class="btn primary" href="{% url 'visits:admin_export_week' %}?week={{ week }}{% if show_all %}&all=1{% endif %}">⬇ Excel للأسبوع</a>
+        <a class="btn soft" href="{% url 'visits:admin_import' %}">⬆ استيراد البيانات</a>
+        <a class="btn" href="{% url 'visits:logout' %}">خروج</a>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi">
+        <div class="meta">
+          <div class="label">الإجمالي</div>
+          <div class="value">{{ kpi_total }}</div>
         </div>
+        <div class="icon">📌</div>
+      </div>
 
-        <div class="right">
-          <span class="chip"><span class="dot ok"></span> النظام يعمل</span>
-          <span class="chip"><span class="dot"></span> الأسبوع: <b style="color:var(--txt);font-weight:var(--fw-title)">{{ week }}</b></span>
-          <span class="chip">النتائج: <b style="color:var(--txt);font-weight:var(--fw-title)">{{ kpi_total }}</b></span>
+      <div class="kpi">
+        <div class="meta">
+          <div class="label">المعتمدة</div>
+          <div class="value">{{ kpi_approved }}</div>
+        </div>
+        <div class="icon">✅</div>
+      </div>
 
-          <a class="btn primary" href="{% url 'visits:admin_export_week' %}?week={{ week }}">⬇ Excel للأسبوع</a>
-          <a class="btn soft" href="{% url 'visits:admin_import' %}">⬆ استيراد البيانات</a>
+      <div class="kpi">
+        <div class="meta">
+          <div class="label">المسودات</div>
+          <div class="value">{{ kpi_drafts }}</div>
+        </div>
+        <div class="icon">📝</div>
+      </div>
+
+      <div class="kpi">
+        <div class="meta">
+          <div class="label">طلبات فك اعتماد</div>
+          <div class="value">{{ kpi_unlock }}</div>
+        </div>
+        <div class="icon">🔓</div>
+      </div>
+
+      <div class="kpi">
+        <div class="meta">
+          <div class="label">مكتملة</div>
+          <div class="value">{{ kpi_filled }}</div>
+        </div>
+        <div class="icon">🟢</div>
+      </div>
+
+      <div class="kpi">
+        <div class="meta">
+          <div class="label">غير مكتملة</div>
+          <div class="value">{{ kpi_not_filled }}</div>
+        </div>
+        <div class="icon">🟠</div>
+      </div>
+    </div>
+
+    <div class="analytics">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3 class="panel-title">تحليل الزيارات حسب أيام الأسبوع</h3>
+            <p class="panel-sub">مقارنة بين الزيارات الحضورية، وعن بُعد، والأيام بدون زيارة.</p>
+          </div>
+          <span class="chip">الأسبوع {{ week }}</span>
+        </div>
+        <div class="chart-box">
+          <canvas id="weekVisitsChart"></canvas>
         </div>
       </div>
 
-      <!-- ===== KPI ===== -->
-      <div class="kpis">
-        <div class="kpi"><div class="meta"><div class="label">الإجمالي</div><div class="value">{{ kpi_total }}</div></div><div class="icon">📌</div></div>
-        <div class="kpi"><div class="meta"><div class="label">المعتمدة</div><div class="value">{{ kpi_approved }}</div></div><div class="icon">✅</div></div>
-        <div class="kpi"><div class="meta"><div class="label">المسودات</div><div class="value">{{ kpi_drafts }}</div></div><div class="icon">📝</div></div>
-        <div class="kpi"><div class="meta"><div class="label">طلبات فك اعتماد</div><div class="value">{{ kpi_unlock }}</div></div><div class="icon">🔓</div></div>
-        <div class="kpi"><div class="meta"><div class="label">مكتملة</div><div class="value">{{ kpi_filled }}</div></div><div class="icon">🟢</div></div>
-        <div class="kpi"><div class="meta"><div class="label">غير مكتملة</div><div class="value">{{ kpi_not_filled }}</div></div><div class="icon">🟠</div></div>
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h3 class="panel-title">ملخص سريع للحركة</h3>
+            <p class="panel-sub">قراءة تنفيذية مختصرة لأبرز مؤشرات هذا الأسبوع.</p>
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-item">
+            <div class="s-right">
+              <div class="summary-badge">🏫</div>
+              <div>
+                <div class="name">إجمالي الزيارات الحضورية</div>
+                <div class="num" id="summaryInTotal">{{ chart_in_total }}</div>
+              </div>
+            </div>
+            <div class="name">عبر الأيام الخمسة</div>
+          </div>
+
+          <div class="summary-item">
+            <div class="s-right">
+              <div class="summary-badge">💻</div>
+              <div>
+                <div class="name">إجمالي الزيارات عن بُعد</div>
+                <div class="num" id="summaryRemoteTotal">{{ chart_remote_total }}</div>
+              </div>
+            </div>
+            <div class="name">عبر الأيام الخمسة</div>
+          </div>
+
+          <div class="summary-item">
+            <div class="s-right">
+              <div class="summary-badge">📅</div>
+              <div>
+                <div class="name">إجمالي الأيام بدون زيارة</div>
+                <div class="num" id="summaryNoneTotal">{{ chart_none_total }}</div>
+              </div>
+            </div>
+            <div class="name">عبر الأيام الخمسة</div>
+          </div>
+
+          <div class="summary-item">
+            <div class="s-right">
+              <div class="summary-badge">🔓</div>
+              <div>
+                <div class="name">طلبات فك الاعتماد</div>
+                <div class="num">{{ kpi_unlock }}</div>
+              </div>
+            </div>
+            <div class="name">تحتاج قرارًا إداريًا</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <form class="filters" method="get" action="{% url 'visits:admin_dashboard' %}">
+      {% if show_all %}
+        <input type="hidden" name="all" value="1">
+      {% endif %}
+
+      <div class="filters-grid">
+        <div class="field">
+          <label>الأسبوع</label>
+          <select class="select" name="week">
+            {% for w,label in week_choices %}
+              <option value="{{ w }}" {% if week == w %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label>بحث</label>
+          <input class="input" type="text" name="q" value="{{ q }}" placeholder="اسم المشرف أو رقم الهوية">
+        </div>
+
+        <div class="field">
+          <label>فلتر الحالة</label>
+          <select class="select" name="status">
+            <option value="all" {% if status == "all" %}selected{% endif %}>الكل</option>
+            <option value="approved" {% if status == "approved" %}selected{% endif %}>المعتمدة</option>
+            <option value="draft" {% if status == "draft" %}selected{% endif %}>المسودات</option>
+            <option value="unlock" {% if status == "unlock" %}selected{% endif %}>طلبات فك اعتماد</option>
+            <option value="not_full" {% if status == "not_full" %}selected{% endif %}>غير مكتملة</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>حجم الصفحة</label>
+          <select class="select" name="ps">
+            <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
+            <option value="20" {% if page_size == 20 %}selected{% endif %}>20</option>
+            <option value="30" {% if page_size == 30 %}selected{% endif %}>30</option>
+            <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
+          </select>
+        </div>
+
+        <div class="filters-actions">
+          <button class="btn primary" type="submit">تطبيق</button>
+          <a class="btn" href="{% url 'visits:admin_dashboard' %}?week={{ week }}{% if show_all %}&all=1{% endif %}">إعادة ضبط</a>
+        </div>
+      </div>
+    </form>
+
+    <div class="table-card">
+      <div class="table-head">
+        <div class="hint">
+          <span class="mini">✓</span>
+          متابعة الزيارات تتم من صفحة تفاصيل المشرف عند الضغط على الاسم
+        </div>
+
+        <div class="hint">
+          الأسبوع <b style="color:var(--txt);font-weight:var(--fw-title)">#{{ week }}</b>
+          —
+          النتائج <b style="color:var(--txt);font-weight:var(--fw-title)">{{ page_obj.paginator.count }}</b>
+        </div>
       </div>
 
-      <!-- ===== Filters ===== -->
-      <form class="filters" method="get" action="{% url 'visits:admin_dashboard' %}">
-        <div class="filters-grid">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>المشرف</th>
+              <th>الحالة</th>
+              <th>الامتلاء</th>
+              <th>آخر حفظ</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
 
-          <div class="field">
-            <label>الأسبوع</label>
-            <select class="select" name="week">
-              {% for w,label in week_choices %}
-                <option value="{{ w }}" {% if week == w %}selected{% endif %}>{{ label }}</option>
-              {% endfor %}
-            </select>
-          </div>
+          <tbody>
+            {% for r in rows %}
+              {% with p=r.plan %}
+              <tr id="row-{{ p.id }}" data-plan-id="{{ p.id }}" data-filled="{{ r.filled }}">
+                <td>
+                  <a class="sup-link" href="{% url 'visits:admin_plan_detail' p.id %}?week={{ week }}&q={{ q|urlencode }}&status={{ status|urlencode }}&ps={{ page_size }}&page={{ page_obj.number }}{% if show_all %}&all=1{% endif %}">
+                    {{ r.sup.full_name }}
+                    <span style="color:var(--mut2);font-weight:var(--fw-muted)">↩</span>
+                  </a>
 
-          <div class="field">
-            <label>بحث</label>
-            <input class="input" type="text" name="q" value="{{ q }}" placeholder="اسم المشرف أو رقم الهوية">
-          </div>
+                  <div class="sup-sub">
+                    هوية: {{ r.sup.national_id }} — الأسبوع: {{ p.week.week_no }}
+                  </div>
 
-          <div class="field">
-            <label>فلتر الحالة</label>
-            <select class="select" name="status">
-              <option value="all" {% if status == "all" %}selected{% endif %}>الكل</option>
-              <option value="approved" {% if status == "approved" %}selected{% endif %}>المعتمدة</option>
-              <option value="draft" {% if status == "draft" %}selected{% endif %}>المسودات</option>
-              <option value="unlock" {% if status == "unlock" %}selected{% endif %}>طلبات فك اعتماد</option>
-              <option value="not_full" {% if status == "not_full" %}selected{% endif %}>غير مكتملة</option>
-            </select>
-          </div>
+                  <div class="assign-chip">
+                    🏫 المدارس المسندة: {{ r.assignment_count|default:"0" }}
+                  </div>
 
-          <div class="field">
-            <label>حجم الصفحة</label>
-            <select class="select" name="ps">
-              <option value="10" {% if page_size == 10 %}selected{% endif %}>10</option>
-              <option value="20" {% if page_size == 20 %}selected{% endif %}>20</option>
-              <option value="30" {% if page_size == 30 %}selected{% endif %}>30</option>
-              <option value="50" {% if page_size == 50 %}selected{% endif %}>50</option>
-            </select>
-          </div>
+                  {% if p.admin_note %}
+                    <div class="note-box" id="note-box-{{ p.id }}">
+                      <b>ملاحظة الإدارة:</b>
+                      <span id="note-text-{{ p.id }}">{{ p.admin_note }}</span>
+                    </div>
+                  {% else %}
+                    <div class="note-box" id="note-box-{{ p.id }}" style="display:none">
+                      <b>ملاحظة الإدارة:</b>
+                      <span id="note-text-{{ p.id }}"></span>
+                    </div>
+                  {% endif %}
+                </td>
 
-          <div class="filters-actions">
-            <button class="btn primary" type="submit">تطبيق</button>
-            <a class="btn" href="{% url 'visits:admin_dashboard' %}?week={{ week }}">إعادة ضبط</a>
-          </div>
+                <td class="status-cell">
+                  {% if p.status == p.STATUS_APPROVED %}
+                    <span class="pill approved" id="pill-{{ p.id }}">معتمدة</span>
+                  {% elif p.status == p.STATUS_UNLOCK_REQUESTED %}
+                    <span class="pill unlock" id="pill-{{ p.id }}">طلب فك اعتماد</span>
+                  {% else %}
+                    <span class="pill draft" id="pill-{{ p.id }}">مسودة</span>
+                  {% endif %}
+                </td>
 
-        </div>
-      </form>
+                <td class="fill-cell">
+                  {% if r.filled == 5 %}
+                    <span class="count ok" id="filled-{{ p.id }}">5/5</span>
+                  {% else %}
+                    <span class="count bad" id="filled-{{ p.id }}">{{ r.filled }}/5</span>
+                  {% endif %}
+                </td>
 
-      <!-- ===== Table ===== -->
-      <div class="table-card">
-        <div class="table-head">
-          <div class="hint"><span class="mini">✓</span> افتح التفاصيل بالنقر على اسم المشرف</div>
-          <div class="hint">الأسبوع <b style="color:var(--txt);font-weight:var(--fw-title)">#{{ week }}</b> — النتائج <b style="color:var(--txt);font-weight:var(--fw-title)">{{ page_obj.paginator.count }}</b></div>
-        </div>
+                <td class="saved-cell">
+                  {% if p.saved_at %}
+                    <span class="date">{{ p.saved_at|date:"Y-m-d" }}</span>
+                    <span class="time">{{ p.saved_at|time:"H:i" }}</span>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
 
-        <div style="overflow:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th style="min-width:260px">المشرف</th>
-                <th style="min-width:120px">الحالة</th>
-                <th style="min-width:90px">الامتلاء</th>
-                <th style="min-width:160px">آخر حفظ</th>
-                <th style="min-width:240px;text-align:left">إجراءات</th>
+                <td class="actions-cell">
+                  <div class="actions">
+                    <button
+                      class="a-btn notify"
+                      data-action="notify"
+                      data-url="{% url 'visits:admin_send_notification' p.id %}"
+                      data-plan-id="{{ p.id }}"
+                      type="button"
+                    >🔔 تنبيه</button>
+
+                    <a class="a-btn export" href="{% url 'visits:admin_plan_export_excel' p.id %}">⬇ Excel</a>
+
+                    <button
+                      class="a-btn approve"
+                      data-action="approve"
+                      data-url="{% url 'visits:admin_plan_approve' p.id %}"
+                      data-plan-id="{{ p.id }}"
+                      type="button"
+                      {% if p.status == p.STATUS_APPROVED %}disabled{% endif %}
+                      {% if r.filled != 5 %}disabled{% endif %}
+                    >✅ اعتماد</button>
+
+                    <button
+                      class="a-btn draft"
+                      data-action="draft"
+                      data-url="{% url 'visits:admin_plan_back_to_draft' p.id %}"
+                      data-plan-id="{{ p.id }}"
+                      type="button"
+                      {% if p.status == p.STATUS_DRAFT %}disabled{% endif %}
+                    >↩ مسودة</button>
+
+                    {% if p.status == p.STATUS_UNLOCK_REQUESTED %}
+                      <button
+                        class="a-btn unlock"
+                        data-action="unlock-approve"
+                        data-url="{% url 'visits:admin_unlock_approve' p.id %}"
+                        data-plan-id="{{ p.id }}"
+                        type="button"
+                      >🔓 قبول الفك</button>
+
+                      <button
+                        class="a-btn reject"
+                        data-action="unlock-reject"
+                        data-url="{% url 'visits:admin_unlock_reject' p.id %}"
+                        data-plan-id="{{ p.id }}"
+                        type="button"
+                      >⛔ رفض الفك</button>
+                    {% endif %}
+                  </div>
+                </td>
               </tr>
-            </thead>
-
-            <tbody>
-              {% for r in rows %}
-                {% with p=r.plan %}
-                <tr id="row-{{ p.id }}" data-plan-id="{{ p.id }}" data-filled="{{ r.filled }}">
-
-                  <td>
-                    <a class="sup-link" href="{% url 'visits:admin_plan_detail' p.id %}">
-                      {{ r.sup.full_name }} <span style="color:var(--mut2);font-weight:var(--fw-muted)">↩</span>
-                    </a>
-
-                    <div class="sup-sub">
-                      هوية: {{ r.sup.national_id }} — الأسبوع: {{ p.week.week_no }}
-                    </div>
-                  </td>
-
-                  <td>
-                    {% if p.status == p.STATUS_APPROVED %}
-                      <span class="pill approved" id="pill-{{ p.id }}">معتمدة</span>
-                    {% elif p.status == p.STATUS_UNLOCK_REQUESTED %}
-                      <span class="pill unlock" id="pill-{{ p.id }}">طلب فك اعتماد</span>
-                    {% else %}
-                      <span class="pill draft" id="pill-{{ p.id }}">مسودة</span>
-                    {% endif %}
-                  </td>
-
-                  <td>
-                    {% if r.filled == 5 %}
-                      <span class="count ok" id="filled-{{ p.id }}">5/5</span>
-                    {% else %}
-                      <span class="count bad" id="filled-{{ p.id }}">{{ r.filled }}/5</span>
-                    {% endif %}
-                  </td>
-
-                  <td style="color:var(--mut);font-weight:var(--fw-muted)">
-                    {% if p.saved_at %}
-                      {{ p.saved_at|date:"Y-m-d" }} — {{ p.saved_at|time:"H:i" }}
-                    {% else %}
-                      —
-                    {% endif %}
-                  </td>
-
-                  <td>
-                    <div class="actions">
-                      <a class="a-btn ghost" href="{% url 'visits:admin_plan_export_excel' p.id %}">⬇ Excel</a>
-
-                      <button
-                        class="a-btn approve"
-                        data-action="approve"
-                        data-url="{% url 'visits:admin_plan_approve' p.id %}"
-                        {% if p.status == p.STATUS_APPROVED %}disabled{% endif %}
-                        {% if r.filled != 5 %}disabled{% endif %}
-                      >✅ اعتماد</button>
-
-                      <button
-                        class="a-btn draft"
-                        data-action="draft"
-                        data-url="{% url 'visits:admin_plan_back_to_draft' p.id %}"
-                        {% if p.status == p.STATUS_DRAFT %}disabled{% endif %}
-                      >↩ مسودة</button>
-                    </div>
-                  </td>
-
-                </tr>
-                {% endwith %}
-              {% empty %}
-                <tr>
-                  <td colspan="5" style="padding:18px;color:var(--mut);font-weight:var(--fw-normal)">
-                    لا توجد نتائج مطابقة.
-                  </td>
-                </tr>
-              {% endfor %}
-            </tbody>
-
-          </table>
-        </div>
-
-        <!-- ===== Pager ===== -->
-        <div class="pager">
-          <div>صفحة {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</div>
-
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            {% if page_obj.has_previous %}
-              <a class="pbtn" href="?week={{ week }}&q={{ q }}&status={{ status }}&ps={{ page_size }}&page={{ page_obj.previous_page_number }}">السابق</a>
-            {% else %}
-              <span class="pbtn disabled">السابق</span>
-            {% endif %}
-
-            {% if page_obj.has_next %}
-              <a class="pbtn" href="?week={{ week }}&q={{ q }}&status={{ status }}&ps={{ page_size }}&page={{ page_obj.next_page_number }}">التالي</a>
-            {% else %}
-              <span class="pbtn disabled">التالي</span>
-            {% endif %}
-          </div>
-
-          <div>عرض {{ page_obj.object_list|length }} من {{ page_obj.paginator.count }}</div>
-        </div>
-
+              {% endwith %}
+            {% empty %}
+              <tr>
+                <td colspan="5" style="padding:16px;color:var(--mut);font-weight:var(--fw-normal);font-size:11.4px">
+                  لا توجد نتائج مطابقة.
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
       </div>
 
+      <div class="pager">
+        <div>صفحة {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</div>
+
+        <div class="pager-actions">
+          {% if page_obj.has_previous %}
+            <a class="pbtn" href="?week={{ week }}&q={{ q|urlencode }}&status={{ status|urlencode }}&ps={{ page_size }}&page={{ page_obj.previous_page_number }}{% if show_all %}&all=1{% endif %}">السابق</a>
+          {% else %}
+            <span class="pbtn disabled">السابق</span>
+          {% endif %}
+
+          {% if page_obj.has_next %}
+            <a class="pbtn" href="?week={{ week }}&q={{ q|urlencode }}&status={{ status|urlencode }}&ps={{ page_size }}&page={{ page_obj.next_page_number }}{% if show_all %}&all=1{% endif %}">التالي</a>
+          {% else %}
+            <span class="pbtn disabled">التالي</span>
+          {% endif %}
+        </div>
+
+        <div>عرض {{ page_obj.object_list|length }} من {{ page_obj.paginator.count }}</div>
+      </div>
     </div>
   </div>
 
-  <!-- ===== Toast ===== -->
   <div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
-</section>
 
+  <div class="modal" id="noteModal" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="modalTitle">ملاحظة إدارية</h3>
+        <button class="modal-close" type="button" id="modalCloseBtn">×</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-text" id="modalText">أدخل الملاحظة التي ستظهر للمشرف مع الإشعار.</p>
+        <textarea class="textarea" id="adminNoteInput" placeholder="اكتب الملاحظة هنا..."></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn" type="button" id="modalCancelBtn">إلغاء</button>
+        <button class="btn primary" type="button" id="modalSubmitBtn">تأكيد</button>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+  const chartLabels = JSON.parse(document.getElementById("chart-labels").textContent);
+  const chartInValues = JSON.parse(document.getElementById("chart-in-values").textContent);
+  const chartRemoteValues = JSON.parse(document.getElementById("chart-remote-values").textContent);
+  const chartNoneValues = JSON.parse(document.getElementById("chart-none-values").textContent);
+
+  const currentFilters = {
+    week: "{{ week|default:'' }}",
+    q: "{{ q|default:''|escapejs }}",
+    status: "{{ status|default:'all'|escapejs }}",
+    ps: "{{ page_size|default:'' }}",
+    page: "{{ page_obj.number|default:'1' }}",
+    all: "{% if show_all %}1{% else %}0{% endif %}"
+  };
+
+  function sumArray(arr){
+    return (arr || []).reduce((a, b) => a + parseInt(b || 0, 10), 0);
+  }
+
+  const summaryInTotalEl = document.getElementById("summaryInTotal");
+  const summaryRemoteTotalEl = document.getElementById("summaryRemoteTotal");
+  const summaryNoneTotalEl = document.getElementById("summaryNoneTotal");
+
+  if(summaryInTotalEl) summaryInTotalEl.textContent = sumArray(chartInValues);
+  if(summaryRemoteTotalEl) summaryRemoteTotalEl.textContent = sumArray(chartRemoteValues);
+  if(summaryNoneTotalEl) summaryNoneTotalEl.textContent = sumArray(chartNoneValues);
+
+  const ctx = document.getElementById("weekVisitsChart");
+  if(ctx){
+    new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: chartLabels,
+        datasets: [
+          { label: "حضوري", data: chartInValues, borderWidth: 1, borderRadius: 8 },
+          { label: "عن بُعد", data: chartRemoteValues, borderWidth: 1, borderRadius: 8 },
+          { label: "بدون زيارة", data: chartNoneValues, borderWidth: 1, borderRadius: 8 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: {
+            position: "top",
+            labels: {
+              boxWidth: 14,
+              usePointStyle: true,
+              pointStyle: "rectRounded",
+              font: { family: "Cairo", size: 11 }
+            }
+          },
+          tooltip: {
+            rtl: true,
+            titleFont: { family: "Cairo" },
+            bodyFont: { family: "Cairo" }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { font: { family: "Cairo", size: 11 } },
+            grid: { display: false }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              precision: 0,
+              font: { family: "Cairo", size: 11 }
+            }
+          }
+        }
+      }
+    });
+  }
+
   function showToast(msg){
     const wrap = document.getElementById("toastWrap");
+    if(!wrap) return;
+
     const el = document.createElement("div");
     el.className = "toast";
     el.innerHTML = `<span>${msg}</span><button class="x" type="button">✕</button>`;
     wrap.appendChild(el);
-    el.querySelector(".x").addEventListener("click", ()=> el.remove());
-    setTimeout(()=>{ if(el.parentNode) el.remove(); }, 2500);
+
+    const closeBtn = el.querySelector(".x");
+    if(closeBtn){
+      closeBtn.addEventListener("click", () => el.remove());
+    }
+
+    setTimeout(() => {
+      if(el.parentNode) el.remove();
+    }, 2800);
   }
 
   function getCookie(name){
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
-    if(parts.length === 2) return parts.pop().split(';').shift();
+    if(parts.length === 2){
+      return parts.pop().split(";").shift();
+    }
     return "";
   }
 
-  async function postAction(url){
+  function openModal({title, text, submitText = "تأكيد", defaultValue = ""}){
+    return new Promise((resolve) => {
+      const modal = document.getElementById("noteModal");
+      const titleEl = document.getElementById("modalTitle");
+      const textEl = document.getElementById("modalText");
+      const inputEl = document.getElementById("adminNoteInput");
+      const submitBtn = document.getElementById("modalSubmitBtn");
+      const cancelBtn = document.getElementById("modalCancelBtn");
+      const closeBtn = document.getElementById("modalCloseBtn");
+
+      titleEl.textContent = title || "ملاحظة إدارية";
+      textEl.textContent = text || "";
+      inputEl.value = defaultValue || "";
+      submitBtn.textContent = submitText || "تأكيد";
+
+      modal.classList.add("show");
+      modal.setAttribute("aria-hidden", "false");
+
+      setTimeout(() => inputEl.focus(), 10);
+
+      function cleanup(result){
+        modal.classList.remove("show");
+        modal.setAttribute("aria-hidden", "true");
+
+        submitBtn.removeEventListener("click", onSubmit);
+        cancelBtn.removeEventListener("click", onCancel);
+        closeBtn.removeEventListener("click", onCancel);
+        modal.removeEventListener("click", onBackdrop);
+        document.removeEventListener("keydown", onEsc);
+
+        resolve(result);
+      }
+
+      function onSubmit(){
+        cleanup({ ok: true, note: inputEl.value.trim() });
+      }
+
+      function onCancel(){
+        cleanup({ ok: false, note: "" });
+      }
+
+      function onBackdrop(e){
+        if(e.target === modal) onCancel();
+      }
+
+      function onEsc(e){
+        if(e.key === "Escape") onCancel();
+      }
+
+      submitBtn.addEventListener("click", onSubmit);
+      cancelBtn.addEventListener("click", onCancel);
+      closeBtn.addEventListener("click", onCancel);
+      modal.addEventListener("click", onBackdrop);
+      document.addEventListener("keydown", onEsc);
+    });
+  }
+
+  async function postAction(url, payload = {}){
     const csrf = getCookie("csrftoken");
+    const formData = new FormData();
+    const mergedPayload = { ...currentFilters, ...payload };
+
+    Object.entries(mergedPayload).forEach(([key, value]) => {
+      formData.append(key, value ?? "");
+    });
+
     const res = await fetch(url, {
       method: "POST",
       headers: {
         "X-CSRFToken": csrf,
         "X-Requested-With": "XMLHttpRequest"
-      }
+      },
+      body: formData
     });
 
-    const data = await res.json().catch(()=> ({}));
+    const data = await res.json().catch(() => ({}));
+
     if(!res.ok){
-      throw new Error((data && data.message) ? data.message : "حدث خطأ أثناء التنفيذ.");
+      throw new Error(data.message || "حدث خطأ أثناء التنفيذ.");
     }
+
     return data;
+  }
+
+  function updateNoteBox(planId, note){
+    const box = document.getElementById(`note-box-${planId}`);
+    const text = document.getElementById(`note-text-${planId}`);
+
+    if(!box || !text) return;
+
+    if(note && note.trim()){
+      text.textContent = note;
+      box.style.display = "";
+    } else {
+      text.textContent = "";
+      box.style.display = "none";
+    }
+  }
+
+  function removeUnlockButtons(row){
+    if(!row) return;
+    row.querySelectorAll("button[data-action='unlock-approve'], button[data-action='unlock-reject']").forEach(el => el.remove());
+  }
+
+  function lockRowButtons(row, locked = true){
+    if(!row) return;
+
+    row.querySelectorAll("button[data-action]").forEach(btn => {
+      if(locked){
+        btn.dataset.prevDisabled = btn.disabled ? "1" : "0";
+        btn.disabled = true;
+      } else {
+        if(btn.dataset.prevDisabled === "0"){
+          btn.disabled = false;
+        }
+        delete btn.dataset.prevDisabled;
+      }
+    });
+  }
+
+  function setButtonBusy(btn, busyText){
+    if(!btn) return;
+    btn.dataset.oldText = btn.textContent;
+    btn.textContent = busyText || "جارٍ التنفيذ…";
+    btn.disabled = true;
+  }
+
+  function restoreButton(btn){
+    if(!btn || !document.body.contains(btn)) return;
+    if(btn.dataset.oldText){
+      btn.textContent = btn.dataset.oldText;
+      delete btn.dataset.oldText;
+    }
   }
 
   function updateRowFromJson(data){
     const planId = data.plan_id;
-
     const pill = document.getElementById(`pill-${planId}`);
+    const filledEl = document.getElementById(`filled-${planId}`);
+    const row = document.getElementById(`row-${planId}`);
+
     if(pill){
       pill.textContent = data.status_label || "—";
-      pill.classList.remove("approved","draft","unlock");
+      pill.classList.remove("approved", "draft", "unlock");
       pill.classList.add(data.status_css || "draft");
     }
 
-    const filledEl = document.getElementById(`filled-${planId}`);
     if(filledEl && typeof data.filled !== "undefined"){
       const filled = parseInt(data.filled || 0, 10);
       filledEl.textContent = `${filled}/5`;
-      filledEl.classList.remove("ok","bad");
-      filledEl.classList.add((filled === 5) ? "ok" : "bad");
+      filledEl.classList.remove("ok", "bad");
+      filledEl.classList.add(filled === 5 ? "ok" : "bad");
     }
 
-    const row = document.getElementById(`row-${planId}`);
+    if(typeof data.admin_note !== "undefined"){
+      updateNoteBox(planId, data.admin_note || "");
+    }
+
     if(!row) return;
 
     if(typeof data.filled !== "undefined"){
@@ -779,43 +1567,142 @@
     }
 
     const filledNow = parseInt(row.getAttribute("data-filled") || "0", 10);
-
     const approveBtn = row.querySelector("button[data-action='approve']");
     const draftBtn = row.querySelector("button[data-action='draft']");
+    const unlockApproveBtn = row.querySelector("button[data-action='unlock-approve']");
+    const unlockRejectBtn = row.querySelector("button[data-action='unlock-reject']");
 
-    const isApproved = (data.status_code === "approved") || (data.status_css === "approved");
-    const isDraft = (data.status_code === "draft") || (data.status_css === "draft");
+    const statusCode = data.status_code || "";
+    const statusCss = data.status_css || "";
+
+    const isApproved = (statusCode === "approved") || (statusCss === "approved");
+    const isDraft = (statusCode === "draft") || (statusCss === "draft");
+    const isUnlock = (statusCode === "unlock") || (statusCss === "unlock");
 
     if(approveBtn){
       approveBtn.disabled = isApproved ? true : !(filledNow === 5);
+      approveBtn.textContent = "✅ اعتماد";
     }
+
     if(draftBtn){
-      draftBtn.disabled = isDraft ? true : false;
+      draftBtn.disabled = isDraft;
+      draftBtn.textContent = "↩ مسودة";
+    }
+
+    if(unlockApproveBtn){
+      unlockApproveBtn.disabled = !isUnlock;
+      unlockApproveBtn.textContent = "🔓 قبول الفك";
+    }
+
+    if(unlockRejectBtn){
+      unlockRejectBtn.disabled = !isUnlock;
+      unlockRejectBtn.textContent = "⛔ رفض الفك";
+    }
+
+    if(!isUnlock){
+      removeUnlockButtons(row);
     }
   }
 
-  document.addEventListener("click", async (e)=>{
+  const bulkNotifyBtn = document.getElementById("bulkNotifyBtn");
+
+  if (bulkNotifyBtn) {
+    bulkNotifyBtn.addEventListener("click", async () => {
+      const modalResult = await openModal({
+        title: "إرسال تنبيه عام لجميع المشرفين",
+        text: "اكتب نص التنبيه الذي سيصل إلى جميع المشرفين ضمن الأسبوع الحالي والفلاتر الحالية.",
+        submitText: "إرسال التنبيه العام"
+      });
+
+      if (!modalResult.ok) return;
+
+      const url = "{% url 'visits:admin_send_notification_all' %}";
+      setButtonBusy(bulkNotifyBtn, "جارٍ الإرسال…");
+
+      try {
+        const data = await postAction(url, {
+          note: modalResult.note || "",
+          title: "تنبيه إداري عام"
+        });
+
+        restoreButton(bulkNotifyBtn);
+        bulkNotifyBtn.textContent = "🔔 تنبيه عام";
+        showToast(data.message || "تم إرسال التنبيه العام ✅");
+      } catch (err) {
+        restoreButton(bulkNotifyBtn);
+        bulkNotifyBtn.textContent = "🔔 تنبيه عام";
+        showToast(err.message || "فشل إرسال التنبيه ❌");
+      }
+    });
+  }
+
+  document.addEventListener("click", async (e) => {
     const btn = e.target.closest("button[data-action][data-url]");
     if(!btn) return;
 
     e.preventDefault();
+
     if(btn.disabled) return;
 
+    const action = btn.getAttribute("data-action");
     const url = btn.getAttribute("data-url");
-    const old = btn.textContent;
+    const planId = btn.getAttribute("data-plan-id");
+    const row = document.getElementById(`row-${planId}`);
 
-    btn.disabled = true;
-    btn.textContent = "جارٍ التنفيذ…";
+    let payload = {};
+
+    if(action === "draft"){
+      const modalResult = await openModal({
+        title: "إعادة الخطة إلى مسودة",
+        text: "يمكنك كتابة ملاحظة ستظهر للمشرف مع الإشعار.",
+        submitText: "إرجاع إلى مسودة"
+      });
+
+      if(!modalResult.ok) return;
+      payload.note = modalResult.note || "";
+    }
+
+    if(action === "notify"){
+      const modalResult = await openModal({
+        title: "إرسال تنبيه للمشرف",
+        text: "اكتب نص التنبيه الذي سيظهر للمشرف في صفحة التنبيهات.",
+        submitText: "إرسال التنبيه"
+      });
+
+      if(!modalResult.ok) return;
+      payload.note = modalResult.note || "";
+      payload.title = "تنبيه إداري";
+    }
+
+    if(action === "unlock-reject"){
+      const modalResult = await openModal({
+        title: "رفض طلب فك الاعتماد",
+        text: "أدخل ملاحظة توضح سبب رفض طلب فك الاعتماد.",
+        submitText: "رفض الطلب"
+      });
+
+      if(!modalResult.ok) return;
+      payload.note = modalResult.note || "";
+    }
+
+    lockRowButtons(row, true);
+    setButtonBusy(btn, "جارٍ التنفيذ…");
 
     try{
-      const data = await postAction(url);
+      const data = await postAction(url, payload);
       updateRowFromJson(data);
+
+      if(planId && typeof data.admin_note !== "undefined"){
+        updateNoteBox(planId, data.admin_note || "");
+      }
+
+      lockRowButtons(row, false);
+      restoreButton(btn);
       showToast(data.message || "تم ✅");
-    }catch(err){
+    } catch(err){
+      lockRowButtons(row, false);
+      restoreButton(btn);
       showToast(err.message || "فشل ❌");
-      btn.disabled = false;
-    }finally{
-      btn.textContent = old;
     }
   });
 </script>

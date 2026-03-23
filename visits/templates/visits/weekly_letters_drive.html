@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}خطابات الأسبوع {{ week_number }}{% endblock %}
+{% block page_heading %}خطابات الأسبوع {{ week_number }}{% endblock %}
+{% block page_subtitle %}استعراض ملفات الخطابات المخزنة في Google Drive{% endblock %}
+
+{% block content %}
+<div style="background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:20px;">
+  {% if week_folder %}
+    <div style="margin-bottom:16px;">
+      <strong>مجلد الأسبوع:</strong>
+      {{ week_folder.name }}
+      —
+      <a href="{{ week_folder.webViewLink }}" target="_blank">فتح المجلد في Google Drive</a>
+    </div>
+
+    {% if rows %}
+      <div style="overflow:auto;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;">رقم المدرسة / السجل</th>
+              <th style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;">اسم الملف</th>
+              <th style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;">الإجراء</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+              <tr>
+                <td style="padding:10px;border-bottom:1px solid #f1f5f9;">{{ row.school_code }}</td>
+                <td style="padding:10px;border-bottom:1px solid #f1f5f9;">{{ row.name }}</td>
+                <td style="padding:10px;border-bottom:1px solid #f1f5f9;">
+                  <a href="{{ row.url }}" target="_blank">فتح الخطاب</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p>لا توجد ملفات داخل هذا المجلد.</p>
+    {% endif %}
+  {% else %}
+    <p>لم يتم العثور على مجلد أو رابط خطابات لهذا الأسبوع.</p>
+  {% endif %}
+</div>
+{% endblock %}
