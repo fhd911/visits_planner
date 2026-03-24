@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>الموقع تحت الصيانة</title>
+  <title>{% if site_setting.site_name %}{{ site_setting.site_name }}{% else %}بوابة الزيارات{% endif %} — الخدمة متوقفة مؤقتًا</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,23 +12,19 @@
 
   <style>
     :root{
-      --bg:#eef4fb;
-      --card:#ffffff;
-      --line:#e5edf6;
-      --text:#162033;
-      --muted:#6c7a90;
-      --muted-2:#97a6bc;
-
-      --primary:#165a96;
-      --primary-2:#1d6aae;
-
-      --warn-bg:#fff8ef;
-      --warn-bd:#f3d2a6;
-      --warn-tx:#9a5a13;
-
-      --soft:#f8fbff;
-      --shadow:0 20px 60px rgba(15,23,42,.08);
-      --radius:28px;
+      --bg:#f4f7fb;
+      --surface:#ffffff;
+      --surface-soft:#f8fbfe;
+      --line:#e1e8f0;
+      --text:#17324a;
+      --muted:#738496;
+      --brand:#244f79;
+      --brand-soft:#eef4f9;
+      --accent:#f1c75a;
+      --shadow:0 22px 55px rgba(23,50,74,.08);
+      --radius-xl:34px;
+      --radius-lg:22px;
+      --radius-md:16px;
     }
 
     *{box-sizing:border-box}
@@ -38,218 +34,260 @@
       padding:0;
       min-height:100%;
       font-family:"Cairo",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
-      background:radial-gradient(circle at top right, #ffffff 0%, #f6faff 35%, #eef4fb 100%);
+      background:
+        radial-gradient(circle at top, rgba(36,79,121,.06), transparent 28rem),
+        linear-gradient(180deg, #f6f8fb 0%, #eef3f7 100%);
       color:var(--text);
     }
 
     body{
-      min-height:100vh;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:24px;
+      padding:22px 14px;
     }
 
-    .shell{
-      width:100%;
-      max-width:780px;
+    .page{
+      max-width:920px;
+      margin:0 auto;
     }
 
-    .card{
-      background:rgba(255,255,255,.95);
-      border:1px solid var(--line);
-      border-radius:var(--radius);
+    .panel{
+      background:rgba(255,255,255,.8);
+      border:1px solid rgba(225,232,240,.95);
+      border-radius:40px;
       box-shadow:var(--shadow);
+      backdrop-filter:blur(10px);
       overflow:hidden;
     }
 
     .hero{
-      padding:38px 30px 26px;
+      position:relative;
+      padding:56px 38px 42px;
       text-align:center;
-      background:linear-gradient(180deg, rgba(232,241,251,.92), rgba(255,255,255,.72));
-      border-bottom:1px solid var(--line);
+      background:linear-gradient(180deg, rgba(36,79,121,.97), rgba(36,79,121,.93));
+      color:#fff;
     }
 
-    .icon{
-      width:76px;
-      height:76px;
-      margin:0 auto 18px;
-      border-radius:24px;
-      display:grid;
-      place-items:center;
-      font-size:34px;
-      background:linear-gradient(180deg, #fef3c7, #fff7ed);
-      border:1px solid #f5d46c;
-      box-shadow:0 10px 24px rgba(245,158,11,.08);
+    .hero::after{
+      content:"";
+      position:absolute;
+      width:120px;
+      height:120px;
+      border-radius:50%;
+      left:50%;
+      bottom:-60px;
+      transform:translateX(-50%);
+      background:rgba(255,255,255,.07);
+    }
+
+    .site{
+      margin:0 0 18px;
+      font-size:14px;
+      font-weight:700;
+      color:rgba(255,255,255,.86);
+    }
+
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      margin-bottom:18px;
+      padding:10px 16px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.10);
+      font-size:14px;
+      font-weight:700;
+      color:#fff;
+    }
+
+    .badge::before{
+      content:"";
+      width:9px;
+      height:9px;
+      border-radius:50%;
+      background:var(--accent);
+      box-shadow:0 0 0 5px rgba(241,199,90,.15);
     }
 
     .title{
       margin:0;
-      font-size:clamp(1.9rem, 3vw, 2.5rem);
-      line-height:1.35;
+      font-size:clamp(30px,4.8vw,46px);
+      line-height:1.18;
       font-weight:800;
-      letter-spacing:-.2px;
+      letter-spacing:-.35px;
     }
 
     .subtitle{
-      margin:12px auto 0;
-      max-width:560px;
-      color:var(--muted);
-      font-size:1rem;
+      max-width:680px;
+      margin:16px auto 0;
+      font-size:16px;
       line-height:1.95;
       font-weight:500;
+      color:rgba(255,255,255,.9);
     }
 
-    .content{
-      padding:26px 30px 32px;
+    .body{
+      padding:34px 24px 36px;
     }
 
-    .notice{
-      border:1px solid var(--warn-bd);
-      background:var(--warn-bg);
-      color:var(--warn-tx);
-      border-radius:22px;
-      padding:18px 20px;
-      line-height:1.95;
-      font-size:1rem;
-      font-weight:700;
-      text-align:center;
-    }
-
-    .eta-card{
-      margin-top:18px;
-      background:var(--soft);
+    .card{
+      max-width:720px;
+      margin:0 auto;
+      padding:28px 24px 24px;
+      border-radius:28px;
       border:1px solid var(--line);
-      border-radius:22px;
-      padding:20px 22px;
+      background:linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
       text-align:center;
     }
 
-    .eta-label{
-      margin:0 0 8px;
-      color:var(--muted-2);
-      font-size:.9rem;
-      font-weight:700;
-    }
-
-    .eta-value{
+    .message{
       margin:0;
-      color:var(--text);
-      font-size:1.16rem;
-      line-height:1.8;
-      font-weight:800;
-    }
-
-    .eta-sub{
-      margin:10px 0 0;
-      color:var(--muted);
-      font-size:.92rem;
-      line-height:1.85;
+      font-size:16px;
+      line-height:2;
       font-weight:500;
+      color:var(--muted);
     }
 
-    .admin-actions{
-      margin-top:18px;
-      display:flex;
-      justify-content:center;
+    .times{
+      margin-top:22px;
+      display:grid;
+      gap:12px;
     }
 
-    .btn{
-      appearance:none;
-      border:none;
-      text-decoration:none;
-      cursor:pointer;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-height:46px;
-      padding:0 18px;
-      border-radius:15px;
+    .time-box{
+      padding:16px 18px;
+      border-radius:20px;
+      border:1px solid var(--line);
+      background:var(--surface-soft);
+      text-align:right;
+    }
+
+    .time-label{
+      margin:0 0 6px;
+      font-size:13px;
       font-weight:700;
-      font-size:.95rem;
-      transition:.18s ease;
-      background:linear-gradient(135deg, var(--primary), var(--primary-2));
-      color:#fff;
-      box-shadow:0 10px 24px rgba(22,90,150,.16);
+      color:#8a98a6;
     }
 
-    .btn:hover{
-      transform:translateY(-1px);
+    .time-main{
+      margin:0;
+      font-size:18px;
+      line-height:1.7;
+      font-weight:700;
+      color:var(--text);
     }
 
-    .mini{
+    .time-sub{
+      margin:3px 0 0;
+      font-size:14px;
+      line-height:1.8;
+      font-weight:500;
+      color:var(--muted);
+    }
+
+    .time-empty{
+      color:#96a4b1;
+    }
+
+    .thanks{
       margin-top:18px;
-      text-align:center;
-      color:var(--muted-2);
-      font-size:.92rem;
+      font-size:14px;
+      line-height:1.8;
+      color:#8a97a4;
       font-weight:600;
     }
 
-    @media (max-width: 760px){
-      .hero,
-      .content{
-        padding:22px 18px;
-      }
-
-      .icon{
-        width:66px;
-        height:66px;
-        border-radius:20px;
-        font-size:30px;
-      }
-
-      .eta-value{
-        font-size:1.03rem;
-      }
+    @media (max-width: 700px){
+      body{ padding:12px; }
+      .hero{ padding:40px 20px 30px; }
+      .body{ padding:18px 16px 22px; }
+      .card{ padding:22px 16px 18px; border-radius:22px; }
+      .title{ font-size:30px; }
+      .subtitle, .message{ font-size:15px; }
+      .time-main{ font-size:16px; }
     }
   </style>
 </head>
 <body>
-  <main class="shell">
-    <section class="card">
-      <div class="hero">
-        <div class="icon">🛠️</div>
-        <h1 class="title">الموقع مغلق مؤقتًا للصيانة</h1>
+  <main class="page">
+    <section class="panel">
+      <header class="hero">
+        <p class="site">{% if site_setting.site_name %}{{ site_setting.site_name }}{% else %}بوابة الزيارات{% endif %}</p>
+        <div class="badge">الخدمة متوقفة مؤقتًا</div>
+        <h1 class="title">توقف مؤقت للخدمة</h1>
         <p class="subtitle">
-          نعمل حاليًا على تحسين الخدمة أو تنفيذ تحديثات فنية، وسنعود للعمل في أقرب وقت ممكن.
+          {{ maintenance_message|default:"البوابة غير متاحة حاليًا بسبب صيانة مجدولة، وسيتم استئناف الخدمة بعد انتهاء النافذة المحددة." }}
         </p>
-      </div>
+      </header>
 
-      <div class="content">
-        <div class="notice">
-          {{ maintenance_message|default:"الموقع مغلق مؤقتًا للصيانة، وسيعود العمل خلال وقت قريب." }}
-        </div>
-
-        <div class="eta-card">
-          <p class="eta-label">العودة المتوقعة</p>
-          <p class="eta-value">
-            {% if site_setting.expected_return_text %}
-              {{ site_setting.expected_return_text }}
-            {% elif site_setting.maintenance_ends_at %}
-              {{ site_setting.maintenance_ends_at|date:"Y-m-d" }} — {{ site_setting.maintenance_ends_at|time:"h:i A" }}
+      <section class="body">
+        <div class="card">
+          <p class="message">
+            {% if expected_return_text %}
+              {{ expected_return_text }}
             {% else %}
-              سيتم الإعلان عند الحاجة
+              نعتذر عن التوقف المؤقت. سيتم فتح البوابة فور اكتمال أعمال الصيانة.
             {% endif %}
           </p>
 
-          {% if site_setting.maintenance_starts_at %}
-            <p class="eta-sub">
-              بدأت الصيانة في {{ site_setting.maintenance_starts_at|date:"Y-m-d" }} — {{ site_setting.maintenance_starts_at|time:"h:i A" }}
-            </p>
-          {% endif %}
-        </div>
+          <div class="times">
+            <div class="time-box">
+              <p class="time-label">بداية الصيانة</p>
+              {% if maintenance_starts_at_gregorian %}
+                <p class="time-main">{{ maintenance_starts_at_gregorian }}</p>
+                <p class="time-sub" data-hijri-target data-iso="{{ maintenance_starts_at_iso|default:'' }}">—</p>
+              {% else %}
+                <p class="time-main time-empty">غير محدد</p>
+              {% endif %}
+            </div>
 
-        {% if request.user.is_authenticated and request.user.is_staff %}
-          <div class="admin-actions">
-            <a href="{% url 'visits:admin_dashboard' %}" class="btn">دخول الإدارة</a>
+            <div class="time-box">
+              <p class="time-label">العودة المتوقعة</p>
+              {% if maintenance_ends_at_gregorian %}
+                <p class="time-main">{{ maintenance_ends_at_gregorian }}</p>
+                <p class="time-sub" data-hijri-target data-iso="{{ maintenance_ends_at_iso|default:'' }}">—</p>
+              {% elif expected_return_text %}
+                <p class="time-main">{{ expected_return_text }}</p>
+              {% else %}
+                <p class="time-main time-empty">عند اكتمال الإجراء</p>
+              {% endif %}
+            </div>
           </div>
-        {% endif %}
 
-        <div class="mini">
-          شكرًا لتفهمكم.
+          <div class="thanks">شكرًا لتفهمكم</div>
         </div>
-      </div>
+      </section>
     </section>
   </main>
+
+  <script>
+    (function () {
+      const weekdayFmt = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', { weekday: 'long' });
+      const hijriFmt = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      const timeFmt = new Intl.DateTimeFormat('ar-SA', {
+        hour: 'numeric',
+        minute: '2-digit'
+      });
+
+      document.querySelectorAll('[data-hijri-target]').forEach(function (el) {
+        const iso = el.getAttribute('data-iso');
+        if (!iso) {
+          el.textContent = '';
+          return;
+        }
+
+        const dt = new Date(iso);
+        if (Number.isNaN(dt.getTime())) {
+          el.textContent = '';
+          return;
+        }
+
+        el.textContent = weekdayFmt.format(dt) + '، ' + hijriFmt.format(dt) + ' — ' + timeFmt.format(dt);
+      });
+    })();
+  </script>
 </body>
 </html>

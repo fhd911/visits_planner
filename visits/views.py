@@ -214,6 +214,50 @@ def _format_dt_local(value: Optional[datetime]) -> str:
     return timezone.localtime(value).strftime("%Y-%m-%dT%H:%M")
 
 
+def _dt_iso_local(value: Optional[datetime]) -> str:
+    if not value:
+        return ""
+    return timezone.localtime(value).isoformat()
+
+
+def _format_dt_ar_pretty(value: Optional[datetime]) -> str:
+    if not value:
+        return ""
+
+    dt = timezone.localtime(value)
+    weekdays = ["الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"]
+    months = [
+        "يناير",
+        "فبراير",
+        "مارس",
+        "أبريل",
+        "مايو",
+        "يونيو",
+        "يوليو",
+        "أغسطس",
+        "سبتمبر",
+        "أكتوبر",
+        "نوفمبر",
+        "ديسمبر",
+    ]
+
+    weekday_name = weekdays[dt.weekday()]
+    month_name = months[dt.month - 1]
+    hour12 = dt.hour % 12 or 12
+    ampm = "ص" if dt.hour < 12 else "م"
+    return f"{weekday_name} {dt.day} {month_name} {dt.year} — {hour12:02d}:{dt.minute:02d} {ampm}"
+
+
+def _visit_type_export_label(value: str) -> str:
+    if value == getattr(PlanDay, "VISIT_IN", "in"):
+        return "حضوري"
+    if value == getattr(PlanDay, "VISIT_REMOTE", "remote"):
+        return "عن بعد"
+    if value == getattr(PlanDay, "VISIT_NONE", "none"):
+        return "بدون زيارة"
+    return value or "—"
+
+
 def _maintenance_is_active(setting: SiteSetting, *, persist: bool = False) -> bool:
     active = bool(setting.is_maintenance_mode)
     now = timezone.now()
@@ -239,16 +283,27 @@ def _maintenance_is_active(setting: SiteSetting, *, persist: bool = False) -> bo
 def _maintenance_context() -> dict[str, Any]:
     setting = _get_site_setting()
     active = _maintenance_is_active(setting, persist=True)
+    starts_at = getattr(setting, "maintenance_starts_at", None)
+    ends_at = getattr(setting, "maintenance_ends_at", None)
+    now_dt = timezone.localtime(timezone.now())
+
     return {
         "site_setting": setting,
         "maintenance_message": _maintenance_message(setting),
         "expected_return_text": setting.expected_return_text or "",
         "allow_admin_only": setting.allow_admin_only,
         "maintenance_is_active": active,
-        "maintenance_starts_at": getattr(setting, "maintenance_starts_at", None),
-        "maintenance_ends_at": getattr(setting, "maintenance_ends_at", None),
-        "maintenance_starts_at_value": _format_dt_local(getattr(setting, "maintenance_starts_at", None)),
-        "maintenance_ends_at_value": _format_dt_local(getattr(setting, "maintenance_ends_at", None)),
+        "maintenance_starts_at": starts_at,
+        "maintenance_ends_at": ends_at,
+        "maintenance_starts_at_value": _format_dt_local(starts_at),
+        "maintenance_ends_at_value": _format_dt_local(ends_at),
+        "maintenance_starts_at_iso": _dt_iso_local(starts_at),
+        "maintenance_ends_at_iso": _dt_iso_local(ends_at),
+        "maintenance_starts_at_gregorian": _format_dt_ar_pretty(starts_at),
+        "maintenance_ends_at_gregorian": _format_dt_ar_pretty(ends_at),
+        "maintenance_now": now_dt,
+        "maintenance_now_iso": now_dt.isoformat(),
+        "maintenance_now_gregorian": _format_dt_ar_pretty(now_dt),
         "maintenance_window_label": getattr(setting, "maintenance_window_label", "غير محدد"),
     }
 
@@ -282,6 +337,14 @@ def maintenance_page_view(request: HttpRequest) -> HttpResponse:
         return redirect("visits:login")
 
     context = _maintenance_context()
+    context.update(
+        {
+            "page_title": (getattr(setting, "site_name", "") or "بوابة الزيارات").strip() or "بوابة الزيارات",
+            "page_subtitle": "الخدمة متوقفة مؤقتًا حسب الفترة المحددة من الإدارة.",
+            "maintenance_has_window": bool(context.get("maintenance_starts_at") or context.get("maintenance_ends_at")),
+            "maintenance_period_text": getattr(setting, "maintenance_window_label", "") or "",
+        }
+    )
     return render(request, "visits/maintenance.html", context)
 
 
@@ -1007,16 +1070,25 @@ def _build_admin_week_excel_workbook(week_obj: PlanWeek, plans) -> Workbook:
         for wd, _wd_name in WEEKDAYS:
             d = day_map.get(wd)
             text = "—"
+
             if d:
+                visit_type_label = _visit_type_export_label(getattr(d, "visit_type", ""))
+
                 if d.visit_type == none_val:
                     reason = d.get_no_visit_reason_display() if getattr(d, "no_visit_reason", None) else "بدون زيارة"
                     if getattr(d, "note", None):
                         reason = f"{reason} — {d.note}"
-                    text = reason
+                    text = f"{reason} ({visit_type_label})"
                     filled += 1
                 elif d.school:
-                    text = d.school.name
+                    school_name = d.school.name
+                    if getattr(d, "note", None):
+                        school_name = f"{school_name} — {d.note}"
+                    text = f"{school_name} ({visit_type_label})"
                     filled += 1
+                else:
+                    text = visit_type_label
+
             day_values.append(text)
 
         row_values = [
@@ -1036,7 +1108,7 @@ def _build_admin_week_excel_workbook(week_obj: PlanWeek, plans) -> Workbook:
 
         row_idx += 1
 
-    for col_i, width in {1: 8, 2: 24, 3: 18, 4: 26, 5: 26, 6: 26, 7: 26, 8: 26, 9: 16, 10: 14}.items():
+    for col_i, width in {1: 8, 2: 24, 3: 18, 4: 32, 5: 32, 6: 32, 7: 32, 8: 32, 9: 16, 10: 14}.items():
         ws.column_dimensions[get_column_letter(col_i)].width = width
 
     return wb
