@@ -18,9 +18,7 @@ venv/
 .vscode/
 .idea/
 
-# ✅ ملفات حقيقية حساسة (Excel)
+# Sensitive files
 private_data/
-*.xlsx
-*.xls
 secrets/
 test_google_drive.py
