@@ -858,6 +858,53 @@ def _build_chart_counts(week_obj: PlanWeek) -> dict:
     }
 
 
+def _build_admin_visit_followup_stats(week_obj: PlanWeek) -> dict[str, Any]:
+    plans = (
+        Plan.objects.filter(week=week_obj)
+        .select_related("supervisor", "supervisor__sector", "week")
+        .prefetch_related("days", "days__school")
+        .order_by("supervisor__full_name")
+    )
+
+    rows: list[dict[str, Any]] = []
+    total_assigned = 0
+    total_visited = 0
+    total_remaining = 0
+    supervisors_with_remaining = 0
+
+    for plan in plans:
+        counts = _plan_visit_counts(plan)
+        assigned_count = counts["assigned_count"]
+        visited_count = counts["visited_count"]
+        remaining_count = counts["remaining_count"]
+
+        total_assigned += assigned_count
+        total_visited += visited_count
+        total_remaining += remaining_count
+
+        if remaining_count > 0:
+            supervisors_with_remaining += 1
+
+        rows.append(
+            {
+                "plan": plan,
+                "supervisor": plan.supervisor,
+                "assigned_count": assigned_count,
+                "visited_count": visited_count,
+                "remaining_count": remaining_count,
+                "progress_percent": round((visited_count / assigned_count) * 100, 1) if assigned_count else 0,
+            }
+        )
+
+    return {
+        "visit_followup_rows": rows,
+        "visit_followup_total_assigned": total_assigned,
+        "visit_followup_total_visited": total_visited,
+        "visit_followup_total_remaining": total_remaining,
+        "visit_followup_supervisors_with_remaining": supervisors_with_remaining,
+    }
+
+
 # =============================================================================
 # Excel helpers
 # =============================================================================
@@ -2604,6 +2651,7 @@ def admin_dashboard_view(request: HttpRequest) -> HttpResponse:
     paginator = Paginator(rows, page_size)
     page_obj = paginator.get_page(page)
     chart_data = _build_chart_counts(week_obj)
+    visit_followup = _build_admin_visit_followup_stats(week_obj)
     site_setting = _get_site_setting()
     _maintenance_is_active(site_setting, persist=True)
 
@@ -2631,6 +2679,7 @@ def admin_dashboard_view(request: HttpRequest) -> HttpResponse:
             "week_letter": WeeklyLetterLink.objects.filter(week=week_obj).first(),
             "site_setting": site_setting,
             **chart_data,
+            **visit_followup,
         },
     )
 
@@ -2971,6 +3020,148 @@ def admin_send_notification_all_view(request: HttpRequest) -> HttpResponse:
         return JsonResponse({"ok": True, "message": msg, "sent_count": sent_count, "week_no": week_obj.week_no}, status=200)
 
     messages.success(request, msg)
+    return redirect(return_url)
+
+
+
+
+@admin_only_view
+@require_POST
+def admin_notify_supervisor_visit_followup_view(request: HttpRequest, plan_id: int) -> HttpResponse:
+    plan = get_object_or_404(
+        Plan.objects.select_related("supervisor", "supervisor__sector", "week"),
+        id=plan_id,
+    )
+
+    counts = _plan_visit_counts(plan)
+    remaining = counts["remaining_count"]
+
+    state = _parse_admin_action_state(request)
+    return_url = _resolve_admin_return_url(
+        request,
+        plan=plan,
+        default_week_no=plan.week.week_no,
+        show_all=state["show_all"],
+        q=state["q"],
+        status_filter=state["status_filter"],
+        ps=state["ps"],
+        page=state["page"],
+    )
+
+    if remaining <= 0:
+        msg = "لا توجد مدارس متبقية على هذا المشرف لهذا الأسبوع."
+        if _is_ajax(request):
+            return JsonResponse({"ok": False, "message": msg, "remaining_count": 0}, status=400)
+        messages.info(request, msg)
+        return redirect(return_url)
+
+    _notify_supervisor(
+        supervisor=plan.supervisor,
+        plan=plan,
+        notif_type=SupervisorNotification.TYPE_ADMIN_ALERT,
+        title="تنبيه بمتابعة الزيارات",
+        message=(
+            f"نأمل استكمال الزيارات المتبقية للأسبوع {plan.week.week_no}. "
+            f"عدد المدارس التي لم يتم تسجيل زيارتها حتى الآن: {remaining}."
+        ),
+    )
+
+    msg = f"تم إرسال تنبيه إلى المشرف {plan.supervisor.full_name}."
+    if _is_ajax(request):
+        return JsonResponse({"ok": True, "message": msg, "remaining_count": remaining}, status=200)
+
+    messages.success(request, msg)
+    return redirect(return_url)
+
+
+@admin_only_view
+@require_POST
+def admin_notify_all_supervisors_visit_followup_view(request: HttpRequest) -> HttpResponse:
+    show_all = (request.POST.get("all") or request.GET.get("all") or "0").strip().lower() in ("1", "true", "yes")
+
+    weeks_qs = _get_all_weeks_qs() if show_all else _get_active_weeks_qs()
+    default_week = weeks_qs.first()
+
+    if not default_week:
+        messages.warning(request, "لا يوجد أسابيع متاحة.")
+        return redirect("visits:admin_dashboard")
+
+    week_no = _safe_int(request.POST.get("week") or request.GET.get("week") or default_week.week_no, default=default_week.week_no)
+    if not _week_exists(week_no):
+        week_no = default_week.week_no
+
+    week_obj = _resolve_week_or_404(week_no, allow_inactive=show_all)
+    q = (request.POST.get("q") or request.GET.get("q") or "").strip()
+    status_filter = (request.POST.get("status") or request.GET.get("status") or "all").strip().lower()
+    ps = _safe_int(request.POST.get("ps") or request.GET.get("ps") or 10, default=10)
+    page = _safe_int(request.POST.get("page") or request.GET.get("page") or 1, default=1)
+
+    return_url = _admin_dashboard_url(
+        week_obj.week_no,
+        show_all=show_all,
+        q=q,
+        status=status_filter,
+        ps=ps,
+        page=page,
+    )
+
+    plans_qs = (
+        Plan.objects.filter(week=week_obj)
+        .select_related("supervisor", "supervisor__sector", "week")
+        .order_by("supervisor__full_name")
+    )
+
+    if q:
+        plans_qs = plans_qs.filter(Q(supervisor__full_name__icontains=q) | Q(supervisor__national_id__icontains=q))
+
+    plans = list(plans_qs)
+
+    if status_filter == "approved":
+        plans = [p for p in plans if p.status == Plan.STATUS_APPROVED]
+    elif status_filter == "draft":
+        plans = [p for p in plans if p.status == Plan.STATUS_DRAFT]
+    elif status_filter == "unlock":
+        plans = [p for p in plans if p.status == Plan.STATUS_UNLOCK_REQUESTED]
+    elif status_filter == "not_full":
+        plans = [p for p in plans if not p.is_fully_filled()]
+
+    notified = 0
+    touched_supervisor_ids: set[int] = set()
+
+    for plan in plans:
+        sup = plan.supervisor
+        if not sup or not getattr(sup, "is_active", False):
+            continue
+        if sup.id in touched_supervisor_ids:
+            continue
+
+        counts = _plan_visit_counts(plan)
+        remaining = counts["remaining_count"]
+        if remaining <= 0:
+            continue
+
+        _notify_supervisor(
+            supervisor=sup,
+            plan=plan,
+            notif_type=SupervisorNotification.TYPE_ADMIN_ALERT,
+            title="تنبيه بمتابعة الزيارات",
+            message=(
+                f"نأمل استكمال الزيارات المتبقية للأسبوع {plan.week.week_no}. "
+                f"عدد المدارس التي لم يتم تسجيل زيارتها حتى الآن: {remaining}."
+            ),
+        )
+        touched_supervisor_ids.add(sup.id)
+        notified += 1
+
+    msg = f"تم إرسال التنبيه إلى {notified} مشرف/ة." if notified else "لا يوجد مشرفون لديهم زيارات متبقية حاليًا."
+
+    if _is_ajax(request):
+        return JsonResponse({"ok": True, "message": msg, "sent_count": notified, "week_no": week_obj.week_no}, status=200)
+
+    if notified:
+        messages.success(request, msg)
+    else:
+        messages.info(request, msg)
     return redirect(return_url)
 
 

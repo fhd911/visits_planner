@@ -60,6 +60,18 @@ urlpatterns = [
     path("manager/plan-notify/<int:plan_id>/", views.admin_send_notification_view, name="admin_send_notification"),
     path("manager/notify-all/", views.admin_send_notification_all_view, name="admin_send_notification_all"),
 
+    # متابعة الزيارات والتنبيه الفوري
+    path(
+        "manager/visit-followup/notify/<int:plan_id>/",
+        views.admin_notify_supervisor_visit_followup_view,
+        name="admin_notify_supervisor_visit_followup",
+    ),
+    path(
+        "manager/visit-followup/notify-all/",
+        views.admin_notify_all_supervisors_visit_followup_view,
+        name="admin_notify_all_supervisors_visit_followup",
+    ),
+
     # طلبات فك الاعتماد
     path("manager/unlock-approve/<int:plan_id>/", views.admin_unlock_approve_view, name="admin_unlock_approve"),
     path("manager/unlock-reject/<int:plan_id>/", views.admin_unlock_reject_view, name="admin_unlock_reject"),
