@@ -1,0 +1,299 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}إعداد البريد الإلكتروني{% endblock %}
+{% block page_messages %}{% endblock %}
+
+{% block header_title %}إعداد البريد الإلكتروني{% endblock %}
+{% block header_subtitle %}سجل بريدك الإلكتروني لتصلك التنبيهات والإشعارات المهمة{% endblock %}
+
+{% block topbar_actions %}
+  <a href="{% url 'visits:logout' %}" class="logout-link">خروج</a>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .email-settings-page{
+    --bg:#f4f7fb;
+    --card:#ffffff;
+    --card-soft:#fbfdff;
+    --line:#e7edf5;
+    --line-strong:#d8e3ee;
+
+    --text:#16263d;
+    --text-soft:#4d6278;
+    --muted:#7b8da1;
+
+    --primary:#1d4ed8;
+    --primary-dark:#163fae;
+    --primary-soft:#eff6ff;
+
+    --success:#15803d;
+    --warn:#b45309;
+
+    --shadow:0 20px 50px rgba(15, 23, 42, .08);
+    --radius:24px;
+  }
+
+  .email-settings-page{
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .email-card{
+    background: linear-gradient(180deg, var(--card) 0%, var(--card-soft) 100%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 28px;
+  }
+
+  .email-card-head{
+    margin-bottom: 22px;
+  }
+
+  .email-card-title{
+    margin: 0 0 8px;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--text);
+  }
+
+  .email-card-subtitle{
+    margin: 0;
+    color: var(--text-soft);
+    line-height: 1.8;
+    font-size: .98rem;
+  }
+
+  .email-info{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  .email-info-item{
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 14px 16px;
+  }
+
+  .email-info-label{
+    display: block;
+    font-size: .85rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .email-info-value{
+    color: var(--text);
+    font-weight: 700;
+    font-size: .98rem;
+  }
+
+  .email-form{
+    display: grid;
+    gap: 18px;
+  }
+
+  .form-field{
+    display: grid;
+    gap: 8px;
+  }
+
+  .form-label{
+    font-weight: 700;
+    color: var(--text);
+    font-size: .95rem;
+  }
+
+  .form-input{
+    width: 100%;
+    height: 52px;
+    border-radius: 16px;
+    border: 1px solid var(--line-strong);
+    background: #fff;
+    padding: 0 16px;
+    font-size: 1rem;
+    color: var(--text);
+    outline: none;
+    transition: .2s ease;
+  }
+
+  .form-input:focus{
+    border-color: rgba(29, 78, 216, .45);
+    box-shadow: 0 0 0 4px rgba(29, 78, 216, .10);
+  }
+
+  .form-help{
+    font-size: .88rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  .toggle-box{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: #fff;
+  }
+
+  .toggle-box input[type="checkbox"]{
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+    margin: 0;
+    flex: 0 0 auto;
+  }
+
+  .toggle-box label{
+    margin: 0;
+    color: var(--text);
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .email-note{
+    background: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde7b0;
+    border-radius: 18px;
+    padding: 14px 16px;
+    line-height: 1.8;
+    font-size: .92rem;
+  }
+
+  .form-actions{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  .btn-main,
+  .btn-sub{
+    appearance: none;
+    border: 0;
+    text-decoration: none;
+    border-radius: 16px;
+    height: 48px;
+    padding: 0 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: .95rem;
+    cursor: pointer;
+    transition: .2s ease;
+  }
+
+  .btn-main{
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 12px 26px rgba(29, 78, 216, .20);
+  }
+
+  .btn-main:hover{
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+  }
+
+  .btn-sub{
+    background: var(--primary-soft);
+    color: var(--primary-dark);
+    border: 1px solid #dbe7ff;
+  }
+
+  .btn-sub:hover{
+    background: #e4efff;
+  }
+
+  @media (max-width: 640px){
+    .email-card{
+      padding: 20px;
+      border-radius: 20px;
+    }
+
+    .form-actions{
+      flex-direction: column;
+    }
+
+    .btn-main,
+    .btn-sub{
+      width: 100%;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="email-settings-page">
+  <div class="email-card">
+    <div class="email-card-head">
+      <h2 class="email-card-title">تسجيل البريد الإلكتروني</h2>
+      <p class="email-card-subtitle">
+        يرجى تسجيل بريدك الإلكتروني حتى تصلك الإشعارات والتنبيهات المهمة الخاصة بالخطة والاعتماد والتنبيهات الإدارية.
+      </p>
+    </div>
+
+    <div class="email-info">
+      <div class="email-info-item">
+        <span class="email-info-label">اسم المشرف</span>
+        <div class="email-info-value">{{ sup.full_name }}</div>
+      </div>
+
+      <div class="email-info-item">
+        <span class="email-info-label">السجل المدني</span>
+        <div class="email-info-value">{{ sup.national_id }}</div>
+      </div>
+    </div>
+
+    <form method="post" class="email-form">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next_url|default:'' }}">
+
+      <div class="form-field">
+        <label class="form-label" for="id_email">البريد الإلكتروني</label>
+        <input
+          type="email"
+          name="email"
+          id="id_email"
+          class="form-input"
+          value="{{ sup.email|default:'' }}"
+          placeholder="name@example.com"
+          required
+          dir="ltr"
+        >
+        <div class="form-help">
+          أدخل بريدًا إلكترونيًا صحيحًا ليتم استخدامه لإرسال التنبيهات المهمة.
+        </div>
+      </div>
+
+      <div class="toggle-box">
+        <input
+          type="checkbox"
+          name="email_notifications_enabled"
+          id="id_email_notifications_enabled"
+          value="1"
+          {% if sup.email_notifications_enabled or sup.email_notifications_enabled is None %}checked{% endif %}
+        >
+        <label for="id_email_notifications_enabled">تفعيل التنبيهات البريدية</label>
+      </div>
+
+      <div class="email-note">
+        يمكنك تعديل البريد لاحقًا، كما يمكن للإدارة إضافته أو تحديثه عند الحاجة.
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-main">حفظ البريد والمتابعة</button>
+        <a href="{% url 'visits:plan' %}" class="btn-sub">العودة إلى الخطة</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

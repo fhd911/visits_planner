@@ -149,6 +149,18 @@ def _supervisor_schools_qs(supervisor: Supervisor):
     )
 
 
+
+
+def _supervisor_email_value(sup: Supervisor) -> str:
+    return (getattr(sup, "email", "") or "").strip()
+
+
+def _supervisor_needs_email_prompt(sup: Supervisor) -> bool:
+    return not bool(_supervisor_email_value(sup))
+
+
+def _supervisor_email_notifications_enabled(sup: Supervisor) -> bool:
+    return bool(getattr(sup, "email_notifications_enabled", False))
 # =============================================================================
 # Admin/supervisor isolation
 # =============================================================================
@@ -751,7 +763,12 @@ def _notify_supervisor(
         message=message or "",
     )
 
+    email = _supervisor_email_value(supervisor)
+    enabled = _supervisor_email_notifications_enabled(supervisor)
 
+    if email and enabled:
+        # جاهز لإضافة send_mail لاحقًا بعد إعداد SMTP
+        pass
 def _parse_admin_action_state(request: HttpRequest) -> dict[str, Any]:
     show_all = (request.POST.get("all") or request.GET.get("all") or "0").strip().lower() in ("1", "true", "yes")
     return {
@@ -1239,11 +1256,15 @@ def supervisor_dashboard_view(request: HttpRequest) -> HttpResponse:
         return redirect("visits:maintenance_page")
 
     try:
-        _require_supervisor(request)
+        supervisor = _require_supervisor(request)
     except Supervisor.DoesNotExist:
         return redirect("visits:login")
-    return redirect(_plan_url(_get_default_week_no()))
 
+    if _supervisor_needs_email_prompt(supervisor):
+        messages.info(request, "يرجى تسجيل بريدك الإلكتروني لتصلك التنبيهات والإشعارات المهمة.")
+        return redirect("visits:supervisor_email_settings")
+
+    return redirect(_plan_url(_get_default_week_no()))
 
 # =============================================================================
 # Letter views
@@ -1398,8 +1419,17 @@ def plan_view(request: HttpRequest) -> HttpResponse:
     except Supervisor.DoesNotExist:
         return redirect("visits:login")
 
-    week_no = _safe_int(request.GET.get("week") or request.POST.get("week") or _get_default_week_no(), default=_get_default_week_no())
-    week_obj = _resolve_week_or_404(week_no, allow_inactive=False)
+    current_week_no = _safe_int(
+        request.GET.get("week") or request.POST.get("week") or _get_default_week_no(),
+        default=_get_default_week_no(),
+    )
+
+    if _supervisor_needs_email_prompt(supervisor):
+        messages.info(request, "يرجى تسجيل بريدك الإلكتروني أولًا لتصلك التنبيهات والإشعارات.")
+        settings_url = reverse("visits:supervisor_email_settings")
+        return redirect(f"{settings_url}?next={_plan_url(current_week_no)}")
+
+    week_obj = _resolve_week_or_404(current_week_no, allow_inactive=False)
 
     plan, _ = Plan.objects.get_or_create(supervisor=supervisor, week=week_obj)
     _inject_week_no(plan)
@@ -1517,18 +1547,110 @@ def plan_view(request: HttpRequest) -> HttpResponse:
             "assigned_count": visit_counts["assigned_count"],
             "visited_count": visit_counts["visited_count"],
             "remaining_count": visit_counts["remaining_count"],
+            "supervisor_email": _supervisor_email_value(supervisor),
+            "email_notifications_enabled": _supervisor_email_notifications_enabled(supervisor),
         },
     )
 
 
-def supervisor_visit_status_view(request: HttpRequest) -> HttpResponse:
+def supervisor_email_settings_view(request: HttpRequest) -> HttpResponse:
+    setting = _get_site_setting()
+    if _maintenance_is_active(setting, persist=True) and not _maintenance_allowed_for_request(request, setting):
+        return redirect("visits:maintenance_page")
+
     try:
         supervisor = _require_supervisor(request)
     except Supervisor.DoesNotExist:
         return redirect("visits:login")
 
-    week_no = _safe_int(request.GET.get("week") or _get_default_week_no(), default=_get_default_week_no())
-    week_obj = _resolve_week_or_404(week_no, allow_inactive=False)
+    next_url = request.POST.get("next") or request.GET.get("next") or _plan_url(_get_default_week_no())
+
+    if request.method == "POST":
+        email = _cell_str(request.POST.get("email")).lower()
+        enabled = _bool_from_post(request.POST.get("email_notifications_enabled"), default=True)
+
+        if not email:
+            messages.error(request, "يرجى إدخال البريد الإلكتروني.")
+            return render(
+                request,
+                "visits/supervisor_email_settings.html",
+                {
+                    "sup": supervisor,
+                    "next_url": next_url,
+                },
+            )
+
+        supervisor.email = email
+        supervisor.email_notifications_enabled = enabled
+
+        if hasattr(supervisor, "email_verified"):
+            supervisor.email_verified = False
+            supervisor.save(update_fields=["email", "email_notifications_enabled", "email_verified"])
+        else:
+            supervisor.save(update_fields=["email", "email_notifications_enabled"])
+
+        messages.success(request, "تم حفظ البريد الإلكتروني وتحديث إعدادات التنبيه بنجاح.")
+        return redirect(next_url)
+
+    return render(
+        request,
+        "visits/supervisor_email_settings.html",
+        {
+            "sup": supervisor,
+            "next_url": next_url,
+        },
+    )
+
+
+@require_POST
+def toggle_email_notifications_view(request: HttpRequest) -> HttpResponse:
+    try:
+        supervisor = _require_supervisor(request)
+    except Supervisor.DoesNotExist:
+        return redirect("visits:login")
+
+    if not _supervisor_email_value(supervisor):
+        messages.warning(request, "سجل البريد الإلكتروني أولًا قبل تفعيل التنبيهات البريدية.")
+        return redirect("visits:supervisor_email_settings")
+
+    supervisor.email_notifications_enabled = not bool(getattr(supervisor, "email_notifications_enabled", False))
+    supervisor.save(update_fields=["email_notifications_enabled"])
+
+    if supervisor.email_notifications_enabled:
+        messages.success(request, "تم تفعيل التنبيهات البريدية.")
+    else:
+        messages.success(request, "تم إيقاف التنبيهات البريدية.")
+
+    next_url = request.POST.get("next") or request.GET.get("next") or _plan_url(_get_default_week_no())
+    return redirect(next_url)
+
+
+# =============================================================================
+
+# =============================================================================
+# Supervisor visit status
+# =============================================================================
+def supervisor_visit_status_view(request: HttpRequest) -> HttpResponse:
+    setting = _get_site_setting()
+    if _maintenance_is_active(setting, persist=True) and not _maintenance_allowed_for_request(request, setting):
+        return redirect("visits:maintenance_page")
+
+    try:
+        supervisor = _require_supervisor(request)
+    except Supervisor.DoesNotExist:
+        return redirect("visits:login")
+
+    current_week_no = _safe_int(
+        request.GET.get("week") or _get_default_week_no(),
+        default=_get_default_week_no(),
+    )
+
+    if _supervisor_needs_email_prompt(supervisor):
+        messages.info(request, "يرجى تسجيل بريدك الإلكتروني أولًا لتصلك التنبيهات والإشعارات.")
+        settings_url = reverse("visits:supervisor_email_settings")
+        return redirect(f"{settings_url}?next={_supervisor_visit_status_url(current_week_no)}")
+
+    week_obj = _resolve_week_or_404(current_week_no, allow_inactive=False)
 
     plan = get_object_or_404(
         Plan.objects.select_related("supervisor", "week").prefetch_related("days__school"),
@@ -1537,7 +1659,10 @@ def supervisor_visit_status_view(request: HttpRequest) -> HttpResponse:
     )
     _inject_week_no(plan)
 
-    school_days = [d for d in plan.days.all() if d.visit_type == getattr(PlanDay, "VISIT_IN", "in") and d.school_id]
+    school_days = [
+        d for d in plan.days.all()
+        if d.visit_type == getattr(PlanDay, "VISIT_IN", "in") and d.school_id
+    ]
     visited_days = [d for d in school_days if getattr(d, "visited", False)]
     unvisited_days = [d for d in school_days if not getattr(d, "visited", False)]
 
@@ -1552,8 +1677,12 @@ def supervisor_visit_status_view(request: HttpRequest) -> HttpResponse:
             school__is_active=True,
         ).values_list("school_id", flat=True)
     )
-    remaining_school_ids = assigned_school_ids - set(d.school_id for d in visited_days if d.school_id)
-    remaining_schools = list(School.objects.filter(id__in=remaining_school_ids, is_active=True).order_by("name"))
+    visited_school_ids = {d.school_id for d in visited_days if d.school_id}
+    remaining_school_ids = assigned_school_ids - visited_school_ids
+
+    remaining_schools = list(
+        School.objects.filter(id__in=remaining_school_ids, is_active=True).order_by("name")
+    )
 
     return render(
         request,
@@ -1572,12 +1701,18 @@ def supervisor_visit_status_view(request: HttpRequest) -> HttpResponse:
             "remaining_count": visit_counts["remaining_count"],
             "notifications": notifications,
             "unread_count": unread_count,
+            "supervisor_email": _supervisor_email_value(supervisor),
+            "email_notifications_enabled": _supervisor_email_notifications_enabled(supervisor),
         },
     )
 
 
 @require_POST
 def toggle_day_visited_view(request: HttpRequest, day_id: int) -> HttpResponse:
+    setting = _get_site_setting()
+    if _maintenance_is_active(setting, persist=True) and not _maintenance_allowed_for_request(request, setting):
+        return redirect("visits:maintenance_page")
+
     try:
         supervisor = _require_supervisor(request)
     except Supervisor.DoesNotExist:
@@ -1599,7 +1734,7 @@ def toggle_day_visited_view(request: HttpRequest, day_id: int) -> HttpResponse:
     visited_raw = (request.POST.get("visited") or "").strip()
     note = (request.POST.get("visit_note") or request.POST.get("note") or "").strip() or None
 
-    if visited_raw in ("1", "true", "yes", "on"):
+    if visited_raw.lower() in ("1", "true", "yes", "on"):
         day.visited = True
         day.visited_at = timezone.now()
         day.visit_note = note
@@ -1633,7 +1768,6 @@ def toggle_day_visited_view(request: HttpRequest, day_id: int) -> HttpResponse:
     messages.success(request, msg)
     return redirect(_supervisor_visit_status_url(day.plan.week.week_no))
 
-
 # =============================================================================
 # Notifications
 # =============================================================================
@@ -1665,9 +1799,10 @@ def notifications_view(request: HttpRequest) -> HttpResponse:
             "sup": supervisor,
             "unread_count": unread_count,
             "week": week_no,
+            "supervisor_email": _supervisor_email_value(supervisor),
+            "email_notifications_enabled": _supervisor_email_notifications_enabled(supervisor),
         },
     )
-
 
 @require_POST
 def mark_notification_read_view(request: HttpRequest, notif_id: int) -> HttpResponse:
@@ -1888,9 +2023,11 @@ def admin_supervisor_save_view(request: HttpRequest) -> HttpResponse:
     full_name = _cell_str(request.POST.get("full_name"))
     national_id = _cell_str(request.POST.get("national_id"))
     mobile = _cell_str(request.POST.get("mobile"))
+    email = _cell_str(request.POST.get("email")).lower()
     gender = _cell_str(request.POST.get("gender"))
     sector_id = _safe_int(request.POST.get("sector") or request.POST.get("sector_id") or 0, default=0)
     is_active = _bool_from_post(request.POST.get("is_active"), default=True)
+    email_notifications_enabled = _bool_from_post(request.POST.get("email_notifications_enabled"), default=True)
 
     if not full_name:
         messages.error(request, "اسم المشرف مطلوب.")
@@ -1905,12 +2042,18 @@ def admin_supervisor_save_view(request: HttpRequest) -> HttpResponse:
             supervisor.national_id = national_id
         if hasattr(supervisor, "mobile"):
             supervisor.mobile = mobile
+        if hasattr(supervisor, "email"):
+            supervisor.email = email or None
+        if hasattr(supervisor, "email_notifications_enabled"):
+            supervisor.email_notifications_enabled = email_notifications_enabled
         if hasattr(supervisor, "gender") and gender:
             supervisor.gender = gender
         if hasattr(supervisor, "sector"):
             supervisor.sector = sector
         if hasattr(supervisor, "is_active"):
             supervisor.is_active = is_active
+        if hasattr(supervisor, "email_verified") and not email:
+            supervisor.email_verified = False
         supervisor.save()
         messages.success(request, "تم تحديث المشرف بنجاح.")
     else:
@@ -1919,6 +2062,12 @@ def admin_supervisor_save_view(request: HttpRequest) -> HttpResponse:
             data["national_id"] = national_id
         if hasattr(Supervisor, "mobile"):
             data["mobile"] = mobile
+        if hasattr(Supervisor, "email"):
+            data["email"] = email or None
+        if hasattr(Supervisor, "email_notifications_enabled"):
+            data["email_notifications_enabled"] = email_notifications_enabled
+        if hasattr(Supervisor, "email_verified"):
+            data["email_verified"] = False
         if hasattr(Supervisor, "gender"):
             data["gender"] = gender or "boys"
         if hasattr(Supervisor, "sector"):
@@ -1929,7 +2078,6 @@ def admin_supervisor_save_view(request: HttpRequest) -> HttpResponse:
         messages.success(request, "تمت إضافة المشرف بنجاح.")
 
     return redirect("visits:admin_supervisor_list")
-
 
 @admin_only_view
 @require_POST

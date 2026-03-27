@@ -22,6 +22,9 @@ urlpatterns = [
     # بوابة المشرف
     # =========================================================
     path("dashboard/", views.supervisor_dashboard_view, name="supervisor_dashboard"),
+    path("email-settings/", views.supervisor_email_settings_view, name="supervisor_email_settings"),
+    path("email-settings/toggle/", views.toggle_email_notifications_view, name="toggle_email_notifications"),
+
     path("print-assignment-letter/", views.print_assignment_letter_view, name="print_assignment_letter"),
     path("weekly-letter/", views.current_week_letter_redirect_view, name="current_week_letter"),
 

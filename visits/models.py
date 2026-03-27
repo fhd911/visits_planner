@@ -272,6 +272,7 @@ class Supervisor(models.Model):
             models.Index(fields=["gender"]),
             models.Index(fields=["sector"]),
             models.Index(fields=["is_active"]),
+            models.Index(fields=["email_notifications_enabled"]),
         ]
 
     GENDER_CHOICES = [("boys", "بنين"), ("girls", "بنات")]
@@ -279,6 +280,11 @@ class Supervisor(models.Model):
     national_id = models.CharField("السجل المدني", max_length=20, unique=True)
     full_name = models.CharField("اسم المشرف", max_length=255)
     mobile = models.CharField("جوال المشرف", max_length=20, blank=True, null=True)
+
+    email = models.EmailField("البريد الإلكتروني", blank=True, null=True)
+    email_notifications_enabled = models.BooleanField("تفعيل التنبيهات البريدية", default=True)
+    email_verified = models.BooleanField("تم التحقق من البريد", default=False)
+
     gender = models.CharField("النوع", max_length=10, choices=GENDER_CHOICES, null=True, blank=True)
     sector = models.ForeignKey(
         Sector,
@@ -306,9 +312,13 @@ class Supervisor(models.Model):
         self.national_id = self._digits(self.national_id or "")
         self.full_name = _clean_text(self.full_name)
         self.mobile = _clean_text(self.mobile) or None
+        self.email = _clean_text(self.email) or None
 
         if self.mobile:
             self.mobile = self._digits(self.mobile) or self.mobile
+
+        if self.email:
+            self.email = self.email.lower()
 
         errors = {}
         if not self.national_id:

@@ -66,6 +66,100 @@
     overflow:hidden;
   }
 
+  .email-strip{
+    margin:12px 16px 0;
+    border:1px solid var(--v2-line);
+    border-radius:18px;
+    background:linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    box-shadow:var(--v2-shadow-soft);
+    padding:12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  .email-strip-info{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    min-width:280px;
+  }
+
+  .email-strip-title{
+    font-size:13px;
+    font-weight:var(--fw-strong);
+    color:var(--v2-text);
+  }
+
+  .email-strip-subtitle{
+    font-size:12px;
+    color:var(--v2-muted);
+    line-height:1.8;
+  }
+
+  .email-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    min-height:34px;
+    padding:0 12px;
+    border-radius:999px;
+    border:1px solid var(--v2-line);
+    background:#fff;
+    font-size:12.25px;
+    font-weight:var(--fw-mid);
+    color:var(--v2-text);
+    width:max-content;
+    max-width:100%;
+  }
+
+  .email-pill.empty{
+    background:var(--v2-warn-bg);
+    border-color:var(--v2-warn-bd);
+    color:var(--v2-warn-tx);
+  }
+
+  .email-pill.enabled{
+    background:var(--v2-ok-bg);
+    border-color:var(--v2-ok-bd);
+    color:var(--v2-ok-tx);
+  }
+
+  .email-pill.disabled{
+    background:var(--v2-gray-bg);
+    border-color:var(--v2-gray-bd);
+    color:var(--v2-gray-tx);
+  }
+
+  .email-strip-actions{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .mini-form{
+    margin:0;
+  }
+
+  .page-wrap{
+    max-width:1280px;
+    margin:0 auto;
+    padding:0;
+    display:grid;
+    gap:10px;
+  }
+
+  .panel{
+    background:var(--v2-card);
+    border:1px solid var(--v2-line);
+    border-radius:24px;
+    box-shadow:var(--v2-shadow);
+    overflow:hidden;
+  }
+
   .plan-topbar{
     padding:18px 20px 16px;
     display:grid;
@@ -230,7 +324,6 @@
     box-shadow:0 0 0 4px rgba(59,130,246,.08);
   }
 
-  /* العمود الأيسر: صفين بدون فراغ كبير */
   .plan-topbar-left{
     min-width:0;
     display:grid;
@@ -955,6 +1048,15 @@
     .notif-btn{
       width:100%;
     }
+
+    .email-strip{
+      align-items:flex-start;
+      flex-direction:column;
+    }
+
+    .email-strip-actions{
+      width:100%;
+    }
   }
 
   @media (max-width: 520px){
@@ -1078,6 +1180,55 @@
         <a class="btn btn-outline btn-text" href="{% url 'visits:plan_export' %}?week={{ week }}">
           تصدير Excel
         </a>
+      </div>
+    </div>
+
+    <div class="email-strip">
+      <div class="email-strip-info">
+        <div class="email-strip-title">البريد الإلكتروني والتنبيهات</div>
+
+        {% if supervisor_email %}
+          <div class="email-pill">
+            <span>📧</span>
+            <span>{{ supervisor_email }}</span>
+          </div>
+
+          {% if email_notifications_enabled %}
+            <div class="email-strip-subtitle">
+              <span class="email-pill enabled">التنبيهات البريدية مفعلة</span>
+            </div>
+          {% else %}
+            <div class="email-strip-subtitle">
+              <span class="email-pill disabled">التنبيهات البريدية غير مفعلة</span>
+            </div>
+          {% endif %}
+        {% else %}
+          <div class="email-pill empty">
+            <span>⚠</span>
+            <span>لا يوجد بريد إلكتروني مسجل حاليًا</span>
+          </div>
+          <div class="email-strip-subtitle">
+            يمكنك تسجيل البريد الآن ليصلك كل جديد على البريد الإلكتروني.
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="email-strip-actions">
+        <a class="btn btn-outline btn-text" href="{% url 'visits:supervisor_email_settings' %}?next={{ request.get_full_path|urlencode }}">
+          {% if supervisor_email %}تعديل البريد{% else %}تسجيل البريد{% endif %}
+        </a>
+
+        {% if supervisor_email %}
+          <form method="post" action="{% url 'visits:toggle_email_notifications' %}" class="mini-form">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            {% if email_notifications_enabled %}
+              <button type="submit" class="btn btn-warn">إيقاف التنبيه البريدي</button>
+            {% else %}
+              <button type="submit" class="btn btn-save">تفعيل التنبيه البريدي</button>
+            {% endif %}
+          </form>
+        {% endif %}
       </div>
     </div>
 

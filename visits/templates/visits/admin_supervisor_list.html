@@ -32,6 +32,7 @@
     --warn:#f59e0b;
     --danger:#dc2626;
     --cyan:#0891b2;
+    --violet:#7c3aed;
 
     --shadow:0 12px 28px rgba(15,23,42,.06);
     --shadow2:0 6px 16px rgba(15,23,42,.045);
@@ -120,7 +121,7 @@
 
   .sup-page .form-grid{
     display:grid;
-    grid-template-columns:1fr 1.3fr 1fr 1fr 1fr auto;
+    grid-template-columns:1fr 1.2fr 1fr 1fr 1fr 1.2fr 1fr auto;
     gap:8px;
     align-items:end;
   }
@@ -159,6 +160,27 @@
     border-color:rgba(59,130,246,.30);
     box-shadow:0 0 0 4px rgba(59,130,246,.06);
     background:#fff;
+  }
+
+  .sup-page .check-wrap{
+    height:36px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:0 12px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:rgba(248,250,252,.95);
+    color:var(--txt);
+    font-size:11.6px;
+    font-weight:var(--fw-strong);
+  }
+
+  .sup-page .check-wrap input{
+    width:16px;
+    height:16px;
+    accent-color:#2563eb;
+    margin:0;
   }
 
   .sup-page .btn{
@@ -226,12 +248,13 @@
     white-space:nowrap;
   }
 
-  .sup-page thead th:nth-child(1){ width:18%; }
-  .sup-page thead th:nth-child(2){ width:25%; }
-  .sup-page thead th:nth-child(3){ width:16%; }
-  .sup-page thead th:nth-child(4){ width:11%; }
-  .sup-page thead th:nth-child(5){ width:16%; }
-  .sup-page thead th:nth-child(6){ width:14%; }
+  .sup-page thead th:nth-child(1){ width:13%; }
+  .sup-page thead th:nth-child(2){ width:22%; }
+  .sup-page thead th:nth-child(3){ width:13%; }
+  .sup-page thead th:nth-child(4){ width:18%; }
+  .sup-page thead th:nth-child(5){ width:10%; }
+  .sup-page thead th:nth-child(6){ width:12%; }
+  .sup-page thead th:nth-child(7){ width:12%; }
 
   .sup-page tbody td{
     padding:10px;
@@ -296,6 +319,24 @@
     color:#92400e;
   }
 
+  .sup-page .badge.email-on{
+    background:rgba(22,163,74,.10);
+    border-color:rgba(22,163,74,.18);
+    color:#166534;
+  }
+
+  .sup-page .badge.email-off{
+    background:rgba(148,163,184,.13);
+    border-color:rgba(148,163,184,.2);
+    color:#475569;
+  }
+
+  .sup-page .badge.email-empty{
+    background:rgba(245,158,11,.10);
+    border-color:rgba(245,158,11,.18);
+    color:#92400e;
+  }
+
   .sup-page .actions{
     display:flex;
     gap:6px;
@@ -347,14 +388,27 @@
     font-weight:var(--fw-normal);
   }
 
-  @media (max-width: 980px){
-    .sup-page .form-grid,
+  .sup-page .ltr{
+    direction:ltr;
+    text-align:left;
+    unicode-bidi:plaintext;
+    display:inline-block;
+    max-width:100%;
+  }
+
+  @media (max-width: 1180px){
+    .sup-page .form-grid{
+      grid-template-columns:1fr 1fr;
+    }
+
     .sup-page .filters-grid{
       grid-template-columns:1fr 1fr;
     }
+
     .sup-page table{
       table-layout:auto;
     }
+
     .sup-page thead th:nth-child(n){
       width:auto;
     }
@@ -376,7 +430,7 @@
     <div class="head">
       <div>
         <h1>إدارة المشرفين</h1>
-        <p>إضافة المشرفين وتحديثهم وتعطيلهم وربطهم لاحقًا بصفحة الإسناد المستقلة.</p>
+        <p>إضافة المشرفين وتحديثهم وتعطيلهم وربطهم لاحقًا بصفحة الإسناد المستقلة، مع إدارة البريد والتنبيهات البريدية.</p>
       </div>
       <div class="head-right">
         <span class="chip"><span class="dot"></span> النتائج: <b>{{ rows|length }}</b></span>
@@ -406,6 +460,11 @@
         </div>
 
         <div class="field">
+          <label>البريد الإلكتروني</label>
+          <input class="input" type="email" name="email" id="supEmailInput" placeholder="name@example.com" dir="ltr">
+        </div>
+
+        <div class="field">
           <label>الجنس</label>
           <select class="select" name="gender" id="supGenderInput">
             <option value="boys">بنين</option>
@@ -421,6 +480,14 @@
               <option value="{{ s.id }}">{{ s.name }}</option>
             {% endfor %}
           </select>
+        </div>
+
+        <div class="field">
+          <label>التنبيه البريدي</label>
+          <label class="check-wrap" for="supEmailNotifInput">
+            <input type="checkbox" name="email_notifications_enabled" id="supEmailNotifInput" value="1" checked>
+            <span>مفعّل</span>
+          </label>
         </div>
 
         <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -473,7 +540,7 @@
 
     <div class="table-card">
       <div class="table-head">
-        <div class="hint">إدارة مرجعية لجميع المشرفين داخل النظام.</div>
+        <div class="hint">إدارة مرجعية لجميع المشرفين داخل النظام، بما في ذلك البريد والتنبيهات البريدية.</div>
         <div class="hint">عدد النتائج: <b>{{ rows|length }}</b></div>
       </div>
 
@@ -484,6 +551,7 @@
               <th>الهوية</th>
               <th>المشرف</th>
               <th>الجوال</th>
+              <th>البريد الإلكتروني</th>
               <th>الجنس</th>
               <th>القطاع</th>
               <th>إجراءات</th>
@@ -493,6 +561,7 @@
             {% for sup in rows %}
               <tr>
                 <td>{{ sup.national_id }}</td>
+
                 <td>
                   <div class="sup-name">{{ sup.full_name }}</div>
                   <div class="sub">
@@ -501,8 +570,19 @@
                     {% else %}
                       <span class="badge inactive">معطل</span>
                     {% endif %}
+
+                    {% if sup.email %}
+                      {% if sup.email_notifications_enabled %}
+                        <span class="badge email-on">تنبيه بريدي مفعل</span>
+                      {% else %}
+                        <span class="badge email-off">تنبيه بريدي غير مفعل</span>
+                      {% endif %}
+                    {% else %}
+                      <span class="badge email-empty">لا يوجد بريد</span>
+                    {% endif %}
                   </div>
                 </td>
+
                 <td>
                   {% if sup.mobile %}
                     {{ sup.mobile }}
@@ -510,6 +590,15 @@
                     <span style="color:var(--mut2)">—</span>
                   {% endif %}
                 </td>
+
+                <td>
+                  {% if sup.email %}
+                    <span class="ltr">{{ sup.email }}</span>
+                  {% else %}
+                    <span style="color:var(--mut2)">—</span>
+                  {% endif %}
+                </td>
+
                 <td>
                   {% if sup.gender == "boys" %}
                     <span class="badge boys">بنين</span>
@@ -519,6 +608,7 @@
                     <span style="color:var(--mut2)">—</span>
                   {% endif %}
                 </td>
+
                 <td>
                   {% if sup.sector %}
                     {{ sup.sector.name }}
@@ -526,6 +616,7 @@
                     <span style="color:var(--mut2)">—</span>
                   {% endif %}
                 </td>
+
                 <td>
                   <div class="actions">
                     <button
@@ -535,6 +626,8 @@
                       data-sup-national="{{ sup.national_id }}"
                       data-sup-name="{{ sup.full_name }}"
                       data-sup-mobile="{{ sup.mobile|default:'' }}"
+                      data-sup-email="{{ sup.email|default:'' }}"
+                      data-sup-email-enabled="{% if sup.email_notifications_enabled %}1{% else %}0{% endif %}"
                       data-sup-gender="{{ sup.gender|default:'boys' }}"
                       data-sup-sector="{% if sup.sector_id %}{{ sup.sector_id }}{% endif %}"
                     >
@@ -556,7 +649,7 @@
               </tr>
             {% empty %}
               <tr>
-                <td colspan="6" class="empty">لا توجد نتائج مطابقة.</td>
+                <td colspan="7" class="empty">لا توجد نتائج مطابقة.</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -574,6 +667,8 @@
   const supNationalIdInput = document.getElementById("supNationalIdInput");
   const supNameInput = document.getElementById("supNameInput");
   const supMobileInput = document.getElementById("supMobileInput");
+  const supEmailInput = document.getElementById("supEmailInput");
+  const supEmailNotifInput = document.getElementById("supEmailNotifInput");
   const supGenderInput = document.getElementById("supGenderInput");
   const supSectorInput = document.getElementById("supSectorInput");
   const resetSupBtn = document.getElementById("resetSupBtn");
@@ -586,8 +681,11 @@
     supNationalIdInput.value = btn.getAttribute("data-sup-national") || "";
     supNameInput.value = btn.getAttribute("data-sup-name") || "";
     supMobileInput.value = btn.getAttribute("data-sup-mobile") || "";
+    supEmailInput.value = btn.getAttribute("data-sup-email") || "";
     supGenderInput.value = btn.getAttribute("data-sup-gender") || "boys";
     supSectorInput.value = btn.getAttribute("data-sup-sector") || "";
+    supEmailNotifInput.checked = (btn.getAttribute("data-sup-email-enabled") || "0") === "1";
+
     supNameInput.focus();
     supNameInput.scrollIntoView({ behavior: "smooth", block: "center" });
   });
@@ -598,6 +696,8 @@
       supNationalIdInput.value = "";
       supNameInput.value = "";
       supMobileInput.value = "";
+      supEmailInput.value = "";
+      supEmailNotifInput.checked = true;
       supGenderInput.value = "boys";
       supSectorInput.value = "";
       supNationalIdInput.focus();
