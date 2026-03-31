@@ -2911,25 +2911,70 @@ def _build_global_visit_followup_stats() -> dict[str, Any]:
 
     rows: list[dict[str, Any]] = []
     total_assigned = 0
-    total_visited = 0
+    total_planned = 0
     total_remaining = 0
     supervisors_with_remaining = 0
 
     for supervisor in supervisors:
-        row = _build_supervisor_visit_followup_row(supervisor)
-        rows.append(row)
+        assigned_schools = list(
+            School.objects.filter(
+                assignments__supervisor=supervisor,
+                assignments__is_active=True,
+                is_active=True,
+            )
+            .distinct()
+            .order_by("name")
+        )
+        assigned_school_ids = {s.id for s in assigned_schools}
 
-        total_assigned += row["assigned_count"]
-        total_visited += row["visited_count"]
-        total_remaining += row["remaining_count"]
+        planned_schools = list(
+            School.objects.filter(
+                planday__plan__supervisor=supervisor,
+                planday__school__isnull=False,
+                is_active=True,
+            )
+            .distinct()
+            .order_by("name")
+        )
+        planned_school_ids = {s.id for s in planned_schools}
 
-        if row["remaining_count"] > 0:
+        planned_school_ids &= assigned_school_ids
+        planned_schools = [s for s in planned_schools if s.id in planned_school_ids]
+
+        remaining_schools = [s for s in assigned_schools if s.id not in planned_school_ids]
+        remaining_school_ids = {s.id for s in remaining_schools}
+
+        assigned_count = len(assigned_school_ids)
+        planned_count = len(planned_school_ids)
+        remaining_count = len(remaining_school_ids)
+
+        total_assigned += assigned_count
+        total_planned += planned_count
+        total_remaining += remaining_count
+
+        if remaining_count > 0:
             supervisors_with_remaining += 1
+
+        rows.append(
+            {
+                "supervisor": supervisor,
+                "assigned_count": assigned_count,
+                "planned_count": planned_count,
+                "visited_count": planned_count,   # للإبقاء على التوافق مع القالب الحالي مؤقتًا
+                "remaining_count": remaining_count,
+                "progress_percent": round((planned_count / assigned_count) * 100, 1) if assigned_count else 0,
+                "planned_schools": planned_schools,
+                "remaining_schools": remaining_schools,
+                "planned_school_names": "، ".join(s.name for s in planned_schools) or "—",
+                "remaining_school_names": "، ".join(s.name for s in remaining_schools) or "—",
+            }
+        )
 
     return {
         "visit_followup_rows": rows,
         "visit_followup_total_assigned": total_assigned,
-        "visit_followup_total_visited": total_visited,
+        "visit_followup_total_visited": total_planned,   # للإبقاء على التوافق مع القالب الحالي مؤقتًا
+        "visit_followup_total_planned": total_planned,
         "visit_followup_total_remaining": total_remaining,
         "visit_followup_supervisors_with_remaining": supervisors_with_remaining,
     }
@@ -2967,14 +3012,14 @@ def _filter_visit_followup_rows(
     return filtered
 
 
-def _build_visit_followup_excel_workbook(
-    rows: list[dict[str, Any]],
-    *,
-    report_title: str = "متابعة الزيارات على مستوى جميع الأسابيع",
-) -> Workbook:
+def _build_visit_followup_excel_workbook(rows, report_title: str = "متابعة الزيارات على مستوى جميع الأسابيع") -> Workbook:
     wb = Workbook()
+
+    # =========================================
+    # الورقة الأولى: ملخص
+    # =========================================
     ws = wb.active
-    ws.title = "متابعة الزيارات"
+    ws.title = "ملخص المتابعة"
     ws.sheet_view.rightToLeft = True
 
     title_font = Font(name="Cairo", bold=True, size=14)
@@ -3007,7 +3052,7 @@ def _build_visit_followup_excel_workbook(
         "رقم الهوية",
         "القطاع",
         "المدارس المسندة",
-        "تمت زيارتها",
+        "المدارس المدرجة في الخطة",
         "المتبقي",
         "نسبة الإنجاز",
     ]
@@ -3031,7 +3076,7 @@ def _build_visit_followup_excel_workbook(
             supervisor.national_id or "—",
             sector_name,
             row["assigned_count"],
-            row["visited_count"],
+            row["planned_count"],
             row["remaining_count"],
             f'{row["progress_percent"]}%',
         ]
@@ -3049,12 +3094,78 @@ def _build_visit_followup_excel_workbook(
         2: 28,
         3: 18,
         4: 22,
-        5: 16,
-        6: 16,
+        5: 18,
+        6: 24,
         7: 16,
         8: 16,
     }.items():
         ws.column_dimensions[get_column_letter(col_i)].width = width
+
+    # =========================================
+    # الورقة الثانية: التفاصيل بالأسماء
+    # =========================================
+    ws2 = wb.create_sheet(title="تفاصيل المدارس")
+    ws2.sheet_view.rightToLeft = True
+
+    ws2.merge_cells("A1:F1")
+    ws2["A1"] = f"{report_title} — تفاصيل المدارس"
+    ws2["A1"].font = title_font
+    ws2["A1"].alignment = center
+    ws2["A1"].fill = title_fill
+
+    ws2.merge_cells("A2:F2")
+    ws2["A2"] = f"تاريخ التصدير: {timezone.localtime(timezone.now()).strftime('%Y-%m-%d %H:%M')}"
+    ws2["A2"].font = bold_font
+    ws2["A2"].alignment = center
+
+    detail_headers = [
+        "م",
+        "اسم المشرف",
+        "رقم الهوية",
+        "القطاع",
+        "المدارس المدرجة في الخطة",
+        "المدارس المتبقية",
+    ]
+    detail_header_row = 4
+
+    for col, header in enumerate(detail_headers, start=1):
+        cell = ws2.cell(row=detail_header_row, column=col, value=header)
+        cell.font = bold_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    row_idx = detail_header_row + 1
+    for index, row in enumerate(rows, start=1):
+        supervisor = row["supervisor"]
+        sector_name = supervisor.sector.name if getattr(supervisor, "sector", None) else "—"
+
+        values = [
+            index,
+            supervisor.full_name or "—",
+            supervisor.national_id or "—",
+            sector_name,
+            row.get("planned_school_names", "—"),
+            row.get("remaining_school_names", "—"),
+        ]
+
+        for col, value in enumerate(values, start=1):
+            cell = ws2.cell(row=row_idx, column=col, value=value)
+            cell.font = normal_font
+            cell.border = border
+            cell.alignment = center if col in (1, 3) else right
+
+        row_idx += 1
+
+    for col_i, width in {
+        1: 8,
+        2: 26,
+        3: 18,
+        4: 20,
+        5: 60,
+        6: 60,
+    }.items():
+        ws2.column_dimensions[get_column_letter(col_i)].width = width
 
     return wb
 
