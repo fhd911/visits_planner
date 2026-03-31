@@ -921,7 +921,6 @@ def _plan_visit_counts(plan: Plan) -> dict[str, int]:
             plan=plan,
             visit_type=getattr(PlanDay, "VISIT_IN", "in"),
             school_id__isnull=False,
-            visited=True,
         ).values_list("school_id", flat=True)
     )
 
@@ -2885,7 +2884,6 @@ def _build_supervisor_visit_followup_row(supervisor: Supervisor) -> dict[str, An
         PlanDay.objects.filter(
             plan__supervisor=supervisor,
             visit_type=PlanDay.VISIT_IN,
-            visited=True,
             school__isnull=False,
         ).values_list("school_id", flat=True)
     )
