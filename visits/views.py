@@ -236,61 +236,61 @@ def _send_supervisor_email_otp(*, email: str, code: str, supervisor_name: str) -
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>{subject}</title>
     </head>
-    <body style="margin:0;padding:0;background:#f3f6f8;font-family:'Cairo','Tajawal','Tahoma',Arial,sans-serif;color:#1f2937;">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f3f6f8;margin:0;padding:28px 0;">
+    <body style="margin:0;padding:0;background:#f2f5f7;font-family:'Cairo','Tajawal','Tahoma',Arial,sans-serif;color:#1f2937;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f2f5f7;margin:0;padding:28px 0;">
         <tr>
           <td align="center">
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:720px;background:#ffffff;border:1px solid #d9e2e7;border-radius:22px;overflow:hidden;box-shadow:0 12px 34px rgba(15,23,42,.07);">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:760px;background:#ffffff;border:1px solid #d8e1e6;border-radius:24px;overflow:hidden;box-shadow:0 16px 38px rgba(15,23,42,.08);">
 
               <tr>
-                <td style="background:linear-gradient(135deg,#184c3c,#256b56);padding:18px 34px 14px;text-align:right;">
-                  <div style="font-size:12px;line-height:1.8;color:rgba(255,255,255,.88);font-weight:700;">
-                    المملكة العربية السعودية
-                  </div>
-                  <div style="font-size:12px;line-height:1.8;color:rgba(255,255,255,.88);font-weight:700;">
-                    وزارة التعليم
-                  </div>
-                  <div style="font-size:12px;line-height:1.8;color:rgba(255,255,255,.88);font-weight:700;">
+                <td style="background:#175c49;padding:20px 34px 10px;text-align:right;">
+                  <div style="font-size:13px;line-height:1.9;color:rgba(255,255,255,.92);font-weight:700;">
                     بوابة الزيارات
                   </div>
                 </td>
               </tr>
 
               <tr>
-                <td style="background:#f8fbf9;padding:18px 34px;border-bottom:1px solid #e4ece8;text-align:right;">
-                  <div style="font-size:24px;line-height:1.7;color:#184c3c;font-weight:800;">
+                <td style="background:#175c49;padding:0 34px 18px;text-align:right;">
+                  <div style="height:4px;background:linear-gradient(90deg,#caa85e,#f2dfb1,#caa85e);border-radius:999px;"></div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="background:#f8fbfa;padding:22px 34px 18px;border-bottom:1px solid #e5ece8;text-align:right;">
+                  <div style="font-size:28px;line-height:1.7;color:#184c3c;font-weight:900;">
                     رمز التحقق لتأكيد البريد الإلكتروني
                   </div>
-                  <div style="margin-top:6px;font-size:14px;line-height:2;color:#5f6b76;font-weight:600;">
-                    إشعار آلي لتأكيد البريد الإلكتروني وتفعيل التنبيهات المرتبطة بالخطة الأسبوعية والاعتماد والإشعارات الإدارية.
+                  <div style="margin-top:8px;font-size:14px;line-height:2;color:#5f6b76;font-weight:600;">
+                    إشعار آلي خاص بتأكيد البريد الإلكتروني وتفعيل التنبيهات المرتبطة بالخطة الأسبوعية والإشعارات الإدارية.
                   </div>
                 </td>
               </tr>
 
               <tr>
-                <td style="padding:30px 34px 10px;text-align:right;">
-                  <p style="margin:0 0 14px;font-size:17px;line-height:2;color:#111827;font-weight:700;">
+                <td style="padding:34px 34px 10px;text-align:right;">
+                  <p style="margin:0 0 14px;font-size:17px;line-height:2.1;color:#111827;font-weight:800;">
                     السلام عليكم ورحمة الله وبركاته
                   </p>
 
-                  <p style="margin:0 0 14px;font-size:15px;line-height:2.15;color:#374151;">
+                  <p style="margin:0 0 10px;font-size:15px;line-height:2.1;color:#374151;">
                     الأستاذ/ <strong>{supervisor_name}</strong>
                   </p>
 
-                  <p style="margin:0 0 18px;font-size:15px;line-height:2.2;color:#4b5563;">
+                  <p style="margin:0 0 20px;font-size:15px;line-height:2.2;color:#4b5563;">
                     نفيدكم بأنه تم طلب تأكيد البريد الإلكتروني المرتبط بحسابكم في
-                    <strong style="color:#184c3c;">بوابة الزيارات</strong>.
-                    يرجى استخدام رمز التحقق الموضح أدناه لإتمام عملية التأكيد.
+                    <strong style="color:#184c3c;">بوابة الزيارات</strong>،
+                    وعليه نأمل استخدام رمز التحقق التالي لإتمام عملية التأكيد.
                   </p>
 
-                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0 22px;">
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:26px 0 24px;">
                     <tr>
                       <td align="center">
-                        <div style="display:inline-block;min-width:290px;background:linear-gradient(180deg,#fbfdfc,#f4f8f6);border:1px solid #cfded7;border-radius:20px;padding:18px 26px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.65);">
-                          <div style="font-size:13px;line-height:1.8;color:#6b7280;font-weight:800;margin-bottom:10px;">
+                        <div style="display:inline-block;min-width:340px;background:linear-gradient(180deg,#fffdf8,#f8f4ea);border:1px solid #dcc79a;border-radius:24px;padding:18px 26px;box-shadow:0 8px 24px rgba(180,140,60,.08), inset 0 0 0 1px rgba(255,255,255,.7);">
+                          <div style="font-size:13px;line-height:1.8;color:#8a6a2f;font-weight:800;margin-bottom:10px;">
                             رمز التحقق
                           </div>
-                          <div style="font-size:36px;line-height:1;letter-spacing:10px;color:#184c3c;font-weight:900;direction:ltr;">
+                          <div style="font-size:38px;line-height:1;letter-spacing:12px;color:#184c3c;font-weight:900;direction:ltr;text-shadow:0 1px 0 rgba(255,255,255,.7);">
                             {code}
                           </div>
                         </div>
@@ -298,24 +298,24 @@ def _send_supervisor_email_otp(*, email: str, code: str, supervisor_name: str) -
                     </tr>
                   </table>
 
-                  <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:14px 16px;margin:0 0 18px;">
+                  <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:15px;padding:14px 16px;margin:0 0 16px;">
                     <p style="margin:0;font-size:14px;line-height:2;color:#374151;">
                       <strong>مدة صلاحية الرمز:</strong> {EMAIL_OTP_EXPIRE_MINUTES} دقائق
                     </p>
                   </div>
 
-                  <div style="background:#fffaf3;border:1px solid #ead7b0;border-radius:14px;padding:14px 16px;margin:0 0 18px;">
-                    <p style="margin:0;font-size:14px;line-height:2;color:#8a5a16;">
-                      في حال لم يكن هذا الطلب صادرًا منكم، يمكنكم تجاهل هذه الرسالة، ولن يتم اعتماد البريد الإلكتروني دون إدخال الرمز الصحيح.
+                  <div style="background:#fffaf3;border:1px solid #ead7b0;border-radius:15px;padding:14px 16px;margin:0 0 18px;">
+                    <p style="margin:0;font-size:14px;line-height:2.1;color:#8a5a16;">
+                      في حال لم يكن هذا الطلب صادرًا منكم، يرجى تجاهل هذه الرسالة، ولن يتم اعتماد البريد الإلكتروني دون إدخال الرمز الصحيح.
                     </p>
                   </div>
                 </td>
               </tr>
 
               <tr>
-                <td style="padding:0 34px 26px;text-align:right;">
-                  <div style="border-top:1px solid #e5e7eb;padding-top:18px;">
-                    <div style="font-size:14px;line-height:2;color:#374151;font-weight:700;">
+                <td style="padding:0 34px 28px;text-align:right;">
+                  <div style="border-top:1px solid #e6ecef;padding-top:18px;">
+                    <div style="font-size:14px;line-height:2;color:#374151;font-weight:800;">
                       مع خالص التحية والتقدير
                     </div>
                     <div style="font-size:13px;line-height:2;color:#6b7280;">
