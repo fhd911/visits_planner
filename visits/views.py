@@ -6,9 +6,11 @@ from functools import wraps
 from io import BytesIO
 from typing import Any, Optional
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import authenticate, login, logout
+from django.core.mail import EmailMultiAlternatives
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
@@ -21,9 +23,12 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
+from random import randint
+
 from .forms import WeeklyLetterLinkForm
 from .models import (
     Assignment,
+    EmailOTP,
     Plan,
     PlanDay,
     PlanWeek,
@@ -51,6 +56,8 @@ WEEKDAYS = [
 ]
 WEEKDAY_MAP = dict(WEEKDAYS)
 SESSION_SUP_ID = "visits_sup_id"
+EMAIL_OTP_SESSION_KEY = "visits_email_otp"
+EMAIL_OTP_EXPIRE_MINUTES = 10
 
 
 # =============================================================================
@@ -149,18 +156,201 @@ def _supervisor_schools_qs(supervisor: Supervisor):
     )
 
 
+def _supervisor_email_value(supervisor: Supervisor) -> str:
+    return (getattr(supervisor, "email", "") or "").strip()
 
 
-def _supervisor_email_value(sup: Supervisor) -> str:
-    return (getattr(sup, "email", "") or "").strip()
+def _supervisor_needs_email_prompt(supervisor: Supervisor) -> bool:
+    return not bool(_supervisor_email_value(supervisor))
 
 
-def _supervisor_needs_email_prompt(sup: Supervisor) -> bool:
-    return not bool(_supervisor_email_value(sup))
+def _supervisor_email_notifications_enabled(supervisor: Supervisor) -> bool:
+    return bool(getattr(supervisor, "email_notifications_enabled", False))
 
 
-def _supervisor_email_notifications_enabled(sup: Supervisor) -> bool:
-    return bool(getattr(sup, "email_notifications_enabled", False))
+def _generate_email_otp() -> str:
+    return f"{randint(0, 999999):06d}"
+
+
+def _email_otp_payload(request: HttpRequest) -> dict[str, Any]:
+    return request.session.get(EMAIL_OTP_SESSION_KEY, {}) or {}
+
+
+def _clear_email_otp_payload(request: HttpRequest) -> None:
+    request.session.pop(EMAIL_OTP_SESSION_KEY, None)
+    request.session.modified = True
+
+
+def _set_email_otp_payload(
+    request: HttpRequest,
+    *,
+    supervisor_id: int,
+    email: str,
+    email_notifications_enabled: bool,
+    next_url: str,
+    code: str,
+) -> None:
+    request.session[EMAIL_OTP_SESSION_KEY] = {
+        "supervisor_id": supervisor_id,
+        "email": email,
+        "email_notifications_enabled": bool(email_notifications_enabled),
+        "next_url": next_url,
+        "code": code,
+        "expires_at": (timezone.now() + timedelta(minutes=EMAIL_OTP_EXPIRE_MINUTES)).isoformat(),
+    }
+    request.session.modified = True
+
+
+def _email_otp_is_valid(payload: dict[str, Any]) -> bool:
+    expires_at = payload.get("expires_at")
+    if not expires_at:
+        return False
+    try:
+        dt = datetime.fromisoformat(expires_at)
+        if timezone.is_naive(dt):
+            dt = timezone.make_aware(dt, timezone.get_current_timezone())
+    except Exception:
+        return False
+    return timezone.now() <= dt
+
+
+def _send_supervisor_email_otp(*, email: str, code: str, supervisor_name: str) -> None:
+    subject = "رمز التحقق لتأكيد البريد الإلكتروني"
+
+    plain_message = (
+        f"السلام عليكم ورحمة الله وبركاته {supervisor_name}\n\n"
+        f"نفيدكم بأنه تم طلب تأكيد البريد الإلكتروني المرتبط بحسابكم في بوابة الزيارات.\n\n"
+        f"رمز التحقق الخاص بكم هو:\n"
+        f"{code}\n\n"
+        f"صلاحية الرمز: {EMAIL_OTP_EXPIRE_MINUTES} دقائق.\n\n"
+        f"في حال لم يكن هذا الطلب صادرًا منكم، يرجى تجاهل هذه الرسالة.\n\n"
+        f"مع خالص التحية والتقدير،\n"
+        f"بوابة الزيارات"
+    )
+
+    html_message = f"""
+    <!DOCTYPE html>
+    <html lang="ar" dir="rtl">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>{subject}</title>
+    </head>
+    <body style="margin:0;padding:0;background:#f3f6f8;font-family:'Cairo','Tajawal','Tahoma',Arial,sans-serif;color:#1f2937;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f3f6f8;margin:0;padding:28px 0;">
+        <tr>
+          <td align="center">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:720px;background:#ffffff;border:1px solid #d9e2e7;border-radius:22px;overflow:hidden;box-shadow:0 12px 34px rgba(15,23,42,.07);">
+
+              <tr>
+                <td style="background:linear-gradient(135deg,#184c3c,#256b56);padding:18px 34px 14px;text-align:right;">
+                  <div style="font-size:12px;line-height:1.8;color:rgba(255,255,255,.88);font-weight:700;">
+                    المملكة العربية السعودية
+                  </div>
+                  <div style="font-size:12px;line-height:1.8;color:rgba(255,255,255,.88);font-weight:700;">
+                    وزارة التعليم
+                  </div>
+                  <div style="font-size:12px;line-height:1.8;color:rgba(255,255,255,.88);font-weight:700;">
+                    بوابة الزيارات
+                  </div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="background:#f8fbf9;padding:18px 34px;border-bottom:1px solid #e4ece8;text-align:right;">
+                  <div style="font-size:24px;line-height:1.7;color:#184c3c;font-weight:800;">
+                    رمز التحقق لتأكيد البريد الإلكتروني
+                  </div>
+                  <div style="margin-top:6px;font-size:14px;line-height:2;color:#5f6b76;font-weight:600;">
+                    إشعار آلي لتأكيد البريد الإلكتروني وتفعيل التنبيهات المرتبطة بالخطة الأسبوعية والاعتماد والإشعارات الإدارية.
+                  </div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="padding:30px 34px 10px;text-align:right;">
+                  <p style="margin:0 0 14px;font-size:17px;line-height:2;color:#111827;font-weight:700;">
+                    السلام عليكم ورحمة الله وبركاته
+                  </p>
+
+                  <p style="margin:0 0 14px;font-size:15px;line-height:2.15;color:#374151;">
+                    الأستاذ/ <strong>{supervisor_name}</strong>
+                  </p>
+
+                  <p style="margin:0 0 18px;font-size:15px;line-height:2.2;color:#4b5563;">
+                    نفيدكم بأنه تم طلب تأكيد البريد الإلكتروني المرتبط بحسابكم في
+                    <strong style="color:#184c3c;">بوابة الزيارات</strong>.
+                    يرجى استخدام رمز التحقق الموضح أدناه لإتمام عملية التأكيد.
+                  </p>
+
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:24px 0 22px;">
+                    <tr>
+                      <td align="center">
+                        <div style="display:inline-block;min-width:290px;background:linear-gradient(180deg,#fbfdfc,#f4f8f6);border:1px solid #cfded7;border-radius:20px;padding:18px 26px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.65);">
+                          <div style="font-size:13px;line-height:1.8;color:#6b7280;font-weight:800;margin-bottom:10px;">
+                            رمز التحقق
+                          </div>
+                          <div style="font-size:36px;line-height:1;letter-spacing:10px;color:#184c3c;font-weight:900;direction:ltr;">
+                            {code}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:14px 16px;margin:0 0 18px;">
+                    <p style="margin:0;font-size:14px;line-height:2;color:#374151;">
+                      <strong>مدة صلاحية الرمز:</strong> {EMAIL_OTP_EXPIRE_MINUTES} دقائق
+                    </p>
+                  </div>
+
+                  <div style="background:#fffaf3;border:1px solid #ead7b0;border-radius:14px;padding:14px 16px;margin:0 0 18px;">
+                    <p style="margin:0;font-size:14px;line-height:2;color:#8a5a16;">
+                      في حال لم يكن هذا الطلب صادرًا منكم، يمكنكم تجاهل هذه الرسالة، ولن يتم اعتماد البريد الإلكتروني دون إدخال الرمز الصحيح.
+                    </p>
+                  </div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="padding:0 34px 26px;text-align:right;">
+                  <div style="border-top:1px solid #e5e7eb;padding-top:18px;">
+                    <div style="font-size:14px;line-height:2;color:#374151;font-weight:700;">
+                      مع خالص التحية والتقدير
+                    </div>
+                    <div style="font-size:13px;line-height:2;color:#6b7280;">
+                      بوابة الزيارات
+                    </div>
+                  </div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style="background:#f8fbfa;border-top:1px solid #e4ece8;padding:14px 24px;text-align:center;">
+                  <div style="font-size:12px;line-height:1.9;color:#7b8794;">
+                    هذه رسالة آلية صادرة من بوابة الزيارات، يرجى عدم الرد عليها.
+                  </div>
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+    """
+
+    msg = EmailMultiAlternatives(
+        subject=subject,
+        body=plain_message,
+        from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
+        to=[email],
+    )
+    msg.attach_alternative(html_message, "text/html")
+    msg.send(fail_silently=False)
+
+
 # =============================================================================
 # Admin/supervisor isolation
 # =============================================================================
@@ -763,12 +953,7 @@ def _notify_supervisor(
         message=message or "",
     )
 
-    email = _supervisor_email_value(supervisor)
-    enabled = _supervisor_email_notifications_enabled(supervisor)
 
-    if email and enabled:
-        # جاهز لإضافة send_mail لاحقًا بعد إعداد SMTP
-        pass
 def _parse_admin_action_state(request: HttpRequest) -> dict[str, Any]:
     show_all = (request.POST.get("all") or request.GET.get("all") or "0").strip().lower() in ("1", "true", "yes")
     return {
@@ -855,53 +1040,6 @@ def _build_chart_counts(week_obj: PlanWeek) -> dict:
         "chart_in_total": sum(in_map.values()),
         "chart_remote_total": sum(remote_map.values()),
         "chart_none_total": sum(none_map.values()),
-    }
-
-
-def _build_admin_visit_followup_stats(week_obj: PlanWeek) -> dict[str, Any]:
-    plans = (
-        Plan.objects.filter(week=week_obj)
-        .select_related("supervisor", "supervisor__sector", "week")
-        .prefetch_related("days", "days__school")
-        .order_by("supervisor__full_name")
-    )
-
-    rows: list[dict[str, Any]] = []
-    total_assigned = 0
-    total_visited = 0
-    total_remaining = 0
-    supervisors_with_remaining = 0
-
-    for plan in plans:
-        counts = _plan_visit_counts(plan)
-        assigned_count = counts["assigned_count"]
-        visited_count = counts["visited_count"]
-        remaining_count = counts["remaining_count"]
-
-        total_assigned += assigned_count
-        total_visited += visited_count
-        total_remaining += remaining_count
-
-        if remaining_count > 0:
-            supervisors_with_remaining += 1
-
-        rows.append(
-            {
-                "plan": plan,
-                "supervisor": plan.supervisor,
-                "assigned_count": assigned_count,
-                "visited_count": visited_count,
-                "remaining_count": remaining_count,
-                "progress_percent": round((visited_count / assigned_count) * 100, 1) if assigned_count else 0,
-            }
-        )
-
-    return {
-        "visit_followup_rows": rows,
-        "visit_followup_total_assigned": total_assigned,
-        "visit_followup_total_visited": total_visited,
-        "visit_followup_total_remaining": total_remaining,
-        "visit_followup_supervisors_with_remaining": supervisors_with_remaining,
     }
 
 
@@ -1307,11 +1445,31 @@ def supervisor_dashboard_view(request: HttpRequest) -> HttpResponse:
     except Supervisor.DoesNotExist:
         return redirect("visits:login")
 
-    if _supervisor_needs_email_prompt(supervisor):
-        messages.info(request, "يرجى تسجيل بريدك الإلكتروني لتصلك التنبيهات والإشعارات المهمة.")
-        return redirect("visits:supervisor_email_settings")
+    week_obj = _current_week_obj()
+    if not week_obj:
+        default_week_no = _get_default_week_no()
+        week_obj = PlanWeek.objects.filter(week_no=default_week_no).first()
 
-    return redirect(_plan_url(_get_default_week_no()))
+    current_week_no = week_obj.week_no if week_obj else _get_default_week_no()
+
+    assignment_count = len(_supervisor_school_ids(supervisor))
+    unread_count = supervisor.notifications.filter(is_read=False).count()
+
+    return render(
+        request,
+        "visits/supervisor_dashboard.html",
+        {
+            "sup": supervisor,
+            "week": current_week_no,
+            "current_week": current_week_no,
+            "week_obj": week_obj,
+            "assignment_count": assignment_count,
+            "unread_count": unread_count,
+            "supervisor_email": _supervisor_email_value(supervisor),
+            "email_notifications_enabled": _supervisor_email_notifications_enabled(supervisor),
+        },
+    )
+
 
 # =============================================================================
 # Letter views
@@ -1466,17 +1624,13 @@ def plan_view(request: HttpRequest) -> HttpResponse:
     except Supervisor.DoesNotExist:
         return redirect("visits:login")
 
-    current_week_no = _safe_int(
-        request.GET.get("week") or request.POST.get("week") or _get_default_week_no(),
-        default=_get_default_week_no(),
-    )
+    week_no = _safe_int(request.GET.get("week") or request.POST.get("week") or _get_default_week_no(), default=_get_default_week_no())
 
     if _supervisor_needs_email_prompt(supervisor):
-        messages.info(request, "يرجى تسجيل بريدك الإلكتروني أولًا لتصلك التنبيهات والإشعارات.")
+        messages.info(request, "يرجى تسجيل بريدك الإلكتروني أولًا وتأكيده برمز تحقق لتصلك التنبيهات والإشعارات.")
         settings_url = reverse("visits:supervisor_email_settings")
-        return redirect(f"{settings_url}?next={_plan_url(current_week_no)}")
-
-    week_obj = _resolve_week_or_404(current_week_no, allow_inactive=False)
+        return redirect(f"{settings_url}?next={_plan_url(week_no)}")
+    week_obj = _resolve_week_or_404(week_no, allow_inactive=False)
 
     plan, _ = Plan.objects.get_or_create(supervisor=supervisor, week=week_obj)
     _inject_week_no(plan)
@@ -1624,20 +1778,49 @@ def supervisor_email_settings_view(request: HttpRequest) -> HttpResponse:
                 {
                     "sup": supervisor,
                     "next_url": next_url,
+                    "supervisor_email": email,
+                    "email_notifications_enabled": enabled,
                 },
             )
 
-        supervisor.email = email
-        supervisor.email_notifications_enabled = enabled
+        code = _generate_email_otp()
+        expires_at = timezone.now() + timedelta(minutes=EMAIL_OTP_EXPIRE_MINUTES)
 
-        if hasattr(supervisor, "email_verified"):
-            supervisor.email_verified = False
-            supervisor.save(update_fields=["email", "email_notifications_enabled", "email_verified"])
+        old_qs = EmailOTP.objects.filter(supervisor=supervisor)
+        if hasattr(EmailOTP, "is_used"):
+            old_qs.filter(is_used=False).update(is_used=True)
         else:
-            supervisor.save(update_fields=["email", "email_notifications_enabled"])
+            old_qs.delete()
 
-        messages.success(request, "تم حفظ البريد الإلكتروني وتحديث إعدادات التنبيه بنجاح.")
-        return redirect(next_url)
+        otp = EmailOTP.objects.create(
+            supervisor=supervisor,
+            email=email,
+            code=code,
+            expires_at=expires_at,
+        )
+
+        request.session[EMAIL_OTP_SESSION_KEY] = {
+            "otp_id": otp.id,
+            "supervisor_id": supervisor.id,
+            "email_notifications_enabled": bool(enabled),
+            "next_url": next_url,
+        }
+        request.session.modified = True
+
+        try:
+            _send_supervisor_email_otp(
+                email=email,
+                code=otp.code,
+                supervisor_name=supervisor.full_name,
+            )
+            messages.success(request, "تم إرسال رمز التحقق إلى بريدك الإلكتروني.")
+        except Exception:
+            messages.warning(
+                request,
+                "تم حفظ طلب التحقق، لكن تعذر إرسال الرمز عبر البريد حاليًا. يمكنك إعادة الإرسال من صفحة التحقق.",
+            )
+
+        return redirect("visits:supervisor_email_verify")
 
     return render(
         request,
@@ -1645,39 +1828,13 @@ def supervisor_email_settings_view(request: HttpRequest) -> HttpResponse:
         {
             "sup": supervisor,
             "next_url": next_url,
+            "supervisor_email": _supervisor_email_value(supervisor),
+            "email_notifications_enabled": _supervisor_email_notifications_enabled(supervisor),
         },
     )
 
 
-@require_POST
-def toggle_email_notifications_view(request: HttpRequest) -> HttpResponse:
-    try:
-        supervisor = _require_supervisor(request)
-    except Supervisor.DoesNotExist:
-        return redirect("visits:login")
-
-    if not _supervisor_email_value(supervisor):
-        messages.warning(request, "سجل البريد الإلكتروني أولًا قبل تفعيل التنبيهات البريدية.")
-        return redirect("visits:supervisor_email_settings")
-
-    supervisor.email_notifications_enabled = not bool(getattr(supervisor, "email_notifications_enabled", False))
-    supervisor.save(update_fields=["email_notifications_enabled"])
-
-    if supervisor.email_notifications_enabled:
-        messages.success(request, "تم تفعيل التنبيهات البريدية.")
-    else:
-        messages.success(request, "تم إيقاف التنبيهات البريدية.")
-
-    next_url = request.POST.get("next") or request.GET.get("next") or _plan_url(_get_default_week_no())
-    return redirect(next_url)
-
-
-# =============================================================================
-
-# =============================================================================
-# Supervisor visit status
-# =============================================================================
-def supervisor_visit_status_view(request: HttpRequest) -> HttpResponse:
+def supervisor_email_verify_view(request: HttpRequest) -> HttpResponse:
     setting = _get_site_setting()
     if _maintenance_is_active(setting, persist=True) and not _maintenance_allowed_for_request(request, setting):
         return redirect("visits:maintenance_page")
@@ -1687,17 +1844,189 @@ def supervisor_visit_status_view(request: HttpRequest) -> HttpResponse:
     except Supervisor.DoesNotExist:
         return redirect("visits:login")
 
-    current_week_no = _safe_int(
-        request.GET.get("week") or _get_default_week_no(),
-        default=_get_default_week_no(),
+    payload = request.session.get(EMAIL_OTP_SESSION_KEY, {}) or {}
+    otp_id = _safe_int(payload.get("otp_id") or 0, default=0)
+
+    if not otp_id or payload.get("supervisor_id") != supervisor.id:
+        messages.warning(request, "لا يوجد طلب تحقق نشط. يرجى إدخال البريد الإلكتروني أولًا.")
+        return redirect("visits:supervisor_email_settings")
+
+    otp = EmailOTP.objects.filter(id=otp_id, supervisor=supervisor).first()
+    if not otp:
+        request.session.pop(EMAIL_OTP_SESSION_KEY, None)
+        request.session.modified = True
+        messages.warning(request, "تعذر العثور على طلب التحقق. يرجى طلب رمز جديد.")
+        return redirect("visits:supervisor_email_settings")
+
+    is_used = bool(getattr(otp, "is_used", False))
+    expires_at = getattr(otp, "expires_at", None)
+    is_expired = bool(expires_at and timezone.now() > expires_at)
+
+    if is_used or is_expired:
+        request.session.pop(EMAIL_OTP_SESSION_KEY, None)
+        request.session.modified = True
+        messages.warning(request, "انتهت صلاحية رمز التحقق. يرجى طلب رمز جديد.")
+        return redirect("visits:supervisor_email_settings")
+
+    next_url = payload.get("next_url") or _plan_url(_get_default_week_no())
+    masked_email = getattr(otp, "email", "")
+
+    if request.method == "POST":
+        code = _cell_str(request.POST.get("otp_code") or request.POST.get("code"))
+
+        if code != getattr(otp, "code", ""):
+            messages.error(request, "رمز التحقق غير صحيح.")
+            return render(
+                request,
+                "visits/supervisor_email_verify.html",
+                {
+                    "sup": supervisor,
+                    "masked_email": masked_email,
+                    "next_url": next_url,
+                },
+            )
+
+        supervisor.email = masked_email
+        supervisor.email_notifications_enabled = bool(payload.get("email_notifications_enabled", True))
+        if hasattr(supervisor, "email_verified"):
+            supervisor.email_verified = True
+            supervisor.save(update_fields=["email", "email_notifications_enabled", "email_verified"])
+        else:
+            supervisor.save(update_fields=["email", "email_notifications_enabled"])
+
+        if hasattr(otp, "is_used"):
+            otp.is_used = True
+            if hasattr(otp, "used_at"):
+                otp.used_at = timezone.now()
+                otp.save(update_fields=["is_used", "used_at"])
+            else:
+                otp.save(update_fields=["is_used"])
+        else:
+            otp.delete()
+
+        request.session.pop(EMAIL_OTP_SESSION_KEY, None)
+        request.session.modified = True
+        messages.success(request, "تم تأكيد البريد الإلكتروني وحفظه بنجاح.")
+        return redirect(next_url)
+
+    return render(
+        request,
+        "visits/supervisor_email_verify.html",
+        {
+            "sup": supervisor,
+            "masked_email": masked_email,
+            "next_url": next_url,
+        },
     )
 
-    if _supervisor_needs_email_prompt(supervisor):
-        messages.info(request, "يرجى تسجيل بريدك الإلكتروني أولًا لتصلك التنبيهات والإشعارات.")
-        settings_url = reverse("visits:supervisor_email_settings")
-        return redirect(f"{settings_url}?next={_supervisor_visit_status_url(current_week_no)}")
 
-    week_obj = _resolve_week_or_404(current_week_no, allow_inactive=False)
+@require_POST
+def supervisor_email_resend_otp_view(request: HttpRequest) -> HttpResponse:
+    setting = _get_site_setting()
+    if _maintenance_is_active(setting, persist=True) and not _maintenance_allowed_for_request(request, setting):
+        return redirect("visits:maintenance_page")
+
+    try:
+        supervisor = _require_supervisor(request)
+    except Supervisor.DoesNotExist:
+        return redirect("visits:login")
+
+    payload = request.session.get(EMAIL_OTP_SESSION_KEY, {}) or {}
+    otp_id = _safe_int(payload.get("otp_id") or 0, default=0)
+
+    if not otp_id or payload.get("supervisor_id") != supervisor.id:
+        messages.warning(request, "لا يوجد طلب تحقق نشط لإعادة الإرسال.")
+        return redirect("visits:supervisor_email_settings")
+
+    otp = EmailOTP.objects.filter(id=otp_id, supervisor=supervisor).first()
+    if not otp:
+        request.session.pop(EMAIL_OTP_SESSION_KEY, None)
+        request.session.modified = True
+        messages.warning(request, "تعذر العثور على طلب التحقق. يرجى إدخال البريد الإلكتروني من جديد.")
+        return redirect("visits:supervisor_email_settings")
+
+    if getattr(otp, "is_used", False):
+        request.session.pop(EMAIL_OTP_SESSION_KEY, None)
+        request.session.modified = True
+        messages.warning(request, "تم استخدام رمز التحقق السابق بالفعل. يرجى إدخال البريد الإلكتروني من جديد.")
+        return redirect("visits:supervisor_email_settings")
+
+    otp.code = _generate_email_otp()
+    otp.expires_at = timezone.now() + timedelta(minutes=EMAIL_OTP_EXPIRE_MINUTES)
+
+    update_fields = ["code", "expires_at"]
+    if hasattr(otp, "is_used"):
+        otp.is_used = False
+        update_fields.append("is_used")
+    if hasattr(otp, "used_at"):
+        otp.used_at = None
+        update_fields.append("used_at")
+
+    otp.save(update_fields=update_fields)
+
+    try:
+        _send_supervisor_email_otp(
+            email=otp.email,
+            code=otp.code,
+            supervisor_name=supervisor.full_name,
+        )
+        messages.success(request, "تمت إعادة إرسال رمز التحقق إلى بريدك الإلكتروني.")
+    except Exception as e:
+        messages.error(request, f"فشل إعادة إرسال رمز التحقق: {e}")
+
+    return redirect("visits:supervisor_email_verify")
+
+
+@require_POST
+def toggle_email_notifications_view(request: HttpRequest) -> HttpResponse:
+    try:
+        supervisor = _require_supervisor(request)
+    except Supervisor.DoesNotExist:
+        return redirect("visits:login")
+
+    next_url = request.POST.get("next") or request.GET.get("next") or _plan_url(_get_default_week_no())
+
+    if not _supervisor_email_value(supervisor):
+        payload = request.session.get(EMAIL_OTP_SESSION_KEY, {}) or {}
+        otp_id = _safe_int(payload.get("otp_id") or 0, default=0)
+        pending_otp = None
+        if otp_id and payload.get("supervisor_id") == supervisor.id:
+            pending_otp = EmailOTP.objects.filter(id=otp_id, supervisor=supervisor).first()
+
+        if pending_otp and getattr(pending_otp, "email", ""):
+            payload["email_notifications_enabled"] = not bool(payload.get("email_notifications_enabled", True))
+            payload["next_url"] = next_url
+            request.session[EMAIL_OTP_SESSION_KEY] = payload
+            request.session.modified = True
+
+            if payload["email_notifications_enabled"]:
+                messages.success(request, "سيتم تفعيل التنبيهات البريدية بعد تأكيد البريد الإلكتروني.")
+            else:
+                messages.success(request, "سيتم إيقاف التنبيهات البريدية بعد تأكيد البريد الإلكتروني.")
+            return redirect("visits:supervisor_email_verify")
+
+        messages.warning(request, "سجل البريد الإلكتروني أولًا قبل تفعيل التنبيهات البريدية.")
+        return redirect(f"{reverse('visits:supervisor_email_settings')}?next={next_url}")
+
+    supervisor.email_notifications_enabled = not bool(getattr(supervisor, "email_notifications_enabled", False))
+    supervisor.save(update_fields=["email_notifications_enabled"])
+
+    if supervisor.email_notifications_enabled:
+        messages.success(request, "تم تفعيل التنبيهات البريدية.")
+    else:
+        messages.success(request, "تم إيقاف التنبيهات البريدية.")
+
+    return redirect(next_url)
+
+
+def supervisor_visit_status_view(request: HttpRequest) -> HttpResponse:
+    try:
+        supervisor = _require_supervisor(request)
+    except Supervisor.DoesNotExist:
+        return redirect("visits:login")
+
+    week_no = _safe_int(request.GET.get("week") or _get_default_week_no(), default=_get_default_week_no())
+    week_obj = _resolve_week_or_404(week_no, allow_inactive=False)
 
     plan = get_object_or_404(
         Plan.objects.select_related("supervisor", "week").prefetch_related("days__school"),
@@ -1706,10 +2035,7 @@ def supervisor_visit_status_view(request: HttpRequest) -> HttpResponse:
     )
     _inject_week_no(plan)
 
-    school_days = [
-        d for d in plan.days.all()
-        if d.visit_type == getattr(PlanDay, "VISIT_IN", "in") and d.school_id
-    ]
+    school_days = [d for d in plan.days.all() if d.visit_type == getattr(PlanDay, "VISIT_IN", "in") and d.school_id]
     visited_days = [d for d in school_days if getattr(d, "visited", False)]
     unvisited_days = [d for d in school_days if not getattr(d, "visited", False)]
 
@@ -1724,12 +2050,8 @@ def supervisor_visit_status_view(request: HttpRequest) -> HttpResponse:
             school__is_active=True,
         ).values_list("school_id", flat=True)
     )
-    visited_school_ids = {d.school_id for d in visited_days if d.school_id}
-    remaining_school_ids = assigned_school_ids - visited_school_ids
-
-    remaining_schools = list(
-        School.objects.filter(id__in=remaining_school_ids, is_active=True).order_by("name")
-    )
+    remaining_school_ids = assigned_school_ids - set(d.school_id for d in visited_days if d.school_id)
+    remaining_schools = list(School.objects.filter(id__in=remaining_school_ids, is_active=True).order_by("name"))
 
     return render(
         request,
@@ -1748,18 +2070,12 @@ def supervisor_visit_status_view(request: HttpRequest) -> HttpResponse:
             "remaining_count": visit_counts["remaining_count"],
             "notifications": notifications,
             "unread_count": unread_count,
-            "supervisor_email": _supervisor_email_value(supervisor),
-            "email_notifications_enabled": _supervisor_email_notifications_enabled(supervisor),
         },
     )
 
 
 @require_POST
 def toggle_day_visited_view(request: HttpRequest, day_id: int) -> HttpResponse:
-    setting = _get_site_setting()
-    if _maintenance_is_active(setting, persist=True) and not _maintenance_allowed_for_request(request, setting):
-        return redirect("visits:maintenance_page")
-
     try:
         supervisor = _require_supervisor(request)
     except Supervisor.DoesNotExist:
@@ -1781,7 +2097,7 @@ def toggle_day_visited_view(request: HttpRequest, day_id: int) -> HttpResponse:
     visited_raw = (request.POST.get("visited") or "").strip()
     note = (request.POST.get("visit_note") or request.POST.get("note") or "").strip() or None
 
-    if visited_raw.lower() in ("1", "true", "yes", "on"):
+    if visited_raw in ("1", "true", "yes", "on"):
         day.visited = True
         day.visited_at = timezone.now()
         day.visit_note = note
@@ -1814,6 +2130,7 @@ def toggle_day_visited_view(request: HttpRequest, day_id: int) -> HttpResponse:
 
     messages.success(request, msg)
     return redirect(_supervisor_visit_status_url(day.plan.week.week_no))
+
 
 # =============================================================================
 # Notifications
@@ -1850,6 +2167,7 @@ def notifications_view(request: HttpRequest) -> HttpResponse:
             "email_notifications_enabled": _supervisor_email_notifications_enabled(supervisor),
         },
     )
+
 
 @require_POST
 def mark_notification_read_view(request: HttpRequest, notif_id: int) -> HttpResponse:
@@ -2093,14 +2411,14 @@ def admin_supervisor_save_view(request: HttpRequest) -> HttpResponse:
             supervisor.email = email or None
         if hasattr(supervisor, "email_notifications_enabled"):
             supervisor.email_notifications_enabled = email_notifications_enabled
+        if hasattr(supervisor, "email_verified"):
+            supervisor.email_verified = False if email else False
         if hasattr(supervisor, "gender") and gender:
             supervisor.gender = gender
         if hasattr(supervisor, "sector"):
             supervisor.sector = sector
         if hasattr(supervisor, "is_active"):
             supervisor.is_active = is_active
-        if hasattr(supervisor, "email_verified") and not email:
-            supervisor.email_verified = False
         supervisor.save()
         messages.success(request, "تم تحديث المشرف بنجاح.")
     else:
@@ -2109,12 +2427,6 @@ def admin_supervisor_save_view(request: HttpRequest) -> HttpResponse:
             data["national_id"] = national_id
         if hasattr(Supervisor, "mobile"):
             data["mobile"] = mobile
-        if hasattr(Supervisor, "email"):
-            data["email"] = email or None
-        if hasattr(Supervisor, "email_notifications_enabled"):
-            data["email_notifications_enabled"] = email_notifications_enabled
-        if hasattr(Supervisor, "email_verified"):
-            data["email_verified"] = False
         if hasattr(Supervisor, "gender"):
             data["gender"] = gender or "boys"
         if hasattr(Supervisor, "sector"):
@@ -2125,6 +2437,7 @@ def admin_supervisor_save_view(request: HttpRequest) -> HttpResponse:
         messages.success(request, "تمت إضافة المشرف بنجاح.")
 
     return redirect("visits:admin_supervisor_list")
+
 
 @admin_only_view
 @require_POST
@@ -2557,6 +2870,317 @@ def request_unlock_view(request: HttpRequest) -> HttpResponse:
 
 
 # =============================================================================
+# Admin visit follow-up
+# =============================================================================
+def _build_supervisor_visit_followup_row(supervisor: Supervisor) -> dict[str, Any]:
+    assigned_school_ids = set(
+        Assignment.objects.filter(
+            supervisor=supervisor,
+            is_active=True,
+            school__is_active=True,
+        ).values_list("school_id", flat=True)
+    )
+
+    visited_school_ids = set(
+        PlanDay.objects.filter(
+            plan__supervisor=supervisor,
+            visit_type=PlanDay.VISIT_IN,
+            visited=True,
+            school__isnull=False,
+        ).values_list("school_id", flat=True)
+    )
+
+    assigned_count = len(assigned_school_ids)
+    visited_count = len(assigned_school_ids & visited_school_ids)
+    remaining_count = max(assigned_count - visited_count, 0)
+    progress_percent = round((visited_count / assigned_count) * 100, 1) if assigned_count else 0
+
+    return {
+        "supervisor": supervisor,
+        "assigned_count": assigned_count,
+        "visited_count": visited_count,
+        "remaining_count": remaining_count,
+        "progress_percent": progress_percent,
+    }
+
+
+def _build_global_visit_followup_stats() -> dict[str, Any]:
+    supervisors = (
+        Supervisor.objects.filter(is_active=True)
+        .select_related("sector")
+        .order_by("full_name")
+    )
+
+    rows: list[dict[str, Any]] = []
+    total_assigned = 0
+    total_visited = 0
+    total_remaining = 0
+    supervisors_with_remaining = 0
+
+    for supervisor in supervisors:
+        row = _build_supervisor_visit_followup_row(supervisor)
+        rows.append(row)
+
+        total_assigned += row["assigned_count"]
+        total_visited += row["visited_count"]
+        total_remaining += row["remaining_count"]
+
+        if row["remaining_count"] > 0:
+            supervisors_with_remaining += 1
+
+    return {
+        "visit_followup_rows": rows,
+        "visit_followup_total_assigned": total_assigned,
+        "visit_followup_total_visited": total_visited,
+        "visit_followup_total_remaining": total_remaining,
+        "visit_followup_supervisors_with_remaining": supervisors_with_remaining,
+    }
+
+
+def _filter_visit_followup_rows(
+    *,
+    rows: list[dict[str, Any]],
+    q: str = "",
+    sector_id: int = 0,
+    only_remaining: bool = False,
+) -> list[dict[str, Any]]:
+    filtered = list(rows)
+
+    if q:
+        q_lower = q.lower()
+        filtered = [
+            row for row in filtered
+            if q_lower in ((row["supervisor"].full_name or "").lower())
+            or q_lower in ((row["supervisor"].national_id or "").lower())
+        ]
+
+    if sector_id:
+        filtered = [
+            row for row in filtered
+            if row["supervisor"].sector_id == sector_id
+        ]
+
+    if only_remaining:
+        filtered = [
+            row for row in filtered
+            if row["remaining_count"] > 0
+        ]
+
+    return filtered
+
+
+def _build_visit_followup_excel_workbook(
+    rows: list[dict[str, Any]],
+    *,
+    report_title: str = "متابعة الزيارات على مستوى جميع الأسابيع",
+) -> Workbook:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "متابعة الزيارات"
+    ws.sheet_view.rightToLeft = True
+
+    title_font = Font(name="Cairo", bold=True, size=14)
+    bold_font = Font(name="Cairo", bold=True, size=12)
+    normal_font = Font(name="Cairo", size=11)
+
+    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    right = Alignment(horizontal="right", vertical="center", wrap_text=True)
+
+    header_fill = PatternFill("solid", fgColor="F1F5F9")
+    title_fill = PatternFill("solid", fgColor="E8F5E9")
+
+    thin = Side(style="thin", color="CBD5E1")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    ws.merge_cells("A1:H1")
+    ws["A1"] = report_title
+    ws["A1"].font = title_font
+    ws["A1"].alignment = center
+    ws["A1"].fill = title_fill
+
+    ws.merge_cells("A2:H2")
+    ws["A2"] = f"تاريخ التصدير: {timezone.localtime(timezone.now()).strftime('%Y-%m-%d %H:%M')}"
+    ws["A2"].font = bold_font
+    ws["A2"].alignment = center
+
+    headers = [
+        "م",
+        "اسم المشرف",
+        "رقم الهوية",
+        "القطاع",
+        "المدارس المسندة",
+        "تمت زيارتها",
+        "المتبقي",
+        "نسبة الإنجاز",
+    ]
+    header_row = 4
+
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=header_row, column=col, value=header)
+        cell.font = bold_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    row_idx = header_row + 1
+    for index, row in enumerate(rows, start=1):
+        supervisor = row["supervisor"]
+        sector_name = supervisor.sector.name if getattr(supervisor, "sector", None) else "—"
+
+        values = [
+            index,
+            supervisor.full_name or "—",
+            supervisor.national_id or "—",
+            sector_name,
+            row["assigned_count"],
+            row["visited_count"],
+            row["remaining_count"],
+            f'{row["progress_percent"]}%',
+        ]
+
+        for col, value in enumerate(values, start=1):
+            cell = ws.cell(row=row_idx, column=col, value=value)
+            cell.font = normal_font
+            cell.border = border
+            cell.alignment = center if col in (1, 3, 5, 6, 7, 8) else right
+
+        row_idx += 1
+
+    for col_i, width in {
+        1: 8,
+        2: 28,
+        3: 18,
+        4: 22,
+        5: 16,
+        6: 16,
+        7: 16,
+        8: 16,
+    }.items():
+        ws.column_dimensions[get_column_letter(col_i)].width = width
+
+    return wb
+
+
+@admin_only_view
+def admin_visit_followup_dashboard_view(request: HttpRequest) -> HttpResponse:
+    q = _cell_str(request.GET.get("q"))
+    sector_id = _safe_int(request.GET.get("sector") or 0, default=0)
+    only_remaining = str(request.GET.get("only_remaining") or "").strip().lower() in ("1", "true", "on", "yes")
+
+    stats = _build_global_visit_followup_stats()
+    rows = _filter_visit_followup_rows(
+        rows=stats["visit_followup_rows"],
+        q=q,
+        sector_id=sector_id,
+        only_remaining=only_remaining,
+    )
+
+    sectors = Sector.objects.filter(is_active=True).order_by("name")
+
+    return render(
+        request,
+        "visits/admin_visit_followup_dashboard.html",
+        {
+            **stats,
+            "rows": rows,
+            "q": q,
+            "sector_id": sector_id,
+            "only_remaining": only_remaining,
+            "sectors": sectors,
+        },
+    )
+
+
+@admin_only_view
+def admin_visit_followup_export_excel_view(request: HttpRequest) -> HttpResponse:
+    q = _cell_str(request.GET.get("q"))
+    sector_id = _safe_int(request.GET.get("sector") or 0, default=0)
+    only_remaining = str(request.GET.get("only_remaining") or "").strip().lower() in ("1", "true", "on", "yes")
+
+    stats = _build_global_visit_followup_stats()
+    rows = _filter_visit_followup_rows(
+        rows=stats["visit_followup_rows"],
+        q=q,
+        sector_id=sector_id,
+        only_remaining=only_remaining,
+    )
+
+    title_parts = ["متابعة الزيارات على مستوى جميع الأسابيع"]
+    if q:
+        title_parts.append(f"بحث: {q}")
+
+    if sector_id:
+        sector = Sector.objects.filter(id=sector_id).first()
+        if sector:
+            title_parts.append(f"القطاع: {sector.name}")
+
+    if only_remaining:
+        title_parts.append("المتأخرون فقط")
+
+    workbook = _build_visit_followup_excel_workbook(
+        rows,
+        report_title=" — ".join(title_parts),
+    )
+    return _excel_response(workbook, "visit_followup_report.xlsx")
+
+
+@admin_only_view
+@require_POST
+def admin_notify_supervisor_visit_followup_view(request: HttpRequest, supervisor_id: int) -> HttpResponse:
+    supervisor = get_object_or_404(Supervisor, id=supervisor_id)
+    row = _build_supervisor_visit_followup_row(supervisor)
+
+    if row["remaining_count"] <= 0:
+        messages.info(request, "لا توجد مدارس متبقية على هذا المشرف.")
+        return redirect("visits:admin_visit_followup_dashboard")
+
+    _notify_supervisor(
+        supervisor=supervisor,
+        plan=None,
+        notif_type=SupervisorNotification.TYPE_ADMIN_ALERT,
+        title="تنبيه بمتابعة الزيارات",
+        message=(
+            "نأمل استكمال الزيارات المتبقية. "
+            f"عدد المدارس التي لم يتم تسجيل زيارتها حتى الآن: {row['remaining_count']}."
+        ),
+    )
+
+    messages.success(request, f"تم إرسال تنبيه إلى المشرف {supervisor.full_name}.")
+    return redirect("visits:admin_visit_followup_dashboard")
+
+
+@admin_only_view
+@require_POST
+def admin_notify_all_supervisors_visit_followup_view(request: HttpRequest) -> HttpResponse:
+    supervisors = Supervisor.objects.filter(is_active=True).order_by("full_name")
+    notified = 0
+
+    for supervisor in supervisors:
+        row = _build_supervisor_visit_followup_row(supervisor)
+        if row["remaining_count"] <= 0:
+            continue
+
+        _notify_supervisor(
+            supervisor=supervisor,
+            plan=None,
+            notif_type=SupervisorNotification.TYPE_ADMIN_ALERT,
+            title="تنبيه بمتابعة الزيارات",
+            message=(
+                "نأمل استكمال الزيارات المتبقية. "
+                f"عدد المدارس التي لم يتم تسجيل زيارتها حتى الآن: {row['remaining_count']}."
+            ),
+        )
+        notified += 1
+
+    if notified:
+        messages.success(request, f"تم إرسال {notified} تنبيهًا للمشرفين المتأخرين.")
+    else:
+        messages.info(request, "لا يوجد مشرفون متأخرون حاليًا.")
+
+    return redirect("visits:admin_visit_followup_dashboard")
+
+
+# =============================================================================
 # Admin dashboard / detail / exports
 # =============================================================================
 @admin_only_view
@@ -2651,7 +3275,6 @@ def admin_dashboard_view(request: HttpRequest) -> HttpResponse:
     paginator = Paginator(rows, page_size)
     page_obj = paginator.get_page(page)
     chart_data = _build_chart_counts(week_obj)
-    visit_followup = _build_admin_visit_followup_stats(week_obj)
     site_setting = _get_site_setting()
     _maintenance_is_active(site_setting, persist=True)
 
@@ -2679,7 +3302,6 @@ def admin_dashboard_view(request: HttpRequest) -> HttpResponse:
             "week_letter": WeeklyLetterLink.objects.filter(week=week_obj).first(),
             "site_setting": site_setting,
             **chart_data,
-            **visit_followup,
         },
     )
 
@@ -2759,6 +3381,164 @@ def admin_export_supervisor_assignments_excel(request: HttpRequest, supervisor_i
     return _excel_response(wb, filename)
 
 
+
+
+def _build_week_visit_summary_rows(week_obj: PlanWeek) -> list[dict[str, Any]]:
+    plans = (
+        Plan.objects.filter(week=week_obj)
+        .select_related("supervisor", "supervisor__sector", "week")
+        .prefetch_related("days__school")
+        .order_by("supervisor__full_name")
+    )
+
+    rows: list[dict[str, Any]] = []
+
+    for plan in plans:
+        assigned_school_ids = set(
+            Assignment.objects.filter(
+                supervisor=plan.supervisor,
+                is_active=True,
+                school__is_active=True,
+            ).values_list("school_id", flat=True)
+        )
+
+        visited_school_ids = set(
+            PlanDay.objects.filter(
+                plan=plan,
+                visit_type=getattr(PlanDay, "VISIT_IN", "in"),
+                school_id__isnull=False,
+                visited=True,
+            ).values_list("school_id", flat=True)
+        )
+
+        visited_school_ids &= assigned_school_ids
+        unvisited_school_ids = assigned_school_ids - visited_school_ids
+
+        visited_schools = list(
+            School.objects.filter(id__in=visited_school_ids, is_active=True).order_by("name")
+        )
+        unvisited_schools = list(
+            School.objects.filter(id__in=unvisited_school_ids, is_active=True).order_by("name")
+        )
+
+        rows.append(
+            {
+                "supervisor": plan.supervisor,
+                "plan": plan,
+                "sector_name": getattr(getattr(plan.supervisor, "sector", None), "name", "") or "—",
+                "assigned_count": len(assigned_school_ids),
+                "visited_count": len(visited_school_ids),
+                "unvisited_count": len(unvisited_school_ids),
+                "visited_school_names": [s.name for s in visited_schools],
+                "unvisited_school_names": [s.name for s in unvisited_schools],
+            }
+        )
+
+    return rows
+
+
+def _build_week_visit_summary_excel_workbook(week_obj: PlanWeek) -> Workbook:
+    rows = _build_week_visit_summary_rows(week_obj)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f"ملخص الأسبوع {week_obj.week_no}"
+    ws.sheet_view.rightToLeft = True
+
+    title_font = Font(name="Cairo", bold=True, size=14)
+    bold_font = Font(name="Cairo", bold=True, size=12)
+    normal_font = Font(name="Cairo", size=11)
+
+    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    right = Alignment(horizontal="right", vertical="center", wrap_text=True)
+
+    header_fill = PatternFill("solid", fgColor="F1F5F9")
+    title_fill = PatternFill("solid", fgColor="E8F5E9")
+    visited_fill = PatternFill("solid", fgColor="ECFDF3")
+    unvisited_fill = PatternFill("solid", fgColor="FFF7ED")
+
+    thin = Side(style="thin", color="CBD5E1")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    total_assigned = sum(r["assigned_count"] for r in rows)
+    total_visited = sum(r["visited_count"] for r in rows)
+    total_unvisited = sum(r["unvisited_count"] for r in rows)
+
+    ws.merge_cells("A1:H1")
+    ws["A1"] = f"تقرير المدارس المزارة وغير المزارة — الأسبوع {week_obj.week_no}"
+    ws["A1"].font = title_font
+    ws["A1"].alignment = center
+    ws["A1"].fill = title_fill
+
+    ws.merge_cells("A2:H2")
+    ws["A2"] = (
+        f"إجمالي المدارس المسندة: {total_assigned}  |  "
+        f"المزارة: {total_visited}  |  "
+        f"غير المزارة: {total_unvisited}"
+    )
+    ws["A2"].font = bold_font
+    ws["A2"].alignment = center
+
+    headers = [
+        "م",
+        "اسم المشرف",
+        "السجل المدني",
+        "القطاع",
+        "عدد المدارس المسندة",
+        "عدد المدارس المزارة",
+        "عدد المدارس غير المزارة",
+        "تفاصيل المدارس غير المزارة",
+    ]
+
+    header_row = 4
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=header_row, column=col, value=header)
+        cell.font = bold_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    row_idx = header_row + 1
+    for i, row in enumerate(rows, start=1):
+        values = [
+            i,
+            row["supervisor"].full_name,
+            _sup_nid_value(row["supervisor"]),
+            row["sector_name"],
+            row["assigned_count"],
+            row["visited_count"],
+            row["unvisited_count"],
+            "، ".join(row["unvisited_school_names"]) if row["unvisited_school_names"] else "—",
+        ]
+
+        for col, value in enumerate(values, start=1):
+            cell = ws.cell(row=row_idx, column=col, value=value)
+            cell.font = normal_font
+            cell.border = border
+            cell.alignment = center if col in (1, 3, 5, 6, 7) else right
+
+            if col == 6:
+                cell.fill = visited_fill
+            elif col == 7:
+                cell.fill = unvisited_fill
+
+        row_idx += 1
+
+    for col_i, width in {
+        1: 8,
+        2: 26,
+        3: 18,
+        4: 20,
+        5: 18,
+        6: 18,
+        7: 20,
+        8: 60,
+    }.items():
+        ws.column_dimensions[get_column_letter(col_i)].width = width
+
+    return wb
+
+
 @admin_only_view
 def admin_export_week_excel(request: HttpRequest) -> HttpResponse:
     show_all = (request.GET.get("all") or "0").strip().lower() in ("1", "true", "yes")
@@ -2782,6 +3562,26 @@ def admin_export_week_excel(request: HttpRequest) -> HttpResponse:
     )
     wb = _build_admin_week_excel_workbook(week_obj, plans)
     filename = f"خطط_الأسبوع_{week_obj.week_no}.xlsx"
+    return _excel_response(wb, filename)
+
+
+@admin_only_view
+def admin_export_week_visit_summary_excel(request: HttpRequest) -> HttpResponse:
+    show_all = (request.GET.get("all") or "0").strip().lower() in ("1", "true", "yes")
+    weeks_qs = _get_all_weeks_qs() if show_all else _get_active_weeks_qs()
+    default_week = weeks_qs.first()
+
+    if not default_week:
+        messages.warning(request, "لا يوجد أسابيع متاحة للتصدير.")
+        return redirect("visits:admin_dashboard")
+
+    week_no = _safe_int(request.GET.get("week") or default_week.week_no, default=default_week.week_no)
+    if not _week_exists(week_no):
+        week_no = default_week.week_no
+
+    week_obj = _resolve_week_or_404(week_no, allow_inactive=show_all)
+    wb = _build_week_visit_summary_excel_workbook(week_obj)
+    filename = f"ملخص_الزيارات_الأسبوع_{week_obj.week_no}.xlsx"
     return _excel_response(wb, filename)
 
 
@@ -3023,148 +3823,6 @@ def admin_send_notification_all_view(request: HttpRequest) -> HttpResponse:
     return redirect(return_url)
 
 
-
-
-@admin_only_view
-@require_POST
-def admin_notify_supervisor_visit_followup_view(request: HttpRequest, plan_id: int) -> HttpResponse:
-    plan = get_object_or_404(
-        Plan.objects.select_related("supervisor", "supervisor__sector", "week"),
-        id=plan_id,
-    )
-
-    counts = _plan_visit_counts(plan)
-    remaining = counts["remaining_count"]
-
-    state = _parse_admin_action_state(request)
-    return_url = _resolve_admin_return_url(
-        request,
-        plan=plan,
-        default_week_no=plan.week.week_no,
-        show_all=state["show_all"],
-        q=state["q"],
-        status_filter=state["status_filter"],
-        ps=state["ps"],
-        page=state["page"],
-    )
-
-    if remaining <= 0:
-        msg = "لا توجد مدارس متبقية على هذا المشرف لهذا الأسبوع."
-        if _is_ajax(request):
-            return JsonResponse({"ok": False, "message": msg, "remaining_count": 0}, status=400)
-        messages.info(request, msg)
-        return redirect(return_url)
-
-    _notify_supervisor(
-        supervisor=plan.supervisor,
-        plan=plan,
-        notif_type=SupervisorNotification.TYPE_ADMIN_ALERT,
-        title="تنبيه بمتابعة الزيارات",
-        message=(
-            f"نأمل استكمال الزيارات المتبقية للأسبوع {plan.week.week_no}. "
-            f"عدد المدارس التي لم يتم تسجيل زيارتها حتى الآن: {remaining}."
-        ),
-    )
-
-    msg = f"تم إرسال تنبيه إلى المشرف {plan.supervisor.full_name}."
-    if _is_ajax(request):
-        return JsonResponse({"ok": True, "message": msg, "remaining_count": remaining}, status=200)
-
-    messages.success(request, msg)
-    return redirect(return_url)
-
-
-@admin_only_view
-@require_POST
-def admin_notify_all_supervisors_visit_followup_view(request: HttpRequest) -> HttpResponse:
-    show_all = (request.POST.get("all") or request.GET.get("all") or "0").strip().lower() in ("1", "true", "yes")
-
-    weeks_qs = _get_all_weeks_qs() if show_all else _get_active_weeks_qs()
-    default_week = weeks_qs.first()
-
-    if not default_week:
-        messages.warning(request, "لا يوجد أسابيع متاحة.")
-        return redirect("visits:admin_dashboard")
-
-    week_no = _safe_int(request.POST.get("week") or request.GET.get("week") or default_week.week_no, default=default_week.week_no)
-    if not _week_exists(week_no):
-        week_no = default_week.week_no
-
-    week_obj = _resolve_week_or_404(week_no, allow_inactive=show_all)
-    q = (request.POST.get("q") or request.GET.get("q") or "").strip()
-    status_filter = (request.POST.get("status") or request.GET.get("status") or "all").strip().lower()
-    ps = _safe_int(request.POST.get("ps") or request.GET.get("ps") or 10, default=10)
-    page = _safe_int(request.POST.get("page") or request.GET.get("page") or 1, default=1)
-
-    return_url = _admin_dashboard_url(
-        week_obj.week_no,
-        show_all=show_all,
-        q=q,
-        status=status_filter,
-        ps=ps,
-        page=page,
-    )
-
-    plans_qs = (
-        Plan.objects.filter(week=week_obj)
-        .select_related("supervisor", "supervisor__sector", "week")
-        .order_by("supervisor__full_name")
-    )
-
-    if q:
-        plans_qs = plans_qs.filter(Q(supervisor__full_name__icontains=q) | Q(supervisor__national_id__icontains=q))
-
-    plans = list(plans_qs)
-
-    if status_filter == "approved":
-        plans = [p for p in plans if p.status == Plan.STATUS_APPROVED]
-    elif status_filter == "draft":
-        plans = [p for p in plans if p.status == Plan.STATUS_DRAFT]
-    elif status_filter == "unlock":
-        plans = [p for p in plans if p.status == Plan.STATUS_UNLOCK_REQUESTED]
-    elif status_filter == "not_full":
-        plans = [p for p in plans if not p.is_fully_filled()]
-
-    notified = 0
-    touched_supervisor_ids: set[int] = set()
-
-    for plan in plans:
-        sup = plan.supervisor
-        if not sup or not getattr(sup, "is_active", False):
-            continue
-        if sup.id in touched_supervisor_ids:
-            continue
-
-        counts = _plan_visit_counts(plan)
-        remaining = counts["remaining_count"]
-        if remaining <= 0:
-            continue
-
-        _notify_supervisor(
-            supervisor=sup,
-            plan=plan,
-            notif_type=SupervisorNotification.TYPE_ADMIN_ALERT,
-            title="تنبيه بمتابعة الزيارات",
-            message=(
-                f"نأمل استكمال الزيارات المتبقية للأسبوع {plan.week.week_no}. "
-                f"عدد المدارس التي لم يتم تسجيل زيارتها حتى الآن: {remaining}."
-            ),
-        )
-        touched_supervisor_ids.add(sup.id)
-        notified += 1
-
-    msg = f"تم إرسال التنبيه إلى {notified} مشرف/ة." if notified else "لا يوجد مشرفون لديهم زيارات متبقية حاليًا."
-
-    if _is_ajax(request):
-        return JsonResponse({"ok": True, "message": msg, "sent_count": notified, "week_no": week_obj.week_no}, status=200)
-
-    if notified:
-        messages.success(request, msg)
-    else:
-        messages.info(request, msg)
-    return redirect(return_url)
-
-
 @admin_only_view
 @require_POST
 def admin_unlock_approve_view(request: HttpRequest, plan_id: int) -> HttpResponse:
@@ -3274,18 +3932,37 @@ def admin_unlock_reject_view(request: HttpRequest, plan_id: int) -> HttpResponse
 # =============================================================================
 # Weekly letter links admin
 # =============================================================================
+def _weekly_letter_links_stats() -> dict[str, int]:
+    return {
+        "total_links": WeeklyLetterLink.objects.count(),
+        "active_links": WeeklyLetterLink.objects.filter(is_active=True).count(),
+        "inactive_links": WeeklyLetterLink.objects.filter(is_active=False).count(),
+        "total_weeks": WeeklyLetterLink.objects.values("week_id").distinct().count(),
+    }
+
+
+def _weekly_letter_links_list_context(*, form=None, edit_obj=None) -> dict[str, Any]:
+    rows = (
+        WeeklyLetterLink.objects
+        .select_related("week")
+        .order_by("week__week_no", "-is_active", "-id")
+    )
+
+    context = {
+        "rows": rows,
+        "form": form or WeeklyLetterLinkForm(),
+        "edit_obj": edit_obj,
+    }
+    context.update(_weekly_letter_links_stats())
+    return context
+
+
 @admin_only_view
 def weekly_letter_links_list_view(request: HttpRequest) -> HttpResponse:
-    rows = WeeklyLetterLink.objects.select_related("week").order_by("week__week_no")
-    form = WeeklyLetterLinkForm()
     return render(
         request,
         "visits/weekly_letter_links_list.html",
-        {
-            "rows": rows,
-            "form": form,
-            "edit_obj": None,
-        },
+        _weekly_letter_links_list_context(),
     )
 
 
@@ -3295,25 +3972,37 @@ def weekly_letter_link_create_view(request: HttpRequest) -> HttpResponse:
         form = WeeklyLetterLinkForm(request.POST)
         if form.is_valid():
             obj = form.save(commit=False)
+
             if obj.is_active:
                 WeeklyLetterLink.objects.filter(
                     week=obj.week,
                     is_active=True,
-                ).exclude(id=obj.id).update(is_active=False)
+                ).update(is_active=False)
+
             obj.save()
             messages.success(request, "تم حفظ رابط الأسبوع بنجاح.")
             return redirect("visits:weekly_letter_links_list")
 
         messages.error(request, "تعذر حفظ رابط الأسبوع. تحقق من الحقول.")
-    else:
-        form = WeeklyLetterLinkForm()
+        return render(
+            request,
+            "visits/weekly_letter_link_form.html",
+            {
+                "form": form,
+                "edit_obj": None,
+                "page_title": "إضافة رابط خطاب أسبوعي",
+                "submit_label": "حفظ الرابط",
+            },
+        )
 
     return render(
         request,
         "visits/weekly_letter_link_form.html",
         {
-            "form": form,
+            "form": WeeklyLetterLinkForm(),
             "edit_obj": None,
+            "page_title": "إضافة رابط خطاب أسبوعي",
+            "submit_label": "حفظ الرابط",
         },
     )
 
@@ -3326,23 +4015,37 @@ def weekly_letter_link_edit_view(request: HttpRequest, pk: int) -> HttpResponse:
         form = WeeklyLetterLinkForm(request.POST, instance=obj)
         if form.is_valid():
             updated = form.save(commit=False)
+
             if updated.is_active:
-                WeeklyLetterLink.objects.filter(week=updated.week, is_active=True).exclude(id=updated.id).update(is_active=False)
+                WeeklyLetterLink.objects.filter(
+                    week=updated.week,
+                    is_active=True,
+                ).exclude(id=updated.id).update(is_active=False)
+
             updated.save()
             messages.success(request, "تم تحديث رابط الأسبوع بنجاح.")
             return redirect("visits:weekly_letter_links_list")
-        messages.error(request, "تعذر تحديث الرابط. تحقق من الحقول.")
-    else:
-        form = WeeklyLetterLinkForm(instance=obj)
 
-    rows = WeeklyLetterLink.objects.select_related("week").order_by("week__week_no")
+        messages.error(request, "تعذر تحديث الرابط. تحقق من الحقول.")
+        return render(
+            request,
+            "visits/weekly_letter_link_form.html",
+            {
+                "form": form,
+                "edit_obj": obj,
+                "page_title": "تعديل رابط الخطاب",
+                "submit_label": "حفظ التعديلات",
+            },
+        )
+
     return render(
         request,
-        "visits/weekly_letter_links.html",
+        "visits/weekly_letter_link_form.html",
         {
-            "rows": rows,
-            "form": form,
+            "form": WeeklyLetterLinkForm(instance=obj),
             "edit_obj": obj,
+            "page_title": "تعديل رابط الخطاب",
+            "submit_label": "حفظ التعديلات",
         },
     )
 

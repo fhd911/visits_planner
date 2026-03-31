@@ -23,6 +23,8 @@ urlpatterns = [
     # =========================================================
     path("dashboard/", views.supervisor_dashboard_view, name="supervisor_dashboard"),
     path("email-settings/", views.supervisor_email_settings_view, name="supervisor_email_settings"),
+    path("email-settings/verify/", views.supervisor_email_verify_view, name="supervisor_email_verify"),
+    path("email-settings/resend-otp/", views.supervisor_email_resend_otp_view, name="supervisor_email_resend_otp"),
     path("email-settings/toggle/", views.toggle_email_notifications_view, name="toggle_email_notifications"),
 
     path("print-assignment-letter/", views.print_assignment_letter_view, name="print_assignment_letter"),
@@ -52,6 +54,11 @@ urlpatterns = [
     path("manager/dashboard/", views.admin_dashboard_view, name="admin_dashboard"),
     path("manager/plan/<int:plan_id>/", views.admin_plan_detail_view, name="admin_plan_detail"),
     path("manager/export-week/", views.admin_export_week_excel, name="admin_export_week"),
+    path(
+        "manager/export-week-visit-summary/",
+        views.admin_export_week_visit_summary_excel,
+        name="admin_export_week_visit_summary",
+    ),
     path("manager/plan-export/<int:plan_id>/", views.admin_plan_export_excel, name="admin_plan_export_excel"),
     path("manager/plan-approve/<int:plan_id>/", views.admin_plan_approve_view, name="admin_plan_approve"),
     path("manager/plan-draft/<int:plan_id>/", views.admin_plan_back_to_draft_view, name="admin_plan_back_to_draft"),
@@ -60,9 +67,21 @@ urlpatterns = [
     path("manager/plan-notify/<int:plan_id>/", views.admin_send_notification_view, name="admin_send_notification"),
     path("manager/notify-all/", views.admin_send_notification_all_view, name="admin_send_notification_all"),
 
-    # متابعة الزيارات والتنبيه الفوري
+    # =========================================================
+    # الإدارة - متابعة الزيارات العامة
+    # =========================================================
     path(
-        "manager/visit-followup/notify/<int:plan_id>/",
+        "manager/visit-followup/",
+        views.admin_visit_followup_dashboard_view,
+        name="admin_visit_followup_dashboard",
+    ),
+    path(
+        "manager/visit-followup/export-excel/",
+        views.admin_visit_followup_export_excel_view,
+        name="admin_visit_followup_export_excel",
+    ),
+    path(
+        "manager/visit-followup/notify/<int:supervisor_id>/",
         views.admin_notify_supervisor_visit_followup_view,
         name="admin_notify_supervisor_visit_followup",
     ),

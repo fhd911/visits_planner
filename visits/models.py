@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import random
+from datetime import timedelta
+
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -331,6 +334,120 @@ class Supervisor(models.Model):
 
         if self.sector_id and not self.sector.is_active:
             errors["sector"] = "لا يمكن ربط المشرف بقطاع غير نشط."
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+
+# =========================
+# OTP البريد الإلكتروني
+# =========================
+class EmailOTP(models.Model):
+    class Meta:
+        verbose_name = "رمز تحقق البريد"
+        verbose_name_plural = "رموز تحقق البريد"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["email", "purpose"]),
+            models.Index(fields=["is_used"]),
+            models.Index(fields=["expires_at"]),
+        ]
+
+    PURPOSE_EMAIL_VERIFICATION = "email_verification"
+    PURPOSE_LOGIN = "login"
+    PURPOSE_PASSWORD_RESET = "password_reset"
+
+    PURPOSE_CHOICES = [
+        (PURPOSE_EMAIL_VERIFICATION, "التحقق من البريد"),
+        (PURPOSE_LOGIN, "تسجيل الدخول"),
+        (PURPOSE_PASSWORD_RESET, "إعادة تعيين كلمة المرور"),
+    ]
+
+    supervisor = models.ForeignKey(
+        Supervisor,
+        on_delete=models.CASCADE,
+        related_name="email_otps",
+        verbose_name="المشرف",
+        null=True,
+        blank=True,
+    )
+    email = models.EmailField("البريد الإلكتروني", db_index=True)
+    code = models.CharField("رمز التحقق", max_length=6)
+    purpose = models.CharField(
+        "الغرض",
+        max_length=50,
+        choices=PURPOSE_CHOICES,
+        default=PURPOSE_EMAIL_VERIFICATION,
+    )
+    is_used = models.BooleanField("تم الاستخدام", default=False)
+
+    created_at = models.DateTimeField("تاريخ الإنشاء", auto_now_add=True)
+    expires_at = models.DateTimeField("ينتهي في")
+    verified_at = models.DateTimeField("وقت التحقق", null=True, blank=True)
+
+    def __str__(self) -> str:
+        return f"{self.email} - {self.code}"
+
+    @property
+    def is_expired(self) -> bool:
+        return timezone.now() > self.expires_at
+
+    @classmethod
+    def generate_code(cls) -> str:
+        return f"{random.randint(0, 999999):06d}"
+
+    @classmethod
+    def create_otp(
+        cls,
+        email: str,
+        purpose: str = PURPOSE_EMAIL_VERIFICATION,
+        expiry_minutes: int = 10,
+        supervisor: Supervisor | None = None,
+    ) -> "EmailOTP":
+        email = _clean_text(email).lower()
+
+        cls.objects.filter(
+            email=email,
+            purpose=purpose,
+            is_used=False,
+            expires_at__gt=timezone.now(),
+        ).update(is_used=True)
+
+        code = cls.generate_code()
+        return cls.objects.create(
+            supervisor=supervisor,
+            email=email,
+            code=code,
+            purpose=purpose,
+            expires_at=timezone.now() + timedelta(minutes=expiry_minutes),
+        )
+
+    def mark_as_used(self):
+        self.is_used = True
+        self.verified_at = timezone.now()
+        self.save(update_fields=["is_used", "verified_at"])
+
+    def clean(self):
+        super().clean()
+        self.email = _clean_text(self.email).lower()
+        self.code = _digits(self.code)
+
+        errors = {}
+
+        if not self.email:
+            errors["email"] = "البريد الإلكتروني مطلوب."
+
+        if not self.code:
+            errors["code"] = "رمز التحقق مطلوب."
+        elif len(self.code) != 6:
+            errors["code"] = "رمز التحقق يجب أن يكون 6 أرقام."
+
+        if self.expires_at and self.verified_at and self.verified_at < self.created_at:
+            errors["verified_at"] = "وقت التحقق غير صحيح."
 
         if errors:
             raise ValidationError(errors)

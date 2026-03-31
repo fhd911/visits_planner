@@ -8,708 +8,849 @@
 
 {% block topbar_actions %}
   <a href="{% url 'visits:admin_dashboard' %}">لوحة الإدارة</a>
-  <a href="{% url 'visits:logout' %}" class="logout-link">خروج</a>
+  <a href="{% url 'visits:logout' %}">خروج</a>
 {% endblock %}
 
 {% block extra_css %}
 <style>
   .maint-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+
+    --fw-title:700;
+    --fw-strong:600;
+    --fw-normal:500;
+
     --card:#ffffff;
-    --soft:#f8fbff;
-    --soft-2:#fbfdff;
-    --line:#e5edf5;
-    --line-strong:#d6e2ee;
+    --card-soft:#fbfcfb;
+    --soft:#f7f9f8;
 
-    --text:#162033;
-    --muted:#6c7a90;
-    --muted-2:#97a6bc;
+    --txt:var(--vp-text);
+    --mut:var(--vp-text-soft);
+    --mut2:var(--vp-text-faint);
 
-    --primary:#165a96;
-    --primary-2:#1d6aae;
+    --line:var(--vp-line);
+    --line2:var(--vp-line-2);
+    --line-strong:var(--vp-line-strong);
 
-    --success-bg:#eefaf3;
-    --success-bd:#cfead8;
-    --success-tx:#1f6b42;
+    --ok:var(--vp-ok-text);
+    --ok-bg:var(--vp-ok-bg);
+    --ok-br:var(--vp-ok-border);
 
-    --warn-bg:#fff8ef;
-    --warn-bd:#f3d2a6;
-    --warn-tx:#9a5a13;
+    --warn:var(--vp-warn-text);
+    --warn-bg:var(--vp-warn-bg);
+    --warn-br:var(--vp-warn-border);
 
-    --danger-bg:#fff1f1;
-    --danger-bd:#f2c4c4;
-    --danger-tx:#be2f2f;
+    --danger:var(--vp-danger-text);
+    --danger-bg:var(--vp-danger-bg);
+    --danger-br:var(--vp-danger-border);
 
-    --shadow:0 14px 34px rgba(15,23,42,.05);
-    --radius:24px;
+    --primary:var(--vp-primary);
+    --primary-2:var(--vp-primary-2);
+    --primary-soft:var(--vp-primary-soft);
+    --primary-soft-br:var(--vp-primary-soft-border);
+
+    --blue:#245fd6;
+    --blue-bg:rgba(37,99,235,.08);
+    --blue-br:rgba(37,99,235,.16);
+
+    --shadow:var(--vp-shadow);
+    --shadow2:var(--vp-shadow-soft);
   }
 
-  .maint-page *{ box-sizing:border-box; }
+  .maint-page *{
+    box-sizing:border-box;
+    font-family:var(--ff) !important;
+  }
 
-  .maint-layout{
+  .maint-page .wrap{
+    display:grid;
+    gap:12px;
+    margin-top:2px;
+  }
+
+  .maint-page .summary-card,
+  .maint-page .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    box-shadow:var(--shadow);
+  }
+
+  .maint-page .summary-card{
+    border-radius:20px;
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,252,251,.98));
+  }
+
+  .maint-page .summary-note{
+    color:var(--mut);
+    font-size:12px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
+    max-width:880px;
+  }
+
+  .maint-page .summary-right{
+    display:flex;
+    gap:7px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+
+  .maint-page .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    min-height:32px;
+    padding:6px 11px;
+    border-radius:999px;
+    background:var(--soft);
+    border:1px solid var(--line);
+    color:var(--mut);
+    font-size:11.2px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+  }
+
+  .maint-page .chip.on{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:var(--danger);
+  }
+
+  .maint-page .chip.off{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+  }
+
+  .maint-page .dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#5e8d7a;
+    box-shadow:0 0 0 4px rgba(94,141,122,.10);
+    flex:0 0 auto;
+  }
+
+  .maint-page .dot.ok{
+    background:#2f6250;
+    box-shadow:0 0 0 4px rgba(47,98,80,.10);
+  }
+
+  .maint-page .dot.danger{
+    background:#b42318;
+    box-shadow:0 0 0 4px rgba(180,35,24,.10);
+  }
+
+  .maint-page .layout{
     display:grid;
     grid-template-columns:minmax(0, 1.12fr) 330px;
-    gap:20px;
+    gap:16px;
     align-items:start;
   }
 
-  .card{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-    box-shadow:var(--shadow);
+  .maint-page .card{
+    border-radius:20px;
     overflow:hidden;
   }
 
-  .card-head{
-    padding:18px 22px;
+  .maint-page .card-head{
+    padding:12px 14px;
     border-bottom:1px solid var(--line);
-    background:linear-gradient(180deg, #fcfdff 0%, #f8fbff 100%);
+    background:linear-gradient(180deg, #fcfdfc, #f8fbf9);
   }
 
-  .card-title{
+  .maint-page .card-title{
     margin:0;
-    color:var(--text);
-    font-size:1.02rem;
-    font-weight:700;
-    line-height:1.6;
+    color:var(--txt);
+    font-size:12.9px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
   }
 
-  .card-sub{
-    margin:6px 0 0;
-    color:var(--muted);
-    font-size:.92rem;
-    line-height:1.85;
-    font-weight:500;
+  .maint-page .card-sub{
+    margin:4px 0 0;
+    color:var(--mut);
+    font-size:11px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
   }
 
-  .card-body{
-    padding:22px;
+  .maint-page .card-body{
+    padding:14px;
   }
 
-  .hero-status{
+  .maint-page .hero-status{
     display:flex;
     align-items:center;
     justify-content:space-between;
     gap:14px;
     padding:16px 18px;
     border:1px solid var(--line);
-    border-radius:20px;
+    border-radius:18px;
     background:var(--soft);
-    margin-bottom:18px;
+    margin-bottom:16px;
   }
 
-  .hero-status-main{ min-width:0; }
+  .maint-page .hero-status-main{
+    min-width:0;
+  }
 
-  .hero-status-title{
+  .maint-page .hero-status-title{
     margin:0;
-    color:var(--text);
-    font-size:.98rem;
-    font-weight:700;
-    line-height:1.6;
+    color:var(--txt);
+    font-size:12.8px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
   }
 
-  .hero-status-sub{
-    margin:5px 0 0;
-    color:var(--muted);
-    font-size:.9rem;
-    line-height:1.8;
-    font-weight:500;
+  .maint-page .hero-status-sub{
+    margin:4px 0 0;
+    color:var(--mut);
+    font-size:11.1px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
   }
 
-  .badge{
+  .maint-page .badge{
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    min-height:38px;
-    padding:0 15px;
+    min-height:36px;
+    padding:0 14px;
     border-radius:999px;
-    font-size:.9rem;
-    font-weight:700;
+    font-size:11.7px;
+    font-weight:var(--fw-title);
     white-space:nowrap;
     flex:0 0 auto;
   }
 
-  .badge.on{
+  .maint-page .badge.on{
     background:var(--danger-bg);
-    border:1px solid var(--danger-bd);
-    color:var(--danger-tx);
+    border:1px solid var(--danger-br);
+    color:var(--danger);
   }
 
-  .badge.off{
-    background:var(--success-bg);
-    border:1px solid var(--success-bd);
-    color:var(--success-tx);
+  .maint-page .badge.off{
+    background:var(--ok-bg);
+    border:1px solid var(--ok-br);
+    color:var(--ok);
   }
 
-  .section{
+  .maint-page .section{
     display:grid;
-    gap:16px;
+    gap:14px;
   }
 
-  .section + .section{
-    margin-top:22px;
-    padding-top:22px;
+  .maint-page .section + .section{
+    margin-top:20px;
+    padding-top:20px;
     border-top:1px solid var(--line);
   }
 
-  .section-title{
+  .maint-page .section-title{
     margin:0;
-    color:var(--text);
-    font-size:.95rem;
-    font-weight:700;
-    line-height:1.6;
+    color:var(--txt);
+    font-size:12.7px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
   }
 
-  .section-sub{
+  .maint-page .section-sub{
     margin:4px 0 0;
-    color:var(--muted);
-    font-size:.89rem;
-    line-height:1.8;
-    font-weight:500;
+    color:var(--mut);
+    font-size:11px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
   }
 
-  .field{
+  .maint-page .field{
     display:grid;
-    gap:8px;
+    gap:6px;
   }
 
-  .label{
-    color:var(--text);
-    font-size:.92rem;
-    font-weight:700;
+  .maint-page .label{
+    color:var(--txt);
+    font-size:12px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
   }
 
-  .hint{
-    color:var(--muted-2);
-    font-size:.84rem;
-    line-height:1.8;
-    font-weight:500;
+  .maint-page .hint{
+    color:var(--mut2);
+    font-size:10.8px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
   }
 
-  .input,
-  .textarea{
+  .maint-page .input,
+  .maint-page .textarea{
     width:100%;
-    border:1px solid var(--line-strong);
-    background:#fff;
-    color:var(--text);
-    border-radius:18px;
-    padding:13px 15px;
+    border:1px solid var(--line);
+    background:#f9fbfa;
+    color:var(--txt);
+    border-radius:14px;
+    padding:12px 14px;
     font:inherit;
-    font-weight:500;
+    font-weight:var(--fw-normal);
     outline:none;
     transition:border-color .18s ease, box-shadow .18s ease, background .18s ease;
   }
 
-  .textarea{
+  .maint-page .input{
+    min-height:48px;
+  }
+
+  .maint-page .textarea{
     min-height:140px;
     resize:vertical;
     line-height:1.9;
   }
 
-  .input:focus,
-  .textarea:focus{
-    border-color:#9ec4eb;
-    box-shadow:0 0 0 4px rgba(147,197,253,.14);
+  .maint-page .input:focus,
+  .maint-page .textarea:focus{
+    border-color:#c7d6ce;
+    box-shadow:0 0 0 4px rgba(47,98,80,.06);
     background:#fff;
   }
 
-  .input-row{
+  .maint-page .input-row{
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:12px;
   }
 
-  .input-row-3{
+  .maint-page .input-row-3{
     display:grid;
     grid-template-columns:1fr 1fr 1fr;
     gap:12px;
   }
 
-  .check-card{
+  .maint-page .check-card{
     display:flex;
     align-items:flex-start;
     gap:12px;
     padding:16px;
     border:1px solid var(--line);
-    background:var(--soft-2);
-    border-radius:18px;
+    background:var(--soft);
+    border-radius:16px;
   }
 
-  .check-card input{
+  .maint-page .check-card input{
     margin-top:4px;
     transform:scale(1.08);
+    accent-color:var(--primary);
   }
 
-  .check-title{
+  .maint-page .check-title{
     margin:0;
-    color:var(--text);
-    font-size:.92rem;
-    font-weight:700;
+    color:var(--txt);
+    font-size:11.9px;
+    font-weight:var(--fw-title);
   }
 
-  .check-sub{
+  .maint-page .check-sub{
     margin:4px 0 0;
-    color:var(--muted);
-    font-size:.87rem;
-    line-height:1.8;
-    font-weight:500;
+    color:var(--mut);
+    font-size:10.9px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
   }
 
-  .summary-box{
+  .maint-page .summary-box{
     border:1px solid var(--line);
     background:var(--soft);
-    border-radius:20px;
-    padding:16px 18px;
+    border-radius:18px;
+    padding:14px 16px;
   }
 
-  .summary-label{
+  .maint-page .summary-label{
     margin:0 0 6px;
-    color:var(--muted-2);
-    font-size:.86rem;
-    font-weight:700;
+    color:var(--mut2);
+    font-size:10.8px;
+    font-weight:var(--fw-title);
   }
 
-  .summary-value{
+  .maint-page .summary-value{
     margin:0;
-    color:var(--text);
-    font-size:1rem;
-    line-height:1.8;
-    font-weight:700;
+    color:var(--txt);
+    font-size:12.4px;
+    line-height:1.9;
+    font-weight:var(--fw-title);
   }
 
-  .actions{
+  .maint-page .actions{
     display:flex;
     flex-wrap:wrap;
-    gap:10px;
+    gap:8px;
     align-items:center;
   }
 
-  .btn{
+  .maint-page .btn{
     appearance:none;
-    border:none;
+    border:1px solid var(--line-strong);
     cursor:pointer;
     text-decoration:none;
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    gap:8px;
-    min-height:46px;
-    padding:0 18px;
-    border-radius:16px;
-    font-size:.93rem;
-    font-weight:600;
-    transition:.18s ease;
+    gap:7px;
+    min-height:38px;
+    padding:0 15px;
+    border-radius:999px;
+    font-size:11.5px;
+    font-weight:var(--fw-strong);
+    transition:.16s ease;
     line-height:1;
-  }
-
-  .btn-primary{
-    background:linear-gradient(135deg, var(--primary), var(--primary-2));
-    color:#fff;
-    box-shadow:0 12px 22px rgba(22,90,150,.14);
-  }
-
-  .btn-primary:hover{ transform:translateY(-1px); }
-
-  .btn-light{
     background:#fff;
-    color:var(--text);
-    border:1px solid var(--line-strong);
+    color:var(--txt);
+    white-space:nowrap;
   }
 
-  .btn-light:hover{ background:#f8fafc; }
+  .maint-page .btn:hover{
+    transform:translateY(-1px);
+    background:#fcfdfc;
+  }
 
-  .btn-danger{
+  .maint-page .btn-primary{
+    background:var(--primary);
+    border-color:var(--primary);
+    color:#fff;
+  }
+
+  .maint-page .btn-primary:hover{
+    background:var(--primary-2);
+    border-color:var(--primary-2);
+  }
+
+  .maint-page .btn-light{
+    background:#fff;
+    color:var(--txt);
+    border-color:var(--line-strong);
+  }
+
+  .maint-page .btn-danger{
     background:#b83434;
+    border-color:#b83434;
     color:#fff;
-    box-shadow:0 12px 22px rgba(184,52,52,.12);
   }
 
-  .btn-danger:hover{
+  .maint-page .btn-danger:hover{
     background:#a42d2d;
-    transform:translateY(-1px);
+    border-color:#a42d2d;
   }
 
-  .btn-success{
+  .maint-page .btn-success{
     background:#1d6b42;
+    border-color:#1d6b42;
     color:#fff;
-    box-shadow:0 12px 22px rgba(29,107,66,.12);
   }
 
-  .btn-success:hover{
+  .maint-page .btn-success:hover{
     background:#175634;
-    transform:translateY(-1px);
+    border-color:#175634;
   }
 
-  .side-stack{
+  .maint-page .side-stack{
     display:grid;
-    gap:20px;
+    gap:16px;
   }
 
-  .info-list{
+  .maint-page .info-list{
     display:grid;
-    gap:12px;
-  }
-
-  .info-item{
-    border:1px solid var(--line);
-    border-radius:18px;
-    padding:14px 16px;
-    background:#fff;
-  }
-
-  .info-k{
-    margin:0 0 6px;
-    color:var(--muted-2);
-    font-size:.8rem;
-    font-weight:600;
-  }
-
-  .info-v{
-    margin:0;
-    color:var(--text);
-    font-size:.94rem;
-    line-height:1.8;
-    font-weight:600;
-    word-break:break-word;
-  }
-
-  .tips{
-    border:1px solid var(--warn-bd);
-    background:var(--warn-bg);
-    color:var(--warn-tx);
-    border-radius:18px;
-    padding:16px;
-    line-height:1.9;
-    font-size:.9rem;
-    font-weight:600;
-  }
-
-  .danger-zone{
-    border:1px solid var(--line);
-    background:linear-gradient(180deg, #fff 0%, #fdfefe 100%);
-    border-radius:20px;
-    padding:18px;
-  }
-
-  .danger-title{
-    margin:0;
-    color:var(--text);
-    font-size:.95rem;
-    font-weight:700;
-  }
-
-  .danger-sub{
-    margin:6px 0 0;
-    color:var(--muted);
-    font-size:.88rem;
-    line-height:1.8;
-    font-weight:500;
-  }
-
-  .danger-actions{
-    margin-top:14px;
-    display:flex;
-    flex-wrap:wrap;
     gap:10px;
   }
 
+  .maint-page .info-item{
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:13px 14px;
+    background:#fff;
+  }
+
+  .maint-page .info-k{
+    margin:0 0 6px;
+    color:var(--mut2);
+    font-size:10.6px;
+    font-weight:var(--fw-title);
+  }
+
+  .maint-page .info-v{
+    margin:0;
+    color:var(--txt);
+    font-size:11.8px;
+    line-height:1.9;
+    font-weight:var(--fw-strong);
+    word-break:break-word;
+  }
+
+  .maint-page .tips{
+    border:1px solid var(--warn-br);
+    background:var(--warn-bg);
+    color:var(--warn);
+    border-radius:16px;
+    padding:14px;
+    line-height:1.9;
+    font-size:11.3px;
+    font-weight:var(--fw-strong);
+  }
+
+  .maint-page .danger-zone{
+    border:1px solid var(--line);
+    background:linear-gradient(180deg, #fff 0%, #fdfefe 100%);
+    border-radius:18px;
+    padding:16px;
+  }
+
+  .maint-page .danger-title{
+    margin:0;
+    color:var(--txt);
+    font-size:12.4px;
+    font-weight:var(--fw-title);
+  }
+
+  .maint-page .danger-sub{
+    margin:6px 0 0;
+    color:var(--mut);
+    font-size:11px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
+  }
+
+  .maint-page .danger-actions{
+    margin-top:12px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
   @media (max-width: 980px){
-    .maint-layout{ grid-template-columns:1fr; }
+    .maint-page .layout{
+      grid-template-columns:1fr;
+    }
   }
 
   @media (max-width: 760px){
-    .input-row,
-    .input-row-3{
+    .maint-page .input-row,
+    .maint-page .input-row-3{
       grid-template-columns:1fr;
     }
 
-    .hero-status{
+    .maint-page .hero-status{
       flex-direction:column;
       align-items:flex-start;
+    }
+
+    .maint-page .summary-card{
+      padding:12px;
     }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="maint-page">
-  <div class="maint-layout">
+<section class="maint-page">
+  <div class="wrap">
 
-    <section class="card">
-      <div class="card-head">
-        <h2 class="card-title">التحكم في وضع الصيانة</h2>
-        <p class="card-sub">ركّز هنا على ما يراه المستخدم فعليًا: الرسالة ووقت العودة المتوقع، مع إمكانية ضبط بداية ونهاية الصيانة عند الحاجة.</p>
+    <div class="summary-card">
+      <div class="summary-note">
+        التحكم في تشغيل وضع الصيانة، وتحديد الرسالة ووقت العودة المتوقع الذي يظهر للزائر، مع إمكان ضبط السماح للإدارة فقط أثناء فترة الإغلاق.
       </div>
 
-      <div class="card-body">
-        <div class="hero-status">
-          <div class="hero-status-main">
-            <h3 class="hero-status-title">الحالة الحالية</h3>
-            <p class="hero-status-sub">
-              {% if maintenance_is_active %}
-                الصيانة نشطة الآن، والمستخدمون يرون صفحة الصيانة مع موعد العودة المتوقع.
-              {% elif site_setting.is_maintenance_mode %}
-                الصيانة مفعلة إداريًا، لكنها ليست نشطة فعليًا الآن وفق الفترة المحددة.
-              {% else %}
-                الموقع يعمل بشكل طبيعي ولا توجد صيانة مفعلة حاليًا.
-              {% endif %}
-            </p>
-          </div>
+      <div class="summary-right">
+        {% if maintenance_is_active %}
+          <span class="chip on"><span class="dot danger"></span> الصيانة مفعلة الآن</span>
+        {% else %}
+          <span class="chip off"><span class="dot ok"></span> الموقع يعمل</span>
+        {% endif %}
 
-          {% if maintenance_is_active %}
-            <span class="badge on">الصيانة مفعلة</span>
-          {% else %}
-            <span class="badge off">الموقع مفتوح</span>
-          {% endif %}
-        </div>
-
-        <form method="post" action="{% url 'visits:admin_update_maintenance_message' %}" class="section">
-          {% csrf_token %}
-
-          <div>
-            <h3 class="section-title">ما يظهر للمستخدم</h3>
-            <p class="section-sub">هذا هو الجزء الأهم، لأنه يحدد الرسالة وموعد العودة الذي سيقرأه الزائر في صفحة الصيانة.</p>
-          </div>
-
-          <div class="field">
-            <label class="label" for="site_name">اسم الموقع</label>
-            <input
-              class="input"
-              id="site_name"
-              name="site_name"
-              type="text"
-              value="{{ site_setting.site_name|default:'بوابة الزيارات' }}"
-              placeholder="اسم الموقع"
-            >
-          </div>
-
-          <div class="field">
-            <label class="label" for="maintenance_message">رسالة الصيانة</label>
-            <textarea
-              class="textarea"
-              id="maintenance_message"
-              name="maintenance_message"
-              placeholder="مثال: الموقع مغلق مؤقتًا للصيانة، وسيعود للعمل في أقرب وقت ممكن."
-            >{{ site_setting.maintenance_message|default_if_none:"" }}</textarea>
-          </div>
-
-          <div class="field">
-            <label class="label" for="expected_return_text">العودة المتوقعة</label>
-            <input
-              class="input"
-              id="expected_return_text"
-              name="expected_return_text"
-              type="text"
-              value="{{ site_setting.expected_return_text|default_if_none:'' }}"
-              placeholder="مثال: اليوم الساعة 4 مساءً"
-            >
-            <div class="hint">هذا هو النص الرئيسي الذي سيظهر للزائر في صفحة الصيانة. يفضّل أن يكون واضحًا ومختصرًا.</div>
-          </div>
-
-          <div class="summary-box">
-            <p class="summary-label">معاينة منطقية لما يراه الزائر</p>
-            <p class="summary-value">
-              {% if site_setting.expected_return_text %}
-                العودة المتوقعة: {{ site_setting.expected_return_text }}
-              {% else %}
-                العودة المتوقعة: سيتم الإعلان عند الحاجة
-              {% endif %}
-            </p>
-          </div>
-
-          <div>
-            <h3 class="section-title">الجدولة الزمنية للصيانة</h3>
-            <p class="section-sub">هذه المعلومات إدارية أكثر من كونها ظاهرة للزائر. استخدمها عند الحاجة لتفعيل الصيانة ضمن فترة محددة.</p>
-          </div>
-
-          <div class="input-row">
-            <div class="field">
-              <label class="label" for="maintenance_starts_at">بداية الصيانة</label>
-              <input
-                class="input"
-                id="maintenance_starts_at"
-                name="maintenance_starts_at"
-                type="datetime-local"
-                value="{{ maintenance_starts_at_value|default:'' }}"
-              >
-              <div class="hint">يمكن تركه فارغًا إذا كنت تريد التفعيل الفوري.</div>
-            </div>
-
-            <div class="field">
-              <label class="label" for="maintenance_ends_at">نهاية الصيانة</label>
-              <input
-                class="input"
-                id="maintenance_ends_at"
-                name="maintenance_ends_at"
-                type="datetime-local"
-                value="{{ maintenance_ends_at_value|default:'' }}"
-              >
-              <div class="hint">إذا تم تحديده، يفتح الموقع تلقائيًا عند انتهاء الوقت.</div>
-            </div>
-          </div>
-
-          <div class="input-row-3">
-            <div class="field">
-              <label class="label">بداية الصيانة الحالية</label>
-              <input
-                class="input"
-                type="text"
-                value="{% if site_setting.maintenance_starts_at %}{{ site_setting.maintenance_starts_at|date:'Y-m-d h:i A' }}{% else %}غير محدد{% endif %}"
-                readonly
-              >
-            </div>
-
-            <div class="field">
-              <label class="label">نهاية الصيانة الحالية</label>
-              <input
-                class="input"
-                type="text"
-                value="{% if site_setting.maintenance_ends_at %}{{ site_setting.maintenance_ends_at|date:'Y-m-d h:i A' }}{% else %}غير محدد{% endif %}"
-                readonly
-              >
-            </div>
-
-            <div class="field">
-              <label class="label">نافذة الصيانة</label>
-              <input
-                class="input"
-                type="text"
-                value="{{ maintenance_window_label|default:'غير محدد' }}"
-                readonly
-              >
-            </div>
-          </div>
-
-          <div>
-            <h3 class="section-title">الوصول أثناء الصيانة</h3>
-            <p class="section-sub">حدد من يمكنه الدخول أثناء إغلاق الموقع مؤقتًا.</p>
-          </div>
-
-          <label class="check-card">
-            <input
-              type="checkbox"
-              name="allow_admin_only"
-              value="1"
-              {% if site_setting.allow_admin_only %}checked{% endif %}
-            >
-            <div>
-              <p class="check-title">السماح للإدارة فقط أثناء الصيانة</p>
-              <p class="check-sub">عند التفعيل يستطيع موظفو الإدارة الدخول، بينما يُحوَّل بقية المستخدمين إلى صفحة الصيانة.</p>
-            </div>
-          </label>
-
-          <div class="actions">
-            <button type="submit" class="btn btn-primary">حفظ الرسالة والإعدادات</button>
-            <a href="{% url 'visits:maintenance_page' %}" target="_blank" class="btn btn-light">معاينة صفحة الصيانة</a>
-          </div>
-        </form>
-
-        <div class="section">
-          <div class="danger-zone">
-            <h3 class="danger-title">إجراء التفعيل والإلغاء</h3>
-            <p class="danger-sub">فعّل الصيانة أو ألغها بعد التأكد من الرسالة ووقت العودة المتوقع. هذه هي العناصر الأهم للمستخدم النهائي.</p>
-
-            <div class="danger-actions">
-              <form method="post" action="{% url 'visits:admin_toggle_maintenance' %}">
-                {% csrf_token %}
-                {% if site_setting.is_maintenance_mode %}
-                  <input type="hidden" name="enable" value="0">
-                  <button type="submit" class="btn btn-success">إلغاء تفعيل الصيانة</button>
-                {% else %}
-                  <input type="hidden" name="enable" value="1">
-                  <button type="submit" class="btn btn-danger">تفعيل وضع الصيانة</button>
-                {% endif %}
-              </form>
-            </div>
-          </div>
-        </div>
+        <span class="chip"><span class="dot"></span> العودة المتوقعة: {{ site_setting.expected_return_text|default:"سيتم الإعلان عند الحاجة" }}</span>
       </div>
-    </section>
+    </div>
 
-    <aside class="side-stack">
+    <div class="layout">
+
       <section class="card">
         <div class="card-head">
-          <h2 class="card-title">ملخص الإعداد الحالي</h2>
-          <p class="card-sub">عرض مختصر لما يؤثر على صفحة الصيانة الفعلية.</p>
+          <h2 class="card-title">التحكم في وضع الصيانة</h2>
+          <p class="card-sub">ركّز هنا على ما يراه المستخدم فعليًا: الرسالة ووقت العودة المتوقع، مع إمكانية ضبط بداية ونهاية الصيانة عند الحاجة.</p>
         </div>
 
         <div class="card-body">
-          <div class="info-list">
-            <div class="info-item">
-              <p class="info-k">اسم الموقع</p>
-              <p class="info-v">{{ site_setting.site_name|default:"بوابة الزيارات" }}</p>
-            </div>
-
-            <div class="info-item">
-              <p class="info-k">الحالة الفعلية الآن</p>
-              <p class="info-v">
+          <div class="hero-status">
+            <div class="hero-status-main">
+              <h3 class="hero-status-title">الحالة الحالية</h3>
+              <p class="hero-status-sub">
                 {% if maintenance_is_active %}
-                  الصيانة نشطة الآن
+                  الصيانة نشطة الآن، والمستخدمون يرون صفحة الصيانة مع موعد العودة المتوقع.
+                {% elif site_setting.is_maintenance_mode %}
+                  الصيانة مفعلة إداريًا، لكنها ليست نشطة فعليًا الآن وفق الفترة المحددة.
                 {% else %}
-                  الموقع مفتوح الآن
+                  الموقع يعمل بشكل طبيعي ولا توجد صيانة مفعلة حاليًا.
                 {% endif %}
               </p>
             </div>
 
-            <div class="info-item">
-              <p class="info-k">العودة المتوقعة الظاهرة للزائر</p>
-              <p class="info-v">{{ site_setting.expected_return_text|default:"سيتم الإعلان عند الحاجة" }}</p>
+            {% if maintenance_is_active %}
+              <span class="badge on">الصيانة مفعلة</span>
+            {% else %}
+              <span class="badge off">الموقع مفتوح</span>
+            {% endif %}
+          </div>
+
+          <form method="post" action="{% url 'visits:admin_update_maintenance_message' %}" class="section">
+            {% csrf_token %}
+
+            <div>
+              <h3 class="section-title">ما يظهر للمستخدم</h3>
+              <p class="section-sub">هذا هو الجزء الأهم، لأنه يحدد الرسالة وموعد العودة الذي سيقرأه الزائر في صفحة الصيانة.</p>
             </div>
 
-            <div class="info-item">
-              <p class="info-k">الوصول أثناء الصيانة</p>
-              <p class="info-v">
-                {% if site_setting.allow_admin_only %}
-                  الإدارة فقط
+            <div class="field">
+              <label class="label" for="site_name">اسم الموقع</label>
+              <input
+                class="input"
+                id="site_name"
+                name="site_name"
+                type="text"
+                value="{{ site_setting.site_name|default:'بوابة الزيارات' }}"
+                placeholder="اسم الموقع"
+              >
+            </div>
+
+            <div class="field">
+              <label class="label" for="maintenance_message">رسالة الصيانة</label>
+              <textarea
+                class="textarea"
+                id="maintenance_message"
+                name="maintenance_message"
+                placeholder="مثال: الموقع مغلق مؤقتًا للصيانة، وسيعود للعمل في أقرب وقت ممكن."
+              >{{ site_setting.maintenance_message|default_if_none:"" }}</textarea>
+            </div>
+
+            <div class="field">
+              <label class="label" for="expected_return_text">العودة المتوقعة</label>
+              <input
+                class="input"
+                id="expected_return_text"
+                name="expected_return_text"
+                type="text"
+                value="{{ site_setting.expected_return_text|default_if_none:'' }}"
+                placeholder="مثال: اليوم الساعة 4 مساءً"
+              >
+              <div class="hint">هذا هو النص الرئيسي الذي سيظهر للزائر في صفحة الصيانة. يفضّل أن يكون واضحًا ومختصرًا.</div>
+            </div>
+
+            <div class="summary-box">
+              <p class="summary-label">معاينة منطقية لما يراه الزائر</p>
+              <p class="summary-value">
+                {% if site_setting.expected_return_text %}
+                  العودة المتوقعة: {{ site_setting.expected_return_text }}
                 {% else %}
-                  إغلاق كامل
+                  العودة المتوقعة: سيتم الإعلان عند الحاجة
                 {% endif %}
               </p>
             </div>
 
-            <div class="info-item">
-              <p class="info-k">بداية الصيانة</p>
-              <p class="info-v">
-                {% if site_setting.maintenance_starts_at %}
-                  {{ site_setting.maintenance_starts_at|date:"Y-m-d h:i A" }}
-                {% else %}
-                  غير محدد
-                {% endif %}
-              </p>
+            <div>
+              <h3 class="section-title">الجدولة الزمنية للصيانة</h3>
+              <p class="section-sub">هذه المعلومات إدارية أكثر من كونها ظاهرة للزائر. استخدمها عند الحاجة لتفعيل الصيانة ضمن فترة محددة.</p>
             </div>
 
-            <div class="info-item">
-              <p class="info-k">نهاية الصيانة</p>
-              <p class="info-v">
-                {% if site_setting.maintenance_ends_at %}
-                  {{ site_setting.maintenance_ends_at|date:"Y-m-d h:i A" }}
-                {% else %}
-                  غير محدد
-                {% endif %}
-              </p>
+            <div class="input-row">
+              <div class="field">
+                <label class="label" for="maintenance_starts_at">بداية الصيانة</label>
+                <input
+                  class="input"
+                  id="maintenance_starts_at"
+                  name="maintenance_starts_at"
+                  type="datetime-local"
+                  value="{{ maintenance_starts_at_value|default:'' }}"
+                >
+                <div class="hint">يمكن تركه فارغًا إذا كنت تريد التفعيل الفوري.</div>
+              </div>
+
+              <div class="field">
+                <label class="label" for="maintenance_ends_at">نهاية الصيانة</label>
+                <input
+                  class="input"
+                  id="maintenance_ends_at"
+                  name="maintenance_ends_at"
+                  type="datetime-local"
+                  value="{{ maintenance_ends_at_value|default:'' }}"
+                >
+                <div class="hint">إذا تم تحديده، يفتح الموقع تلقائيًا عند انتهاء الوقت.</div>
+              </div>
             </div>
 
-            <div class="info-item">
-              <p class="info-k">آخر تحديث</p>
-              <p class="info-v">{{ site_setting.updated_at|date:"Y-m-d h:i A" }}</p>
+            <div class="input-row-3">
+              <div class="field">
+                <label class="label">بداية الصيانة الحالية</label>
+                <input
+                  class="input"
+                  type="text"
+                  value="{% if site_setting.maintenance_starts_at %}{{ site_setting.maintenance_starts_at|date:'Y-m-d h:i A' }}{% else %}غير محدد{% endif %}"
+                  readonly
+                >
+              </div>
+
+              <div class="field">
+                <label class="label">نهاية الصيانة الحالية</label>
+                <input
+                  class="input"
+                  type="text"
+                  value="{% if site_setting.maintenance_ends_at %}{{ site_setting.maintenance_ends_at|date:'Y-m-d h:i A' }}{% else %}غير محدد{% endif %}"
+                  readonly
+                >
+              </div>
+
+              <div class="field">
+                <label class="label">نافذة الصيانة</label>
+                <input
+                  class="input"
+                  type="text"
+                  value="{{ maintenance_window_label|default:'غير محدد' }}"
+                  readonly
+                >
+              </div>
+            </div>
+
+            <div>
+              <h3 class="section-title">الوصول أثناء الصيانة</h3>
+              <p class="section-sub">حدد من يمكنه الدخول أثناء إغلاق الموقع مؤقتًا.</p>
+            </div>
+
+            <label class="check-card">
+              <input
+                type="checkbox"
+                name="allow_admin_only"
+                value="1"
+                {% if site_setting.allow_admin_only %}checked{% endif %}
+              >
+              <div>
+                <p class="check-title">السماح للإدارة فقط أثناء الصيانة</p>
+                <p class="check-sub">عند التفعيل يستطيع موظفو الإدارة الدخول، بينما يُحوَّل بقية المستخدمين إلى صفحة الصيانة.</p>
+              </div>
+            </label>
+
+            <div class="actions">
+              <button type="submit" class="btn btn-primary">حفظ الرسالة والإعدادات</button>
+              <a href="{% url 'visits:maintenance_page' %}" target="_blank" class="btn btn-light">معاينة صفحة الصيانة</a>
+            </div>
+          </form>
+
+          <div class="section">
+            <div class="danger-zone">
+              <h3 class="danger-title">إجراء التفعيل والإلغاء</h3>
+              <p class="danger-sub">فعّل الصيانة أو ألغها بعد التأكد من الرسالة ووقت العودة المتوقع. هذه هي العناصر الأهم للمستخدم النهائي.</p>
+
+              <div class="danger-actions">
+                <form method="post" action="{% url 'visits:admin_toggle_maintenance' %}">
+                  {% csrf_token %}
+                  {% if site_setting.is_maintenance_mode %}
+                    <input type="hidden" name="enable" value="0">
+                    <button type="submit" class="btn btn-success">إلغاء تفعيل الصيانة</button>
+                  {% else %}
+                    <input type="hidden" name="enable" value="1">
+                    <button type="submit" class="btn btn-danger">تفعيل وضع الصيانة</button>
+                  {% endif %}
+                </form>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section class="card">
-        <div class="card-head">
-          <h2 class="card-title">تنبيه مهم</h2>
-        </div>
-
-        <div class="card-body">
-          <div class="tips">
-            المستخدم النهائي لا يحتاج عادة إلى رؤية بداية ونهاية الصيانة بشكل منفصل. الأهم في صفحة الصيانة هو رسالة واضحة ووقت عودة متوقع واضح.
+      <aside class="side-stack">
+        <section class="card">
+          <div class="card-head">
+            <h2 class="card-title">ملخص الإعداد الحالي</h2>
+            <p class="card-sub">عرض مختصر لما يؤثر على صفحة الصيانة الفعلية.</p>
           </div>
-        </div>
-      </section>
-    </aside>
 
+          <div class="card-body">
+            <div class="info-list">
+              <div class="info-item">
+                <p class="info-k">اسم الموقع</p>
+                <p class="info-v">{{ site_setting.site_name|default:"بوابة الزيارات" }}</p>
+              </div>
+
+              <div class="info-item">
+                <p class="info-k">الحالة الفعلية الآن</p>
+                <p class="info-v">
+                  {% if maintenance_is_active %}
+                    الصيانة نشطة الآن
+                  {% else %}
+                    الموقع مفتوح الآن
+                  {% endif %}
+                </p>
+              </div>
+
+              <div class="info-item">
+                <p class="info-k">العودة المتوقعة الظاهرة للزائر</p>
+                <p class="info-v">{{ site_setting.expected_return_text|default:"سيتم الإعلان عند الحاجة" }}</p>
+              </div>
+
+              <div class="info-item">
+                <p class="info-k">الوصول أثناء الصيانة</p>
+                <p class="info-v">
+                  {% if site_setting.allow_admin_only %}
+                    الإدارة فقط
+                  {% else %}
+                    إغلاق كامل
+                  {% endif %}
+                </p>
+              </div>
+
+              <div class="info-item">
+                <p class="info-k">بداية الصيانة</p>
+                <p class="info-v">
+                  {% if site_setting.maintenance_starts_at %}
+                    {{ site_setting.maintenance_starts_at|date:"Y-m-d h:i A" }}
+                  {% else %}
+                    غير محدد
+                  {% endif %}
+                </p>
+              </div>
+
+              <div class="info-item">
+                <p class="info-k">نهاية الصيانة</p>
+                <p class="info-v">
+                  {% if site_setting.maintenance_ends_at %}
+                    {{ site_setting.maintenance_ends_at|date:"Y-m-d h:i A" }}
+                  {% else %}
+                    غير محدد
+                  {% endif %}
+                </p>
+              </div>
+
+              <div class="info-item">
+                <p class="info-k">آخر تحديث</p>
+                <p class="info-v">{{ site_setting.updated_at|date:"Y-m-d h:i A" }}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2 class="card-title">تنبيه مهم</h2>
+          </div>
+
+          <div class="card-body">
+            <div class="tips">
+              المستخدم النهائي لا يحتاج عادة إلى رؤية بداية ونهاية الصيانة بشكل منفصل. الأهم في صفحة الصيانة هو رسالة واضحة ووقت عودة متوقع واضح.
+            </div>
+          </div>
+        </section>
+      </aside>
+
+    </div>
   </div>
-</div>
+</section>
 {% endblock %}

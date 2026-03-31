@@ -4,7 +4,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>{% if site_setting.site_name %}{{ site_setting.site_name }}{% else %}بوابة الزيارات{% endif %} — الخدمة متوقفة مؤقتًا</title>
+  <title>
+    {% if site_setting.site_name %}{{ site_setting.site_name }}{% else %}نظام زيارات المشرفين{% endif %}
+    — الخدمة متوقفة مؤقتًا
+  </title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,47 +15,77 @@
 
   <style>
     :root{
-      --bg:#f4f7fb;
-      --surface:#ffffff;
-      --surface-soft:#f8fbfe;
-      --line:#e1e8f0;
-      --text:#17324a;
-      --muted:#738496;
-      --brand:#244f79;
-      --brand-soft:#eef4f9;
-      --accent:#f1c75a;
-      --shadow:0 22px 55px rgba(23,50,74,.08);
+      --bg:#f5f7f6;
+      --bg-2:#eef3f0;
+
+      --card:#ffffff;
+      --card-soft:#fbfcfb;
+      --panel-soft:rgba(255,255,255,.82);
+
+      --line:#dde5e0;
+      --line-2:#e8eeea;
+      --line-strong:#d4ddd8;
+
+      --text:#1f2c25;
+      --text-soft:#67776d;
+      --text-faint:#8d9a92;
+
+      --primary:#1f4b3a;
+      --primary-2:#2f6250;
+      --primary-3:#3d7561;
+      --primary-soft:#f3f7f4;
+      --primary-soft-border:#dce7e0;
+
+      --ok-bg:#eef8f1;
+      --ok-border:#cfe6d7;
+      --ok-text:#1f6b3f;
+
+      --warn-bg:#fcf8f2;
+      --warn-border:#ead6b4;
+      --warn-text:#8b5c1f;
+
+      --info-bg:#f4f7f5;
+      --info-border:#dbe6df;
+      --info-text:#35584a;
+
+      --shadow:0 16px 42px rgba(22,36,29,.07);
+      --shadow-soft:0 10px 24px rgba(22,36,29,.05);
+
       --radius-xl:34px;
-      --radius-lg:22px;
-      --radius-md:16px;
+      --radius-lg:24px;
+      --radius-md:18px;
+      --radius-sm:14px;
     }
 
-    *{box-sizing:border-box}
+    *{
+      box-sizing:border-box;
+    }
 
     html,body{
+      min-height:100%;
       margin:0;
       padding:0;
-      min-height:100%;
-      font-family:"Cairo",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
-      background:
-        radial-gradient(circle at top, rgba(36,79,121,.06), transparent 28rem),
-        linear-gradient(180deg, #f6f8fb 0%, #eef3f7 100%);
-      color:var(--text);
     }
 
     body{
-      padding:22px 14px;
+      font-family:"Cairo",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(900px 420px at 8% 0%, rgba(47,98,80,.05), transparent 56%),
+        radial-gradient(760px 420px at 92% 8%, rgba(31,75,58,.04), transparent 58%),
+        linear-gradient(180deg, var(--bg), var(--bg-2) 42%, #f5f7f6);
+      padding:18px;
     }
 
     .page{
-      max-width:920px;
+      max-width:980px;
       margin:0 auto;
     }
 
-    .panel{
-      background:rgba(255,255,255,.8);
-      border:1px solid rgba(225,232,240,.95);
-      border-radius:40px;
+    .shell{
+      background:var(--panel-soft);
+      border:1px solid rgba(141,154,146,.18);
+      border-radius:var(--radius-xl);
       box-shadow:var(--shadow);
       backdrop-filter:blur(10px);
       overflow:hidden;
@@ -60,202 +93,365 @@
 
     .hero{
       position:relative;
-      padding:56px 38px 42px;
-      text-align:center;
-      background:linear-gradient(180deg, rgba(36,79,121,.97), rgba(36,79,121,.93));
+      padding:34px 28px 28px;
+      background:
+        linear-gradient(180deg, rgba(31,75,58,.985), rgba(47,98,80,.96));
       color:#fff;
+      border-bottom:1px solid rgba(255,255,255,.08);
     }
 
     .hero::after{
       content:"";
       position:absolute;
-      width:120px;
-      height:120px;
-      border-radius:50%;
-      left:50%;
-      bottom:-60px;
+      inset:auto auto -42px 50%;
       transform:translateX(-50%);
-      background:rgba(255,255,255,.07);
+      width:116px;
+      height:116px;
+      border-radius:50%;
+      background:rgba(255,255,255,.05);
+      filter:blur(2px);
+      pointer-events:none;
     }
 
-    .site{
-      margin:0 0 18px;
-      font-size:14px;
-      font-weight:700;
-      color:rgba(255,255,255,.86);
-    }
-
-    .badge{
-      display:inline-flex;
+    .brand{
+      display:flex;
       align-items:center;
-      gap:10px;
-      margin-bottom:18px;
-      padding:10px 16px;
-      border-radius:999px;
-      border:1px solid rgba(255,255,255,.14);
-      background:rgba(255,255,255,.10);
-      font-size:14px;
-      font-weight:700;
+      justify-content:space-between;
+      gap:14px;
+      flex-wrap:wrap;
+      position:relative;
+      z-index:1;
+    }
+
+    .brand-right{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width:0;
+    }
+
+    .logo{
+      width:54px;
+      height:54px;
+      border-radius:16px;
+      background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.07));
+      border:1px solid rgba(255,255,255,.16);
+      display:grid;
+      place-items:center;
+      font-size:20px;
+      font-weight:800;
+      flex:0 0 auto;
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+    }
+
+    .brand-text{
+      min-width:0;
+    }
+
+    .site-name{
+      margin:0;
+      font-size:15px;
+      font-weight:800;
+      line-height:1.4;
       color:#fff;
     }
 
-    .badge::before{
+    .site-sub{
+      margin:4px 0 0;
+      font-size:12.4px;
+      font-weight:500;
+      color:rgba(255,255,255,.84);
+      line-height:1.7;
+    }
+
+    .status-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:9px;
+      min-height:36px;
+      padding:8px 14px;
+      border-radius:999px;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.15);
+      color:#fff;
+      font-size:12.6px;
+      font-weight:700;
+      white-space:nowrap;
+      position:relative;
+      z-index:1;
+    }
+
+    .status-chip::before{
       content:"";
       width:9px;
       height:9px;
       border-radius:50%;
-      background:var(--accent);
-      box-shadow:0 0 0 5px rgba(241,199,90,.15);
+      background:#f4c95d;
+      box-shadow:0 0 0 5px rgba(244,201,93,.12);
+      flex:0 0 auto;
     }
 
-    .title{
+    .hero-body{
+      position:relative;
+      z-index:1;
+      margin-top:24px;
+      text-align:center;
+    }
+
+    .hero-title{
       margin:0;
-      font-size:clamp(30px,4.8vw,46px);
-      line-height:1.18;
+      font-size:clamp(28px, 4.8vw, 44px);
+      line-height:1.2;
       font-weight:800;
-      letter-spacing:-.35px;
+      letter-spacing:-.4px;
+      color:#fff;
     }
 
-    .subtitle{
-      max-width:680px;
-      margin:16px auto 0;
-      font-size:16px;
-      line-height:1.95;
+    .hero-subtitle{
+      max-width:700px;
+      margin:14px auto 0;
+      font-size:15.8px;
+      line-height:2;
       font-weight:500;
       color:rgba(255,255,255,.9);
     }
 
     .body{
-      padding:34px 24px 36px;
+      padding:24px;
     }
 
-    .card{
-      max-width:720px;
-      margin:0 auto;
-      padding:28px 24px 24px;
-      border-radius:28px;
+    .notice{
+      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,252,251,.98));
       border:1px solid var(--line);
-      background:linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+      border-radius:var(--radius-lg);
+      box-shadow:var(--shadow-soft);
+      padding:22px 20px;
       text-align:center;
     }
 
-    .message{
+    .notice-text{
       margin:0;
-      font-size:16px;
+      color:var(--text-soft);
+      font-size:15px;
       line-height:2;
       font-weight:500;
-      color:var(--muted);
     }
 
-    .times{
-      margin-top:22px;
+    .meta-grid{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:12px;
+    }
+
+    .meta-card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius-md);
+      box-shadow:var(--shadow-soft);
+      padding:18px 16px;
+      min-height:138px;
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      gap:10px;
+    }
+
+    .meta-label{
+      color:var(--text-soft);
+      font-size:12px;
+      font-weight:700;
+      line-height:1.7;
+    }
+
+    .meta-main{
+      color:var(--text);
+      font-size:19px;
+      line-height:1.7;
+      font-weight:800;
+      word-break:break-word;
+    }
+
+    .meta-sub{
+      color:var(--text-faint);
+      font-size:12.2px;
+      line-height:1.9;
+      font-weight:500;
+    }
+
+    .meta-empty{
+      color:var(--text-faint);
+    }
+
+    .info-row{
+      margin-top:14px;
       display:grid;
       gap:12px;
     }
 
-    .time-box{
-      padding:16px 18px;
-      border-radius:20px;
-      border:1px solid var(--line);
-      background:var(--surface-soft);
-      text-align:right;
-    }
-
-    .time-label{
-      margin:0 0 6px;
-      font-size:13px;
-      font-weight:700;
-      color:#8a98a6;
-    }
-
-    .time-main{
-      margin:0;
-      font-size:18px;
-      line-height:1.7;
-      font-weight:700;
-      color:var(--text);
-    }
-
-    .time-sub{
-      margin:3px 0 0;
-      font-size:14px;
-      line-height:1.8;
-      font-weight:500;
-      color:var(--muted);
-    }
-
-    .time-empty{
-      color:#96a4b1;
-    }
-
-    .thanks{
-      margin-top:18px;
-      font-size:14px;
-      line-height:1.8;
-      color:#8a97a4;
+    .info-box{
+      border:1px solid var(--info-border);
+      background:var(--info-bg);
+      color:var(--info-text);
+      border-radius:var(--radius-md);
+      padding:14px 16px;
+      line-height:1.9;
+      font-size:13.2px;
       font-weight:600;
     }
 
-    @media (max-width: 700px){
-      body{ padding:12px; }
-      .hero{ padding:40px 20px 30px; }
-      .body{ padding:18px 16px 22px; }
-      .card{ padding:22px 16px 18px; border-radius:22px; }
-      .title{ font-size:30px; }
-      .subtitle, .message{ font-size:15px; }
-      .time-main{ font-size:16px; }
+    .footer-note{
+      margin-top:14px;
+      text-align:center;
+      color:var(--text-faint);
+      font-size:12.6px;
+      line-height:1.8;
+      font-weight:600;
+    }
+
+    .admin-link{
+      margin-top:14px;
+      display:flex;
+      justify-content:center;
+    }
+
+    .admin-link a{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:38px;
+      padding:0 16px;
+      border-radius:999px;
+      border:1px solid var(--primary-soft-border);
+      background:var(--primary-soft);
+      color:var(--primary);
+      text-decoration:none;
+      font-size:12.6px;
+      font-weight:700;
+      transition:.16s ease;
+    }
+
+    .admin-link a:hover{
+      transform:translateY(-1px);
+      background:#edf3ef;
+    }
+
+    @media (max-width: 760px){
+      body{
+        padding:12px;
+      }
+
+      .hero{
+        padding:24px 18px 22px;
+      }
+
+      .body{
+        padding:16px;
+      }
+
+      .meta-grid{
+        grid-template-columns:1fr;
+      }
+
+      .hero-subtitle,
+      .notice-text{
+        font-size:14px;
+      }
+
+      .meta-main{
+        font-size:17px;
+      }
     }
   </style>
 </head>
 <body>
   <main class="page">
-    <section class="panel">
+    <section class="shell">
+
       <header class="hero">
-        <p class="site">{% if site_setting.site_name %}{{ site_setting.site_name }}{% else %}بوابة الزيارات{% endif %}</p>
-        <div class="badge">الخدمة متوقفة مؤقتًا</div>
-        <h1 class="title">توقف مؤقت للخدمة</h1>
-        <p class="subtitle">
-          {{ maintenance_message|default:"البوابة غير متاحة حاليًا بسبب صيانة مجدولة، وسيتم استئناف الخدمة بعد انتهاء النافذة المحددة." }}
-        </p>
-      </header>
+        <div class="brand">
+          <div class="brand-right">
+            <div class="logo">ز</div>
 
-      <section class="body">
-        <div class="card">
-          <p class="message">
-            {% if expected_return_text %}
-              {{ expected_return_text }}
-            {% else %}
-              نعتذر عن التوقف المؤقت. سيتم فتح البوابة فور اكتمال أعمال الصيانة.
-            {% endif %}
-          </p>
+            <div class="brand-text">
+              <h2 class="site-name">
+                {% if site_setting.site_name %}
+                  {{ site_setting.site_name }}
+                {% else %}
+                  نظام زيارات المشرفين
+                {% endif %}
+              </h2>
 
-          <div class="times">
-            <div class="time-box">
-              <p class="time-label">بداية الصيانة</p>
-              {% if maintenance_starts_at_gregorian %}
-                <p class="time-main">{{ maintenance_starts_at_gregorian }}</p>
-                <p class="time-sub" data-hijri-target data-iso="{{ maintenance_starts_at_iso|default:'' }}">—</p>
-              {% else %}
-                <p class="time-main time-empty">غير محدد</p>
-              {% endif %}
-            </div>
-
-            <div class="time-box">
-              <p class="time-label">العودة المتوقعة</p>
-              {% if maintenance_ends_at_gregorian %}
-                <p class="time-main">{{ maintenance_ends_at_gregorian }}</p>
-                <p class="time-sub" data-hijri-target data-iso="{{ maintenance_ends_at_iso|default:'' }}">—</p>
-              {% elif expected_return_text %}
-                <p class="time-main">{{ expected_return_text }}</p>
-              {% else %}
-                <p class="time-main time-empty">عند اكتمال الإجراء</p>
-              {% endif %}
+              <p class="site-sub">الخدمة غير متاحة مؤقتًا بسبب أعمال صيانة مجدولة</p>
             </div>
           </div>
 
-          <div class="thanks">شكرًا لتفهمكم</div>
+          <div class="status-chip">الخدمة متوقفة مؤقتًا</div>
         </div>
+
+        <div class="hero-body">
+          <h1 class="hero-title">توقف مؤقت للخدمة</h1>
+          <p class="hero-subtitle">
+            {{ maintenance_message|default:"يجري الآن تنفيذ أعمال صيانة وتحديثات مجدولة على البوابة، وسيتم استئناف الخدمة فور اكتمال الإجراء." }}
+          </p>
+        </div>
+      </header>
+
+      <section class="body">
+        <div class="notice">
+          <p class="notice-text">
+            {% if expected_return_text %}
+              {{ expected_return_text }}
+            {% else %}
+              نعتذر عن التوقف المؤقت، وسيتم فتح البوابة مباشرة بعد انتهاء أعمال الصيانة.
+            {% endif %}
+          </p>
+        </div>
+
+        <div class="meta-grid">
+          <article class="meta-card">
+            <div class="meta-label">بداية الصيانة</div>
+
+            {% if maintenance_starts_at_gregorian %}
+              <div class="meta-main">{{ maintenance_starts_at_gregorian }}</div>
+              <div class="meta-sub" data-hijri-target data-iso="{{ maintenance_starts_at_iso|default:'' }}">—</div>
+            {% else %}
+              <div class="meta-main meta-empty">غير محدد</div>
+              <div class="meta-sub">سيتم الإعلان عند توفر الوقت</div>
+            {% endif %}
+          </article>
+
+          <article class="meta-card">
+            <div class="meta-label">العودة المتوقعة</div>
+
+            {% if maintenance_ends_at_gregorian %}
+              <div class="meta-main">{{ maintenance_ends_at_gregorian }}</div>
+              <div class="meta-sub" data-hijri-target data-iso="{{ maintenance_ends_at_iso|default:'' }}">—</div>
+            {% elif expected_return_text %}
+              <div class="meta-main">{{ expected_return_text }}</div>
+              <div class="meta-sub">الوقت التقريبي لعودة الخدمة</div>
+            {% else %}
+              <div class="meta-main meta-empty">عند اكتمال الإجراء</div>
+              <div class="meta-sub">سيتم فتح البوابة فور انتهاء الصيانة</div>
+            {% endif %}
+          </article>
+        </div>
+
+        <div class="info-row">
+          <div class="info-box">
+            يمكن للمستخدمين المحاولة لاحقًا بعد انتهاء الوقت المحدد، وفي حال استمرار المشكلة بعد العودة المتوقعة فيرجى التواصل مع إدارة النظام.
+          </div>
+        </div>
+
+        {% if request.user.is_staff %}
+          <div class="admin-link">
+            <a href="{% url 'visits:admin_dashboard' %}">العودة إلى لوحة الإدارة</a>
+          </div>
+        {% endif %}
+
+        <div class="footer-note">شكرًا لتفهمكم</div>
       </section>
+
     </section>
   </main>
 

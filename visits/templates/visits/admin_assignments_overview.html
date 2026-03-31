@@ -2,86 +2,103 @@
 {% load static %}
 
 {% block title %}إدارة الإسناد{% endblock %}
-{% block page_messages %}{% endblock %}
 
 {% block header_title %}إدارة الإسناد{% endblock %}
-{% block header_subtitle %}متابعة إسناد المدارس للمشرفين من صفحة مستقلة{% endblock %}
+{% block header_subtitle %}متابعة إسناد المدارس للمشرفين من صفحة مستقلة واضحة ومنظمة{% endblock %}
 
 {% block extra_css %}
 <style>
   .assign-page{
     --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+
     --fw-hero:800;
     --fw-title:700;
     --fw-strong:600;
     --fw-normal:500;
-    --fw-muted:400;
 
-    --card:rgba(255,255,255,.97);
-    --soft:rgba(248,250,252,.95);
+    --card:#ffffff;
+    --card-soft:#fbfcfb;
+    --soft:#f7f9f8;
 
-    --txt:#0f172a;
-    --mut:#64748b;
-    --mut2:#94a3b8;
+    --txt:var(--vp-text);
+    --mut:var(--vp-text-soft);
+    --mut2:var(--vp-text-faint);
 
-    --line:rgba(148,163,184,.18);
-    --line2:rgba(148,163,184,.10);
+    --line:var(--vp-line);
+    --line2:var(--vp-line-2);
+    --line-strong:var(--vp-line-strong);
 
-    --ok:#16a34a;
-    --blue:#2563eb;
-    --cyan:#0891b2;
-    --warn:#f59e0b;
+    --ok:#1f6b3f;
+    --ok-bg:var(--vp-ok-bg);
+    --ok-br:var(--vp-ok-border);
 
-    --shadow:0 12px 28px rgba(15,23,42,.06);
-    --shadow2:0 6px 16px rgba(15,23,42,.045);
+    --blue:#245fd6;
+    --blue-bg:rgba(37,99,235,.08);
+    --blue-br:rgba(37,99,235,.16);
+
+    --cyan:#0f766e;
+    --cyan-bg:rgba(15,118,110,.08);
+    --cyan-br:rgba(15,118,110,.16);
+
+    --pink:#be185d;
+    --pink-bg:rgba(219,39,119,.08);
+    --pink-br:rgba(219,39,119,.16);
+
+    --shadow:0 10px 24px rgba(22,36,29,.045);
+    --shadow2:0 6px 16px rgba(22,36,29,.032);
   }
 
-  .assign-page *{ box-sizing:border-box; font-family:var(--ff) !important; }
+  .assign-page *{
+    box-sizing:border-box;
+  }
 
-  .assign-page .wrap{ display:grid; gap:10px; }
+  .assign-page .wrap{
+    display:grid;
+    gap:12px;
+    margin-top:2px;
+  }
 
-  .assign-page .head{
+  .assign-page .summary-card,
+  .assign-page .filters-card,
+  .assign-page .table-card,
+  .assign-page .kpi{
     background:var(--card);
     border:1px solid var(--line);
-    border-radius:20px;
     box-shadow:var(--shadow);
-    padding:12px 14px;
+  }
+
+  .assign-page .summary-card{
+    border-radius:22px;
+    padding:15px 16px;
     display:flex;
     align-items:center;
     justify-content:space-between;
     gap:10px;
     flex-wrap:wrap;
+    background:linear-gradient(180deg, rgba(255,255,255,.985), rgba(251,252,251,.985));
   }
 
-  .assign-page .head h1{
-    margin:0;
-    font-size:15px;
-    color:var(--txt);
-    font-weight:var(--fw-hero);
-    line-height:1.5;
-  }
-
-  .assign-page .head p{
-    margin:3px 0 0;
+  .assign-page .summary-note{
     color:var(--mut);
-    font-size:11.8px;
-    line-height:1.8;
+    font-size:12px;
+    line-height:1.95;
     font-weight:var(--fw-normal);
+    max-width:780px;
   }
 
-  .assign-page .head-right{
+  .assign-page .summary-right{
     display:flex;
-    gap:6px;
-    flex-wrap:wrap;
     align-items:center;
+    gap:7px;
+    flex-wrap:wrap;
   }
 
   .assign-page .chip{
     display:inline-flex;
     align-items:center;
-    gap:7px;
-    min-height:31px;
-    padding:6px 10px;
+    gap:8px;
+    min-height:32px;
+    padding:6px 11px;
     border-radius:999px;
     background:var(--soft);
     border:1px solid var(--line);
@@ -91,25 +108,156 @@
     white-space:nowrap;
   }
 
+  .assign-page .chip b{
+    color:var(--txt);
+    font-weight:var(--fw-title);
+  }
+
   .assign-page .dot{
-    width:7px;
-    height:7px;
+    width:8px;
+    height:8px;
     border-radius:50%;
-    background:var(--blue);
-    box-shadow:0 0 0 3px rgba(37,99,235,.10);
+    background:#5e8d7a;
+    box-shadow:0 0 0 4px rgba(94,141,122,.10);
     flex:0 0 auto;
   }
 
-  .assign-page .dot.ok{
-    background:var(--ok);
-    box-shadow:0 0 0 3px rgba(22,163,74,.10);
+  .assign-page .kpis{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:10px;
+  }
+
+  .assign-page .kpi{
+    border-radius:20px;
+    padding:14px 15px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    min-height:82px;
+    box-shadow:var(--shadow2);
+  }
+
+  .assign-page .kpi-meta{
+    display:grid;
+    gap:3px;
+  }
+
+  .assign-page .kpi-label{
+    color:var(--mut);
+    font-size:11px;
+    font-weight:var(--fw-normal);
+    line-height:1.7;
+  }
+
+  .assign-page .kpi-value{
+    color:var(--txt);
+    font-size:23px;
+    line-height:1.2;
+    font-weight:var(--fw-hero);
+  }
+
+  .assign-page .kpi-icon{
+    width:42px;
+    height:42px;
+    border-radius:15px;
+    display:grid;
+    place-items:center;
+    border:1px solid var(--line);
+    background:linear-gradient(180deg, #f8fbf9, #ffffff);
+    color:var(--vp-primary);
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.4px;
+    flex:0 0 auto;
+  }
+
+  .assign-page .filters-card{
+    border-radius:18px;
+    padding:13px;
+    display:grid;
+    gap:10px;
+    box-shadow:var(--shadow2);
+  }
+
+  .assign-page .card-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .assign-page .card-title{
+    margin:0;
+    color:var(--txt);
+    font-size:12.8px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+  }
+
+  .assign-page .card-note{
+    color:var(--mut);
+    font-size:11px;
+    line-height:1.8;
+    font-weight:var(--fw-normal);
+  }
+
+  .assign-page .filters-grid{
+    display:grid;
+    grid-template-columns:1.4fr 1fr 1fr .95fr auto;
+    gap:9px;
+    align-items:end;
+  }
+
+  .assign-page .field label{
+    display:block;
+    margin-bottom:5px;
+    color:var(--mut);
+    font-size:10.9px;
+    font-weight:var(--fw-normal);
+  }
+
+  .assign-page .input,
+  .assign-page .select{
+    width:100%;
+    height:38px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:#f9fbfa;
+    padding:0 12px;
+    outline:none;
+    color:var(--txt);
+    font-size:11.8px;
+    font-weight:var(--fw-strong);
+    transition:.16s ease;
+  }
+
+  .assign-page .input::placeholder{
+    color:var(--mut2);
+    font-weight:var(--fw-normal);
+  }
+
+  .assign-page .input:focus,
+  .assign-page .select:focus{
+    border-color:#c7d6ce;
+    box-shadow:0 0 0 4px rgba(47,98,80,.06);
+    background:#fff;
+  }
+
+  .assign-page .filter-actions{
+    display:flex;
+    gap:6px;
+    align-items:end;
+    flex-wrap:wrap;
   }
 
   .assign-page .btn{
-    height:33px;
-    padding:0 12px;
+    height:38px;
+    padding:0 14px;
     border-radius:999px;
-    border:1px solid var(--line);
+    border:1px solid var(--line-strong);
     background:#fff;
     color:var(--txt);
     display:inline-flex;
@@ -121,159 +269,83 @@
     white-space:nowrap;
     font-size:11.5px;
     font-weight:var(--fw-strong);
-    box-shadow:0 5px 12px rgba(15,23,42,.045);
-    transition:.14s ease;
+    box-shadow:0 4px 10px rgba(22,36,29,.03);
+    transition:.16s ease;
   }
 
   .assign-page .btn:hover{
     transform:translateY(-1px);
-    box-shadow:0 9px 18px rgba(15,23,42,.07);
+    background:#fcfdfc;
   }
 
   .assign-page .btn.primary{
-    background:linear-gradient(135deg, rgba(37,99,235,.95), rgba(96,165,250,.95));
-    border-color:rgba(37,99,235,.14);
+    background:var(--vp-primary);
+    border-color:var(--vp-primary);
     color:#fff;
   }
 
-  .assign-page .btn.soft{
-    background:rgba(8,145,178,.08);
-    border-color:rgba(8,145,178,.15);
-    color:#0f172a;
-  }
-
-  .assign-page .kpis{
-    display:grid;
-    grid-template-columns:repeat(3, 1fr);
-    gap:8px;
-  }
-
-  .assign-page .kpi{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:16px;
-    box-shadow:var(--shadow2);
-    padding:11px 12px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:8px;
-    min-height:58px;
-  }
-
-  .assign-page .kpi .meta{ display:grid; gap:2px; }
-  .assign-page .kpi .label{
-    color:var(--mut);
-    font-size:11px;
-    font-weight:var(--fw-normal);
-  }
-  .assign-page .kpi .value{
-    color:var(--txt);
-    font-size:18px;
-    font-weight:var(--fw-hero);
-    line-height:1.2;
-  }
-  .assign-page .kpi .icon{
-    width:34px;
-    height:34px;
-    border-radius:12px;
-    display:grid;
-    place-items:center;
-    background:var(--soft);
-    border:1px solid var(--line);
-    font-size:15px;
-    flex:0 0 auto;
-  }
-
-  .assign-page .filters{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:18px;
-    box-shadow:var(--shadow2);
-    padding:10px;
-    display:grid;
-    gap:8px;
-  }
-
-  .assign-page .filters-grid{
-    display:grid;
-    grid-template-columns:1.15fr 1fr 1fr auto auto;
-    gap:8px;
-    align-items:end;
-  }
-
-  .assign-page .field label{
-    display:block;
-    margin-bottom:5px;
-    color:var(--mut);
-    font-size:11px;
-    font-weight:var(--fw-normal);
-  }
-
-  .assign-page .input,
-  .assign-page .select{
-    width:100%;
-    height:35px;
-    border-radius:12px;
-    border:1px solid var(--line);
-    background:rgba(248,250,252,.95);
-    padding:0 11px;
-    outline:none;
-    color:var(--txt);
-    font-size:11.8px;
-    font-weight:var(--fw-strong);
-  }
-
-  .assign-page .input:focus,
-  .assign-page .select:focus{
-    border-color:rgba(59,130,246,.30);
-    box-shadow:0 0 0 4px rgba(59,130,246,.06);
-    background:#fff;
+  .assign-page .btn.primary:hover{
+    background:var(--vp-primary-2);
+    border-color:var(--vp-primary-2);
   }
 
   .assign-page .table-card{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:20px;
-    box-shadow:var(--shadow);
+    border-radius:22px;
     overflow:hidden;
+    background:#fff;
   }
 
   .assign-page .table-head{
-    padding:10px 12px;
+    padding:13px 15px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, #fcfdfc, #f8fbf9);
     display:flex;
     justify-content:space-between;
     align-items:center;
     gap:8px;
     flex-wrap:wrap;
-    border-bottom:1px solid var(--line);
-    background:linear-gradient(180deg, rgba(248,250,252,.95), rgba(255,255,255,.92));
+  }
+
+  .assign-page .table-head-left,
+  .assign-page .table-head-right{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
   }
 
   .assign-page .hint{
     color:var(--mut);
     font-size:11.1px;
     font-weight:var(--fw-normal);
-    display:flex;
-    gap:7px;
+    line-height:1.9;
+    display:inline-flex;
     align-items:center;
-    flex-wrap:wrap;
+    gap:7px;
+  }
+
+  .assign-page .hint b{
+    color:var(--txt);
+    font-weight:var(--fw-title);
   }
 
   .assign-page .mini{
-    width:16px;
-    height:16px;
-    border-radius:6px;
+    width:18px;
+    height:18px;
+    border-radius:7px;
     display:grid;
     place-items:center;
-    background:rgba(22,163,74,.10);
-    border:1px solid rgba(22,163,74,.18);
-    color:#166534;
+    background:var(--ok-bg);
+    border:1px solid var(--ok-br);
+    color:var(--ok);
     font-size:10px;
     font-weight:700;
+    flex:0 0 auto;
   }
 
-  .assign-page .table-wrap{ overflow:auto; }
+  .assign-page .table-wrap{
+    overflow:auto;
+  }
 
   .assign-page table{
     width:100%;
@@ -286,88 +358,102 @@
     position:sticky;
     top:0;
     z-index:2;
-    background:rgba(248,250,252,.985);
-    border-bottom:1px solid var(--line);
-    padding:10px;
+    background:#f8faf9;
+    border-bottom:1px solid #d9e2dd;
+    padding:11px 10px;
     text-align:right;
-    color:var(--mut);
-    font-size:11px;
-    font-weight:var(--fw-strong);
+    color:#687a70;
+    font-size:11.2px;
+    font-weight:var(--fw-title);
     white-space:nowrap;
   }
 
-  .assign-page thead th:nth-child(1){ width:28%; }
+  .assign-page thead th:nth-child(1){ width:30%; }
   .assign-page thead th:nth-child(2){ width:17%; }
-  .assign-page thead th:nth-child(3){ width:16%; }
-  .assign-page thead th:nth-child(4){ width:14%; }
+  .assign-page thead th:nth-child(3){ width:14%; }
+  .assign-page thead th:nth-child(4){ width:13%; }
   .assign-page thead th:nth-child(5){ width:12%; }
-  .assign-page thead th:nth-child(6){ width:13%; }
+  .assign-page thead th:nth-child(6){ width:14%; }
 
   .assign-page tbody td{
-    padding:10px;
+    padding:13px 10px;
     border-bottom:1px solid var(--line2);
     color:var(--txt);
     font-size:12px;
     vertical-align:middle;
+    background:#fff;
   }
 
-  .assign-page tbody tr:nth-child(even){ background:rgba(2,6,23,.012); }
-  .assign-page tbody tr:hover{ background:rgba(37,99,235,.025); }
+  .assign-page tbody tr:nth-child(even) td{
+    background:#fcfdfc;
+  }
+
+  .assign-page tbody tr:hover td{
+    background:#f8fbf9;
+  }
+
+  .assign-page tbody tr:last-child td{
+    border-bottom:none;
+  }
 
   .assign-page .sup-name{
-    font-size:12.5px;
-    font-weight:var(--fw-strong);
     color:var(--txt);
-    line-height:1.6;
+    font-size:12.7px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+    margin:0;
   }
 
   .assign-page .sub{
     margin-top:4px;
     color:var(--mut2);
     font-size:10.9px;
-    line-height:1.7;
+    line-height:1.8;
+    font-weight:var(--fw-normal);
   }
 
   .assign-page .badge{
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    min-height:28px;
-    min-width:64px;
-    padding:5px 9px;
+    min-height:29px;
+    min-width:68px;
+    padding:5px 10px;
     border-radius:999px;
     border:1px solid var(--line);
     background:var(--soft);
-    font-size:11px;
+    color:var(--txt);
+    font-size:10.9px;
     font-weight:var(--fw-strong);
     white-space:nowrap;
   }
 
   .assign-page .badge.boys{
-    background:rgba(37,99,235,.08);
-    border-color:rgba(37,99,235,.14);
-    color:#1d4ed8;
+    background:var(--blue-bg);
+    border-color:var(--blue-br);
+    color:var(--blue);
   }
 
   .assign-page .badge.girls{
-    background:rgba(236,72,153,.08);
-    border-color:rgba(236,72,153,.16);
-    color:#be185d;
+    background:var(--pink-bg);
+    border-color:var(--pink-br);
+    color:var(--pink);
   }
 
   .assign-page .count{
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    min-height:28px;
-    min-width:64px;
-    padding:5px 9px;
+    min-height:29px;
+    min-width:68px;
+    padding:5px 10px;
     border-radius:999px;
-    font-size:11px;
+    background:var(--ok-bg);
+    border:1px solid var(--ok-br);
+    color:var(--ok);
+    font-size:10.9px;
     font-weight:var(--fw-strong);
-    border:1px solid rgba(22,163,74,.18);
-    background:rgba(22,163,74,.10);
-    color:#166534;
+    white-space:nowrap;
   }
 
   .assign-page .actions{
@@ -378,8 +464,8 @@
   }
 
   .assign-page .a-btn{
-    height:28px;
-    padding:0 10px;
+    height:30px;
+    padding:0 11px;
     border-radius:999px;
     border:1px solid var(--line);
     background:#fff;
@@ -390,49 +476,80 @@
     gap:5px;
     text-decoration:none;
     cursor:pointer;
-    font-size:10.8px;
+    font-size:10.9px;
     font-weight:var(--fw-strong);
     white-space:nowrap;
-    box-shadow:0 4px 10px rgba(15,23,42,.04);
+    box-shadow:none;
+    transition:.14s ease;
+  }
+
+  .assign-page .a-btn:hover{
+    transform:translateY(-1px);
   }
 
   .assign-page .a-btn.manage{
-    background:rgba(8,145,178,.10);
-    border-color:rgba(8,145,178,.16);
-    color:#0f766e;
+    background:rgba(31,75,58,.08);
+    border-color:rgba(31,75,58,.14);
+    color:var(--vp-primary);
   }
 
   .assign-page .a-btn.export{
-    background:rgba(37,99,235,.08);
-    border-color:rgba(37,99,235,.14);
-    color:#1d4ed8;
+    background:#fff;
+    border-color:var(--line);
+    color:var(--txt);
+  }
+
+  .assign-page .muted{
+    color:var(--mut2);
   }
 
   .assign-page .empty{
-    padding:18px;
+    padding:28px 16px !important;
+    text-align:center;
     color:var(--mut);
-    font-size:11.5px;
+    font-size:11.7px;
     font-weight:var(--fw-normal);
+    line-height:1.95;
+    background:linear-gradient(180deg, #fff, #fbfcfb);
   }
 
   @media (max-width: 980px){
-    .assign-page .filters-grid{
-      grid-template-columns:1fr 1fr;
-    }
     .assign-page .kpis{
       grid-template-columns:1fr;
     }
+
+    .assign-page .filters-grid{
+      grid-template-columns:1fr 1fr;
+    }
+
     .assign-page table{
       table-layout:auto;
     }
+
     .assign-page thead th:nth-child(n){
       width:auto;
     }
   }
 
-  @media (max-width: 560px){
+  @media (max-width: 640px){
     .assign-page .filters-grid{
       grid-template-columns:1fr;
+    }
+
+    .assign-page .filter-actions{
+      width:100%;
+    }
+
+    .assign-page .btn{
+      flex:1 1 auto;
+    }
+
+    .assign-page .summary-card{
+      padding:12px;
+    }
+
+    .assign-page .summary-right{
+      width:100%;
     }
   }
 </style>
@@ -442,14 +559,12 @@
 <section class="assign-page">
   <div class="wrap">
 
-    <div class="head">
-      <div>
-        <h1>إدارة الإسناد</h1>
-        <p>صفحة مستقلة لعرض المشرفين وعدد المدارس المسندة لهم، مع الانتقال إلى تفاصيل إسناد كل مشرف عند الحاجة.</p>
+    <div class="summary-card">
+      <div class="summary-note">
+        صفحة مرجعية مستقلة لعرض المشرفين وعدد المدارس المسندة لهم، مع الوصول السريع إلى صفحة إدارة الإسناد الخاصة بكل مشرف بصورة واضحة ومنظمة.
       </div>
 
-      <div class="head-right">
-        <span class="chip"><span class="dot ok"></span> النظام يعمل</span>
+      <div class="summary-right">
         <span class="chip"><span class="dot"></span> المشرفون: <b>{{ kpi_supervisors }}</b></span>
         <span class="chip">الإسنادات النشطة: <b>{{ kpi_assignments }}</b></span>
         <span class="chip">المدارس النشطة: <b>{{ kpi_schools }}</b></span>
@@ -458,31 +573,36 @@
 
     <div class="kpis">
       <div class="kpi">
-        <div class="meta">
-          <div class="label">عدد المشرفين في النتائج</div>
-          <div class="value">{{ kpi_supervisors }}</div>
+        <div class="kpi-meta">
+          <div class="kpi-label">عدد المشرفين في النتائج</div>
+          <div class="kpi-value">{{ kpi_supervisors }}</div>
         </div>
-        <div class="icon">👨‍🏫</div>
+        <div class="kpi-icon">01</div>
       </div>
 
       <div class="kpi">
-        <div class="meta">
-          <div class="label">إجمالي الإسنادات النشطة</div>
-          <div class="value">{{ kpi_assignments }}</div>
+        <div class="kpi-meta">
+          <div class="kpi-label">إجمالي الإسنادات النشطة</div>
+          <div class="kpi-value">{{ kpi_assignments }}</div>
         </div>
-        <div class="icon">🏫</div>
+        <div class="kpi-icon">02</div>
       </div>
 
       <div class="kpi">
-        <div class="meta">
-          <div class="label">إجمالي المدارس النشطة</div>
-          <div class="value">{{ kpi_schools }}</div>
+        <div class="kpi-meta">
+          <div class="kpi-label">إجمالي المدارس النشطة</div>
+          <div class="kpi-value">{{ kpi_schools }}</div>
         </div>
-        <div class="icon">📘</div>
+        <div class="kpi-icon">03</div>
       </div>
     </div>
 
-    <form class="filters" method="get">
+    <form class="filters-card" method="get">
+      <div class="card-head">
+        <h3 class="card-title">البحث والتصفية</h3>
+        <div class="card-note">استخدم البحث أو الجنس أو القطاع أو حالة النشاط للوصول إلى المشرف المطلوب بسرعة.</div>
+      </div>
+
       <div class="filters-grid">
         <div class="field">
           <label>بحث</label>
@@ -516,7 +636,7 @@
           </select>
         </div>
 
-        <div style="display:flex;gap:6px;align-items:end;flex-wrap:wrap">
+        <div class="filter-actions">
           <button class="btn primary" type="submit">تطبيق</button>
           <a class="btn" href="{% url 'visits:admin_assignments_overview' %}">إعادة ضبط</a>
         </div>
@@ -525,11 +645,16 @@
 
     <div class="table-card">
       <div class="table-head">
-        <div class="hint">
-          <span class="mini">✓</span>
-          اختر أي مشرف للانتقال إلى صفحة إدارة الإسناد الخاصة به
+        <div class="table-head-left">
+          <div class="hint">
+            <span class="mini">✓</span>
+            اختر أي مشرف للانتقال إلى صفحة إدارة الإسناد الخاصة به
+          </div>
         </div>
-        <div class="hint">عدد النتائج: <b>{{ rows|length }}</b></div>
+
+        <div class="table-head-right">
+          <div class="hint">عدد النتائج: <b>{{ rows|length }}</b></div>
+        </div>
       </div>
 
       <div class="table-wrap">
@@ -549,40 +674,54 @@
               <tr>
                 <td>
                   <div class="sup-name">{{ sup.full_name }}</div>
-                  <div class="sub">هوية: {{ sup.national_id }}{% if sup.mobile %} — جوال: {{ sup.mobile }}{% endif %}</div>
+                  <div class="sub">
+                    هوية: {{ sup.national_id }}{% if sup.mobile %} — جوال: {{ sup.mobile }}{% endif %}
+                  </div>
                 </td>
+
                 <td>
                   {% if sup.sector %}
                     {{ sup.sector.name }}
                   {% else %}
-                    <span style="color:var(--mut2)">—</span>
+                    <span class="muted">—</span>
                   {% endif %}
                 </td>
+
                 <td>
                   {% if sup.gender == "boys" %}
                     <span class="badge boys">بنين</span>
                   {% elif sup.gender == "girls" %}
                     <span class="badge girls">بنات</span>
                   {% else %}
-                    <span style="color:var(--mut2)">—</span>
+                    <span class="muted">—</span>
                   {% endif %}
                 </td>
-                <td><span class="count">{{ sup.active_assignment_count }}</span></td>
-                <td><span class="badge">{{ sup.total_assignment_count }}</span></td>
+
+                <td>
+                  <span class="count">{{ sup.active_assignment_count }}</span>
+                </td>
+
+                <td>
+                  <span class="badge">{{ sup.total_assignment_count }}</span>
+                </td>
+
                 <td>
                   <div class="actions">
                     <a class="a-btn manage" href="{% url 'visits:admin_supervisor_assignments' sup.id %}">
-                      ⚙️ إدارة الإسناد
+                      إدارة
                     </a>
+
                     <a class="a-btn export" href="{% url 'visits:admin_export_supervisor_assignments_excel' sup.id %}">
-                      ⬇ تصدير
+                      تصدير
                     </a>
                   </div>
                 </td>
               </tr>
             {% empty %}
               <tr>
-                <td colspan="6" class="empty">لا توجد نتائج مطابقة.</td>
+                <td colspan="6" class="empty">
+                  لا توجد نتائج مطابقة للبحث أو التصفية الحالية.
+                </td>
               </tr>
             {% endfor %}
           </tbody>

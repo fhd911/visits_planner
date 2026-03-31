@@ -12,42 +12,59 @@
 
   <style>
     :root{
-      --green-950:#053b2b;
-      --green-900:#064e3b;
-      --green-850:#0a5a43;
-      --green-800:#0b5a43;
+      --vp-bg:#f7f8f7;
+      --vp-bg-2:#f3f5f4;
 
-      --bg:#eef5ff;
-      --bg-2:#f6f8fc;
-      --panel:#ffffff;
-      --panel-soft:rgba(255,255,255,.78);
+      --vp-card:#ffffff;
+      --vp-card-soft:#fbfcfb;
+      --vp-panel-soft:rgba(255,255,255,.84);
 
-      --text:#0f172a;
-      --mut:#64748b;
-      --mut-2:#94a3b8;
+      --vp-line:#dde5e0;
+      --vp-line-2:#e8eeea;
+      --vp-line-strong:#d4ddd8;
 
-      --line:rgba(226,232,240,.88);
-      --line-strong:rgba(203,213,225,.96);
+      --vp-text:#1f2c25;
+      --vp-text-soft:#67776d;
+      --vp-text-faint:#8d9a92;
 
-      --shadow:0 16px 34px rgba(2,6,23,.08);
-      --shadow-soft:0 8px 18px rgba(2,6,23,.05);
-      --shadow-top:0 12px 28px rgba(2,6,23,.16);
+      --vp-primary:#1f4b3a;
+      --vp-primary-2:#2f6250;
+      --vp-primary-3:#3d7561;
+      --vp-primary-soft:#f3f7f4;
+      --vp-primary-soft-border:#dce7e0;
 
-      --r-xl:26px;
-      --r-lg:22px;
-      --r-md:18px;
-      --r-sm:14px;
+      --vp-info-bg:#f4f7f5;
+      --vp-info-border:#dbe6df;
+      --vp-info-text:#35584a;
 
-      --blue:#2563eb;
-      --ok:#16a34a;
-      --warn:#f59e0b;
-      --danger:#ef4444;
+      --vp-ok-bg:#eef8f1;
+      --vp-ok-border:#cfe6d7;
+      --vp-ok-text:#1f6b3f;
 
-      --fw-title:800;
+      --vp-warn-bg:#fcf8f2;
+      --vp-warn-border:#ead6b4;
+      --vp-warn-text:#8b5c1f;
+
+      --vp-danger-bg:#fdf3f2;
+      --vp-danger-border:#efc9c5;
+      --vp-danger-text:#9f3129;
+
+      --vp-shadow:0 10px 24px rgba(22,36,29,.04);
+      --vp-shadow-soft:0 6px 16px rgba(22,36,29,.035);
+      --vp-shadow-top:0 10px 24px rgba(22,36,29,.08);
+
+      --vp-radius-xl:24px;
+      --vp-radius-lg:20px;
+      --vp-radius-md:15px;
+      --vp-radius-sm:12px;
+
+      --fw-title:700;
       --fw-strong:700;
       --fw-mid:600;
       --fw-normal:500;
       --fw-light:400;
+
+      --toast-top:100px;
     }
 
     *{ box-sizing:border-box; }
@@ -56,11 +73,11 @@
     body{
       margin:0;
       font-family:"Cairo",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
-      color:var(--text);
+      color:var(--vp-text);
       background:
-        radial-gradient(900px 500px at 10% 0%, rgba(96,165,250,.15), transparent 55%),
-        radial-gradient(800px 500px at 90% 10%, rgba(34,197,94,.12), transparent 60%),
-        linear-gradient(180deg, var(--bg), var(--bg-2) 35%, #f1f5f9);
+        radial-gradient(900px 420px at 8% 0%, rgba(47,98,80,.05), transparent 56%),
+        radial-gradient(760px 420px at 92% 8%, rgba(31,75,58,.04), transparent 58%),
+        linear-gradient(180deg, var(--vp-bg), var(--vp-bg-2) 42%, #f5f7f6);
     }
 
     a{
@@ -76,9 +93,9 @@
       position:sticky;
       top:0;
       z-index:70;
-      background:linear-gradient(180deg, rgba(5,59,43,.98), rgba(6,78,59,.95));
+      background:linear-gradient(180deg, rgba(31,75,58,.985), rgba(47,98,80,.96));
       border-bottom:1px solid rgba(255,255,255,.08);
-      box-shadow:var(--shadow-top);
+      box-shadow:var(--vp-shadow-top);
       backdrop-filter:blur(10px);
     }
 
@@ -87,9 +104,15 @@
       margin:0 auto;
       padding:12px 18px;
       display:grid;
-      grid-template-columns:auto minmax(0,1fr) auto;
-      gap:14px;
+      gap:10px;
+    }
+
+    .topbar-main{
+      display:flex;
       align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
     }
 
     .brand{
@@ -98,19 +121,18 @@
       gap:12px;
       color:#fff;
       min-width:0;
-      justify-self:end;
     }
 
     .brand .logo{
-      width:46px;
-      height:46px;
-      border-radius:15px;
-      background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.08));
+      width:44px;
+      height:44px;
+      border-radius:14px;
+      background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.07));
       border:1px solid rgba(255,255,255,.16);
       display:grid;
       place-items:center;
       font-weight:var(--fw-title);
-      font-size:18px;
+      font-size:17px;
       letter-spacing:.4px;
       user-select:none;
       flex:0 0 auto;
@@ -126,22 +148,64 @@
 
     .brand .title{
       font-weight:var(--fw-strong);
-      font-size:15.5px;
+      font-size:15px;
       white-space:nowrap;
     }
 
     .brand .sub{
       opacity:.88;
-      font-size:12.5px;
+      font-size:12.2px;
       margin-top:3px;
       font-weight:var(--fw-normal);
       white-space:nowrap;
     }
 
+    .topbar-meta{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .top-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      min-height:34px;
+      padding:0 12px;
+      border-radius:999px;
+      color:#fff;
+      background:rgba(255,255,255,.09);
+      border:1px solid rgba(255,255,255,.14);
+      font-size:12.2px;
+      font-weight:var(--fw-mid);
+      white-space:nowrap;
+    }
+
+    .top-pill .dot{
+      width:8px;
+      height:8px;
+      border-radius:999px;
+      background:#cfe6d7;
+      box-shadow:0 0 0 4px rgba(255,255,255,.08);
+      flex:0 0 auto;
+    }
+
+    .top-pill .dot.blue{
+      background:#9fc4b3;
+    }
+
+    .topbar-navrow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
     .nav{
       display:flex;
       align-items:center;
-      justify-content:center;
       gap:8px;
       flex-wrap:wrap;
       min-width:0;
@@ -151,13 +215,13 @@
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      min-height:38px;
+      min-height:37px;
       padding:0 14px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,.16);
+      border:1px solid rgba(255,255,255,.14);
       background:rgba(255,255,255,.08);
       color:#fff;
-      font-size:13px;
+      font-size:12.9px;
       font-weight:var(--fw-mid);
       transition:background .18s ease, transform .18s ease, box-shadow .18s ease, border-color .18s ease;
       white-space:nowrap;
@@ -171,45 +235,50 @@
 
     .nav a.active{
       background:#fff;
-      color:var(--green-900);
-      border-color:rgba(255,255,255,.75);
-      box-shadow:0 10px 18px rgba(2,6,23,.14);
+      color:var(--vp-primary);
+      border-color:rgba(255,255,255,.78);
+      box-shadow:0 8px 16px rgba(22,36,29,.12);
       font-weight:var(--fw-strong);
     }
 
-    .header-chip{
+    .topbar-tools{
       display:flex;
       align-items:center;
-      justify-self:start;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .topbar-tools a,
+    .topbar-tools button{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.10);
       color:#fff;
-      min-width:0;
+      min-height:37px;
+      padding:0 14px;
+      border-radius:999px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-family:inherit;
+      font-size:12.6px;
+      font-weight:var(--fw-mid);
+      cursor:pointer;
+      white-space:nowrap;
+      transition:background .18s ease, transform .18s ease, border-color .18s ease;
     }
 
-    .header-chip .who{
-      display:flex;
-      flex-direction:column;
-      line-height:1.2;
-      text-align:right;
-      min-width:0;
+    .topbar-tools a:hover,
+    .topbar-tools button:hover{
+      background:rgba(255,255,255,.16);
+      transform:translateY(-1px);
     }
 
-    .header-chip .who b{
-      font-size:13px;
+    .topbar-tools .primary{
+      background:#fff;
+      color:var(--vp-primary);
+      border-color:rgba(255,255,255,.85);
       font-weight:var(--fw-strong);
-      white-space:nowrap;
-    }
-
-    .header-chip .who small{
-      opacity:.86;
-      font-size:12px;
-      font-weight:var(--fw-normal);
-      white-space:nowrap;
-    }
-
-    .topbar .avatar,
-    .topbar .header-chip .avatar,
-    .topbar .inner .avatar{
-      display:none !important;
     }
 
     .page{
@@ -219,19 +288,19 @@
     }
 
     .shell{
-      background:var(--panel-soft);
-      border:1px solid rgba(148,163,184,.24);
-      border-radius:var(--r-xl);
+      background:var(--vp-panel-soft);
+      border:1px solid rgba(141,154,146,.18);
+      border-radius:var(--vp-radius-xl);
       padding:16px;
-      box-shadow:var(--shadow);
+      box-shadow:var(--vp-shadow);
       backdrop-filter:blur(10px);
     }
 
     .hero{
       padding:15px 18px;
-      border-radius:var(--r-lg);
-      background:linear-gradient(135deg, rgba(96,165,250,.10), rgba(34,197,94,.08));
-      border:1px solid rgba(148,163,184,.18);
+      border-radius:var(--vp-radius-lg);
+      background:linear-gradient(135deg, rgba(31,75,58,.055), rgba(47,98,80,.035));
+      border:1px solid rgba(141,154,146,.16);
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -241,15 +310,16 @@
 
     .hero h1{
       margin:0;
-      font-size:18px;
+      font-size:17px;
       font-weight:var(--fw-title);
       line-height:1.45;
+      color:var(--vp-primary);
     }
 
     .hero p{
       margin:5px 0 0;
-      color:var(--mut);
-      font-size:13.2px;
+      color:var(--vp-text-soft);
+      font-size:13px;
       line-height:1.9;
       font-weight:var(--fw-normal);
     }
@@ -267,27 +337,27 @@
       gap:9px;
       padding:8px 12px;
       border-radius:999px;
-      background:rgba(255,255,255,.88);
-      border:1px solid var(--line);
-      box-shadow:var(--shadow-soft);
-      font-size:12.5px;
+      background:rgba(255,255,255,.92);
+      border:1px solid var(--vp-line);
+      box-shadow:var(--vp-shadow-soft);
+      font-size:12.3px;
       white-space:nowrap;
-      color:rgba(15,23,42,.90);
+      color:var(--vp-text);
       font-weight:var(--fw-mid);
     }
 
-    .dot{
-      width:9px;
-      height:9px;
+    .pill .dot{
+      width:8px;
+      height:8px;
       border-radius:999px;
-      background:#22c55e;
-      box-shadow:0 0 0 4px rgba(34,197,94,.14);
+      background:var(--vp-primary-3);
+      box-shadow:0 0 0 4px rgba(61,117,97,.10);
       flex:0 0 auto;
     }
 
-    .dot.blue{
-      background:#3b82f6;
-      box-shadow:0 0 0 4px rgba(59,130,246,.14);
+    .pill .dot.blue{
+      background:#5e8d7a;
+      box-shadow:0 0 0 4px rgba(94,141,122,.10);
     }
 
     .page-actions{
@@ -298,9 +368,9 @@
       flex-wrap:wrap;
       padding:12px 14px;
       border-radius:18px;
-      background:rgba(255,255,255,.70);
-      border:1px solid rgba(226,232,240,.88);
-      box-shadow:var(--shadow-soft);
+      background:rgba(255,255,255,.76);
+      border:1px solid var(--vp-line);
+      box-shadow:var(--vp-shadow-soft);
     }
 
     .page-actions a,
@@ -311,88 +381,153 @@
       display:inline-flex;
       align-items:center;
       justify-content:center;
-      min-height:38px;
+      min-height:37px;
       padding:0 14px;
       border-radius:999px;
       background:#fff;
-      color:var(--text);
-      border:1px solid rgba(203,213,225,.95);
-      box-shadow:0 6px 14px rgba(2,6,23,.04);
+      color:var(--vp-text);
+      border:1px solid var(--vp-line-strong);
+      box-shadow:none;
       font-family:inherit;
-      font-size:13px;
+      font-size:12.9px;
       font-weight:var(--fw-mid);
-      transition:background .18s ease, transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+      transition:background .18s ease, transform .18s ease, border-color .18s ease;
       white-space:nowrap;
     }
 
     .page-actions a:hover,
     .page-actions button:hover{
       transform:translateY(-1px);
-      border-color:rgba(148,163,184,.95);
-      box-shadow:0 10px 18px rgba(2,6,23,.07);
+      border-color:#c4d0c9;
+      background:#fcfdfc;
     }
 
     .page-actions .btn-primary{
-      background:linear-gradient(180deg, var(--green-900), var(--green-850));
+      background:var(--vp-primary);
       color:#fff;
-      border-color:rgba(5,59,43,.88);
-      box-shadow:0 10px 18px rgba(5,59,43,.18);
+      border-color:var(--vp-primary);
+    }
+
+    .page-actions .btn-primary:hover{
+      background:var(--vp-primary-2);
+      border-color:var(--vp-primary-2);
     }
 
     .page-actions .btn-danger{
-      background:rgba(239,68,68,.08);
-      color:#991b1b;
-      border-color:rgba(239,68,68,.18);
+      background:var(--vp-danger-bg);
+      color:var(--vp-danger-text);
+      border-color:var(--vp-danger-border);
     }
 
     .page-actions .btn-soft{
-      background:rgba(248,250,252,.94);
-      color:#334155;
+      background:var(--vp-primary-soft);
+      color:var(--vp-primary);
+      border-color:var(--vp-primary-soft-border);
     }
 
     .msgs{
-      margin:14px 0 0;
+      position:fixed;
+      top:var(--toast-top);
+      inset-inline-start:max(18px, calc((100vw - 1320px) / 2 + 18px));
+      inset-inline-end:auto;
+      width:min(360px, calc(100vw - 20px));
       display:grid;
-      gap:8px;
+      gap:10px;
+      z-index:120;
+      pointer-events:none;
     }
 
     .msg{
-      border-radius:var(--r-sm);
-      padding:10px 12px;
-      font-size:13px;
-      border:1px solid rgba(226,232,240,.9);
-      background:#fff;
-      box-shadow:0 8px 18px rgba(2,6,23,.05);
+      position:relative;
+      border-radius:16px;
+      padding:12px 44px 12px 14px;
+      font-size:12.9px;
+      border:1px solid var(--vp-line);
+      background:rgba(255,255,255,.96);
+      box-shadow:0 14px 30px rgba(22,36,29,.10);
+      backdrop-filter:blur(10px);
       font-weight:var(--fw-mid);
-      line-height:1.8;
+      line-height:1.85;
+      color:var(--vp-text);
+      pointer-events:auto;
+      opacity:0;
+      transform:translateY(-8px) scale(.985);
+      transition:opacity .22s ease, transform .22s ease, box-shadow .22s ease;
+    }
+
+    .msg.is-visible{
+      opacity:1;
+      transform:translateY(0) scale(1);
+    }
+
+    .msg.is-hiding{
+      opacity:0;
+      transform:translateY(-10px) scale(.98);
+    }
+
+    .msg:hover{
+      box-shadow:0 16px 34px rgba(22,36,29,.14);
     }
 
     .msg.success{
-      border-color:rgba(34,197,94,.22);
-      background:rgba(34,197,94,.08);
+      border-color:var(--vp-ok-border);
+      background:linear-gradient(180deg, rgba(238,248,241,.97), rgba(255,255,255,.98));
+      color:var(--vp-ok-text);
     }
 
     .msg.warning{
-      border-color:rgba(245,158,11,.22);
-      background:rgba(245,158,11,.10);
+      border-color:var(--vp-warn-border);
+      background:linear-gradient(180deg, rgba(252,248,242,.97), rgba(255,255,255,.98));
+      color:var(--vp-warn-text);
     }
 
     .msg.error{
-      border-color:rgba(239,68,68,.22);
-      background:rgba(239,68,68,.08);
+      border-color:var(--vp-danger-border);
+      background:linear-gradient(180deg, rgba(253,243,242,.97), rgba(255,255,255,.98));
+      color:var(--vp-danger-text);
     }
 
     .msg.info{
-      border-color:rgba(59,130,246,.22);
-      background:rgba(59,130,246,.08);
+      border-color:var(--vp-info-border);
+      background:linear-gradient(180deg, rgba(244,247,245,.97), rgba(255,255,255,.98));
+      color:var(--vp-info-text);
+    }
+
+    .msg-close{
+      position:absolute;
+      top:8px;
+      inset-inline-start:8px;
+      width:28px;
+      height:28px;
+      border:0;
+      border-radius:999px;
+      background:rgba(31,44,37,.06);
+      color:inherit;
+      font:inherit;
+      font-size:18px;
+      line-height:1;
+      cursor:pointer;
+      display:grid;
+      place-items:center;
+      transition:background .18s ease, transform .18s ease;
+    }
+
+    .msg-close:hover{
+      background:rgba(31,44,37,.11);
+      transform:scale(1.04);
+    }
+
+    .msg-text{
+      padding-inline-end:2px;
+      word-break:break-word;
     }
 
     footer{
       margin:18px auto 22px;
       max-width:1320px;
       padding:0 18px;
-      color:#64748b;
-      font-size:12.5px;
+      color:var(--vp-text-soft);
+      font-size:12.3px;
     }
 
     .foot{
@@ -402,31 +537,23 @@
       gap:10px;
       padding:12px 14px;
       border-radius:18px;
-      background:rgba(255,255,255,.74);
-      border:1px solid rgba(226,232,240,.86);
-      box-shadow:0 8px 18px rgba(2,6,23,.05);
+      background:rgba(255,255,255,.78);
+      border:1px solid var(--vp-line);
+      box-shadow:var(--vp-shadow-soft);
       flex-wrap:wrap;
       font-weight:var(--fw-normal);
     }
 
     @media (max-width: 1180px){
-      .topbar .inner{
-        grid-template-columns:1fr;
-        justify-items:center;
-        gap:10px;
+      .topbar-main,
+      .topbar-navrow{
+        justify-content:center;
       }
 
       .brand,
-      .header-chip{
-        justify-self:center;
-      }
-
-      .header-chip .who{
-        text-align:center;
-      }
-
-      .nav{
-        width:100%;
+      .topbar-meta,
+      .nav,
+      .topbar-tools{
         justify-content:center;
       }
     }
@@ -441,14 +568,18 @@
       }
 
       .brand .title,
-      .brand .sub,
-      .header-chip .who b,
-      .header-chip .who small{
+      .brand .sub{
         white-space:normal;
       }
 
       .hero{
         align-items:flex-start;
+      }
+
+      .msgs{
+        inset-inline-start:12px;
+        inset-inline-end:auto;
+        width:min(360px, calc(100vw - 24px));
       }
     }
 
@@ -461,10 +592,12 @@
         gap:7px;
       }
 
-      .nav a{
-        min-height:36px;
+      .nav a,
+      .topbar-tools a,
+      .topbar-tools button{
+        min-height:35px;
         padding:0 12px;
-        font-size:12.4px;
+        font-size:12.2px;
       }
 
       .page{
@@ -473,7 +606,7 @@
 
       .shell{
         padding:12px;
-        border-radius:22px;
+        border-radius:20px;
       }
 
       .hero{
@@ -481,7 +614,7 @@
       }
 
       .hero h1{
-        font-size:16.5px;
+        font-size:15.8px;
       }
 
       .page-actions{
@@ -490,8 +623,19 @@
 
       .page-actions a,
       .page-actions button{
-        min-height:36px;
-        font-size:12.6px;
+        min-height:35px;
+        font-size:12.4px;
+      }
+
+      .msgs{
+        inset-inline-start:10px;
+        inset-inline-end:auto;
+        width:min(340px, calc(100vw - 20px));
+      }
+
+      .msg{
+        border-radius:14px;
+        padding:11px 42px 11px 13px;
       }
     }
   </style>
@@ -504,95 +648,96 @@
 <header class="topbar">
   <div class="inner">
 
-    <div class="brand">
-      <div class="logo">ز</div>
-      <div class="meta">
-        <div class="title">نظام زيارات المشرفين</div>
-        <div class="sub">قسم الإدارة المدرسية — تعليم عسير</div>
+    <div class="topbar-main">
+      <div class="brand">
+        <div class="logo">ز</div>
+        <div class="meta">
+          <div class="title">نظام زيارات المشرفين</div>
+          <div class="sub">قسم الإدارة المدرسية — تعليم عسير</div>
+        </div>
+      </div>
+
+      <div class="topbar-meta">
+        <div class="top-pill">
+          <span class="dot blue"></span>
+          {% if request.session.visits_sup_id %}
+            بوابة المشرف
+          {% elif request.user.is_staff %}
+            بيئة الإدارة
+          {% else %}
+            النظام يعمل
+          {% endif %}
+        </div>
+
+        <div class="top-pill">
+          <span class="dot"></span>
+          اليوم: {% now "d-m-Y" %}
+        </div>
       </div>
     </div>
 
-    <nav class="nav">
-      {% if request.session.visits_sup_id %}
-        <a href="{% url 'visits:supervisor_dashboard' %}"
-           class="{% if url_name == 'supervisor_dashboard' %}active{% endif %}">
-          بوابة المشرف
-        </a>
+    <div class="topbar-navrow">
+      <nav class="nav">
+        {% if request.session.visits_sup_id %}
+          <a href="{% url 'visits:supervisor_dashboard' %}"
+             class="{% if url_name == 'supervisor_dashboard' %}active{% endif %}">
+            بوابة المشرف
+          </a>
 
-        <a href="{% url 'visits:plan' %}"
-           class="{% if url_name == 'plan' or url_name == 'supervisor_visit_status' %}active{% endif %}">
-          خطة الأسبوع
-        </a>
+          <a href="{% url 'visits:plan' %}"
+             class="{% if url_name == 'plan' or url_name == 'supervisor_visit_status' %}active{% endif %}">
+            خطة الأسبوع
+          </a>
 
-        <a href="{% url 'visits:notifications' %}"
-           class="{% if url_name == 'notifications' %}active{% endif %}">
-          الإشعارات
-        </a>
+          <a href="{% url 'visits:notifications' %}"
+             class="{% if url_name == 'notifications' %}active{% endif %}">
+            الإشعارات
+          </a>
 
-        {% block supervisor_topbar_actions %}{% endblock %}
+        {% elif request.user.is_staff %}
+          <a href="{% url 'visits:admin_dashboard' %}"
+             class="{% if url_name == 'admin_dashboard' %}active{% endif %}">
+            لوحة الإدارة
+          </a>
 
-      {% elif request.user.is_staff %}
-        <a href="{% url 'visits:admin_dashboard' %}"
-           class="{% if url_name == 'admin_dashboard' %}active{% endif %}">
-          لوحة الإدارة
-        </a>
+          <a href="{% url 'visits:admin_school_list' %}"
+             class="{% if url_name == 'admin_school_list' %}active{% endif %}">
+            المدارس
+          </a>
 
-        <a href="{% url 'visits:admin_school_list' %}"
-           class="{% if url_name == 'admin_school_list' %}active{% endif %}">
-          المدارس
-        </a>
+          <a href="{% url 'visits:admin_supervisor_list' %}"
+             class="{% if url_name == 'admin_supervisor_list' %}active{% endif %}">
+            المشرفون
+          </a>
 
-        <a href="{% url 'visits:admin_supervisor_list' %}"
-           class="{% if url_name == 'admin_supervisor_list' %}active{% endif %}">
-          المشرفون
-        </a>
+          <a href="{% url 'visits:admin_assignments_overview' %}"
+             class="{% if url_name == 'admin_assignments_overview' or url_name == 'admin_supervisor_assignments' %}active{% endif %}">
+            الإسناد
+          </a>
 
-        <a href="{% url 'visits:admin_assignments_overview' %}"
-           class="{% if url_name == 'admin_assignments_overview' or url_name == 'admin_supervisor_assignments' %}active{% endif %}">
-          الإسناد
-        </a>
+          <a href="{% url 'visits:admin_sector_list' %}"
+             class="{% if url_name == 'admin_sector_list' %}active{% endif %}">
+            القطاعات
+          </a>
 
-        <a href="{% url 'visits:admin_sector_list' %}"
-           class="{% if url_name == 'admin_sector_list' %}active{% endif %}">
-          القطاعات
-        </a>
+          <a href="{% url 'visits:admin_import' %}"
+             class="{% if url_name == 'admin_import' %}active{% endif %}">
+            مركز الاستيراد
+          </a>
 
-        <a href="{% url 'visits:admin_import' %}"
-           class="{% if url_name == 'admin_import' %}active{% endif %}">
-          مركز الاستيراد
-        </a>
+          <a href="{% url 'visits:weekly_letter_links_list' %}"
+             class="{% if url_name == 'weekly_letter_links_list' or url_name == 'weekly_letter_link_create' %}active{% endif %}">
+            روابط الخطابات
+          </a>
+        {% endif %}
+      </nav>
 
-        <a href="{% url 'visits:weekly_letter_links_list' %}"
-           class="{% if url_name == 'weekly_letter_links_list' or url_name == 'weekly_letter_link_create' %}active{% endif %}">
-          روابط الخطابات
-        </a>
-
-        {% block topbar_actions %}{% endblock %}
-      {% endif %}
-    </nav>
-
-    <div class="header-chip">
-      <div class="who">
-        <b>
-          {% block header_title %}
-            {% if request.session.visits_sup_id %}
-              بوابة المشرف
-            {% elif request.user.is_staff %}
-              لوحة الإدارة
-            {% else %}
-              نظام زيارات المشرفين
-            {% endif %}
-          {% endblock %}
-        </b>
-        <small>
-          {% if request.session.visits_sup_id %}
-            متابعة الخطة والإشعارات
-          {% elif request.user.is_staff %}
-            إدارة الصفحات التنفيذية والبيانات المرجعية
-          {% else %}
-            قسم الإدارة المدرسية — تعليم عسير
-          {% endif %}
-        </small>
+      <div class="topbar-tools">
+        {% if request.session.visits_sup_id %}
+          {% block supervisor_topbar_actions %}{% endblock %}
+        {% elif request.user.is_staff %}
+          {% block topbar_actions %}{% endblock %}
+        {% endif %}
       </div>
     </div>
 
@@ -604,70 +749,56 @@
   <div class="shell">
 
     {% block hero %}
-      {% if request.session.visits_sup_id %}
-        <div class="hero">
-          <div>
-            <h1>بوابة المشرف</h1>
-            <p>إدارة الخطة الأسبوعية، متابعة التنفيذ، والاطلاع على الإشعارات المرتبطة بالزيارات.</p>
-          </div>
+      <div class="hero">
+        <div>
+          <h1>
+            {% block header_title %}
+              {% if request.session.visits_sup_id %}
+                بوابة المشرف
+              {% elif request.user.is_staff %}
+                لوحة الإدارة
+              {% else %}
+                نظام زيارات المشرفين
+              {% endif %}
+            {% endblock %}
+          </h1>
 
-          <div class="hero-meta">
-            <div class="pill">
-              <span class="dot blue"></span>
-              النظام يعمل
-            </div>
-            <div class="pill">
-              <span class="dot"></span>
-              اليوم: {% now "d-m-Y" %}
-            </div>
+          <p>
+            {% block header_subtitle %}
+              {% if request.session.visits_sup_id %}
+                إدارة الخطة الأسبوعية، متابعة التنفيذ، والاطلاع على الإشعارات المرتبطة بالزيارات.
+              {% elif request.user.is_staff %}
+                إدارة الخطط والبيانات المرجعية للمدارس والمشرفين والإسناد والقطاعات عبر صفحات منظمة وواضحة.
+              {% else %}
+                منصة تنظيم ومتابعة خطط الزيارات الأسبوعية والإشعارات المرتبطة بها.
+              {% endif %}
+            {% endblock %}
+          </p>
+        </div>
+
+        <div class="hero-meta">
+          <div class="pill">
+            <span class="dot blue"></span>
+            النظام يعمل
+          </div>
+          <div class="pill">
+            <span class="dot"></span>
+            اليوم: {% now "d-m-Y" %}
           </div>
         </div>
-      {% elif request.user.is_staff %}
-        <div class="hero">
-          <div>
-            <h1>لوحة الإدارة</h1>
-            <p>إدارة الخطط والبيانات المرجعية للمدارس والمشرفين والإسناد والقطاعات عبر صفحات منظمة وواضحة.</p>
-          </div>
-
-          <div class="hero-meta">
-            <div class="pill">
-              <span class="dot blue"></span>
-              النظام يعمل
-            </div>
-            <div class="pill">
-              <span class="dot"></span>
-              اليوم: {% now "d-m-Y" %}
-            </div>
-          </div>
-        </div>
-      {% else %}
-        <div class="hero">
-          <div>
-            <h1>نظام زيارات المشرفين</h1>
-            <p>منصة تنظيم ومتابعة خطط الزيارات الأسبوعية والإشعارات المرتبطة بها.</p>
-          </div>
-
-          <div class="hero-meta">
-            <div class="pill">
-              <span class="dot blue"></span>
-              النظام يعمل
-            </div>
-            <div class="pill">
-              <span class="dot"></span>
-              اليوم: {% now "d-m-Y" %}
-            </div>
-          </div>
-        </div>
-      {% endif %}
+      </div>
     {% endblock %}
 
     {% block page_actions %}{% endblock %}
 
     {% block page_messages %}
       {% if messages %}
-        <div class="msgs">
+        <div class="msgs" id="pageMessages" aria-live="polite" aria-atomic="true">
           {% for message in messages %}
-            <div class="msg {{ message.tags|default:'info' }}">{{ message }}</div>
+            <div class="msg {{ message.tags|default:'info' }}" data-toast>
+              <button type="button" class="msg-close" data-close-msg aria-label="إغلاق">×</button>
+              <div class="msg-text">{{ message }}</div>
+            </div>
           {% endfor %}
         </div>
       {% endif %}
@@ -678,12 +809,61 @@
   </div>
 </main>
 
+{% block overlays %}{% endblock %}
+
 <footer>
   <div class="foot">
     <div>© منصة خطة الزيارات — جميع الحقوق محفوظة</div>
     <div>الإصدار: 2026</div>
   </div>
 </footer>
+
+<script>
+  (function () {
+    function setToastTopOffset() {
+      const topbar = document.querySelector('.topbar');
+      const top = (topbar ? topbar.offsetHeight : 86) + 14;
+      document.documentElement.style.setProperty('--toast-top', top + 'px');
+    }
+
+    function hideToast(el) {
+      if (!el || el.dataset.hiding === '1') return;
+      el.dataset.hiding = '1';
+      el.classList.remove('is-visible');
+      el.classList.add('is-hiding');
+
+      window.setTimeout(function () {
+        const parent = el.parentElement;
+        el.remove();
+        if (parent && !parent.children.length) {
+          parent.remove();
+        }
+      }, 240);
+    }
+
+    setToastTopOffset();
+    window.addEventListener('resize', setToastTopOffset);
+
+    const toasts = document.querySelectorAll('[data-toast]');
+    toasts.forEach(function (toast, index) {
+      window.setTimeout(function () {
+        toast.classList.add('is-visible');
+      }, 40 + (index * 80));
+
+      const lifetime = 4200 + (index * 320);
+      window.setTimeout(function () {
+        hideToast(toast);
+      }, lifetime);
+    });
+
+    document.addEventListener('click', function (event) {
+      const btn = event.target.closest('[data-close-msg]');
+      if (!btn) return;
+      const toast = btn.closest('[data-toast]');
+      hideToast(toast);
+    });
+  })();
+</script>
 
 {% block extra_js %}{% endblock %}
 </body>

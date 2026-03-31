@@ -1,269 +1,372 @@
 {% extends "visits/base.html" %}
 
 {% block title %}روابط الخطابات الأسبوعية{% endblock %}
+{% block page_messages %}{% endblock %}
+
 {% block header_title %}روابط الخطابات{% endblock %}
 {% block header_subtitle %}إدارة روابط الخطابات الأسبوعية{% endblock %}
 
 {% block extra_css %}
 <style>
-  :root{
-    --wll-card:#ffffff;
-    --wll-card-2:#fbfdfb;
-    --wll-line:#d9e3dd;
-    --wll-line-2:#e8eeea;
+  .letters-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
 
-    --wll-text:#16241d;
-    --wll-text-soft:#62746a;
-    --wll-text-faint:#8a988f;
+    --fw-title:700;
+    --fw-strong:600;
+    --fw-normal:500;
 
-    --wll-green-1:#18382b;
-    --wll-green-2:#24503d;
-    --wll-green-3:#3f6f5a;
+    --card:#ffffff;
+    --card-soft:#fbfcfb;
+    --soft:#f7f9f8;
 
-    --wll-gold-bg:#fbf6eb;
-    --wll-gold-bd:#ecdcae;
-    --wll-gold-tx:#836127;
+    --txt:var(--vp-text);
+    --mut:var(--vp-text-soft);
+    --mut2:var(--vp-text-faint);
 
-    --wll-blue-bg:#eef5ff;
-    --wll-blue-bd:#d7e6fb;
-    --wll-blue-tx:#2f5f98;
+    --line:var(--vp-line);
+    --line2:var(--vp-line-2);
+    --line-strong:var(--vp-line-strong);
 
-    --wll-ok-bg:#edf8f1;
-    --wll-ok-bd:#cfe8d8;
-    --wll-ok-tx:#1f6a43;
+    --ok:var(--vp-ok-text);
+    --ok-bg:var(--vp-ok-bg);
+    --ok-br:var(--vp-ok-border);
 
-    --wll-off-bg:#f3f4f6;
-    --wll-off-bd:#d9dde3;
-    --wll-off-tx:#4b5563;
+    --warn:var(--vp-warn-text);
+    --warn-bg:var(--vp-warn-bg);
+    --warn-br:var(--vp-warn-border);
 
-    --wll-danger-bg:#fff4f2;
-    --wll-danger-bd:#f4d1cb;
-    --wll-danger-tx:#b42318;
+    --danger:var(--vp-danger-text);
+    --danger-bg:var(--vp-danger-bg);
+    --danger-br:var(--vp-danger-border);
 
-    --wll-shadow:0 18px 40px rgba(17,24,39,.06);
-    --wll-radius:22px;
-    --wll-radius-sm:14px;
+    --primary:var(--vp-primary);
+    --primary-2:var(--vp-primary-2);
+    --primary-soft:var(--vp-primary-soft);
+    --primary-soft-br:var(--vp-primary-soft-border);
+
+    --blue:#245fd6;
+    --blue-bg:rgba(37,99,235,.08);
+    --blue-br:rgba(37,99,235,.16);
+
+    --shadow:var(--vp-shadow);
+    --shadow2:var(--vp-shadow-soft);
   }
 
-  .links-shell{
+  .letters-page *{
+    box-sizing:border-box;
+    font-family:var(--ff) !important;
+  }
+
+  .letters-page .wrap{
+    display:grid;
+    gap:12px;
+    margin-top:2px;
+  }
+
+  .letters-page .summary-card,
+  .letters-page .stat-card,
+  .letters-page .panel-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    box-shadow:var(--shadow);
+  }
+
+  .letters-page .summary-card{
+    border-radius:20px;
+    padding:14px 16px;
     display:flex;
-    flex-direction:column;
-    gap:16px;
-    margin-top:16px;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,252,251,.98));
   }
 
-  .stats-grid{
+  .letters-page .summary-note{
+    color:var(--mut);
+    font-size:12px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
+    max-width:880px;
+  }
+
+  .letters-page .summary-right{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    flex-wrap:wrap;
+  }
+
+  .letters-page .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    min-height:32px;
+    padding:6px 11px;
+    border-radius:999px;
+    background:var(--soft);
+    border:1px solid var(--line);
+    color:var(--mut);
+    font-size:11.2px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+  }
+
+  .letters-page .chip b{
+    color:var(--txt);
+    font-weight:var(--fw-title);
+  }
+
+  .letters-page .dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#5e8d7a;
+    box-shadow:0 0 0 4px rgba(94,141,122,.10);
+    flex:0 0 auto;
+  }
+
+  .letters-page .dot.ok{
+    background:#2f6250;
+    box-shadow:0 0 0 4px rgba(47,98,80,.10);
+  }
+
+  .letters-page .stats-grid{
     display:grid;
     grid-template-columns:repeat(4, minmax(0, 1fr));
-    gap:14px;
+    gap:10px;
   }
 
-  .stat-card{
-    border:1px solid var(--wll-line);
+  .letters-page .stat-card{
     border-radius:18px;
-    background:linear-gradient(180deg, var(--wll-card) 0%, var(--wll-card-2) 100%);
-    box-shadow:var(--wll-shadow);
-    padding:16px 18px;
-    min-height:110px;
+    padding:14px 15px;
+    min-height:112px;
     display:flex;
     flex-direction:column;
     justify-content:space-between;
     gap:8px;
+    box-shadow:var(--shadow2);
+    background:linear-gradient(180deg, #ffffff 0%, #fbfcfb 100%);
   }
 
-  .stat-label{
-    color:var(--wll-text-soft);
-    font-size:.86rem;
+  .letters-page .stat-label{
+    color:var(--mut);
+    font-size:11px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+  }
+
+  .letters-page .stat-value{
+    color:var(--txt);
+    font-size:27px;
     font-weight:800;
-  }
-
-  .stat-value{
-    color:var(--wll-text);
-    font-size:2rem;
-    font-weight:900;
     line-height:1;
-    letter-spacing:-.6px;
+    letter-spacing:-.4px;
   }
 
-  .stat-note{
-    color:var(--wll-text-faint);
-    font-size:.8rem;
-    line-height:1.8;
+  .letters-page .stat-note{
+    color:var(--mut2);
+    font-size:11px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
   }
 
-  .panel-card{
-    border:1px solid var(--wll-line);
-    border-radius:var(--wll-radius);
-    background:linear-gradient(180deg, var(--wll-card) 0%, var(--wll-card-2) 100%);
-    box-shadow:var(--wll-shadow);
+  .letters-page .panel-card{
+    border-radius:20px;
     overflow:hidden;
   }
 
-  .panel-head{
-    padding:16px 20px;
-    border-bottom:1px solid var(--wll-line-2);
-    background:linear-gradient(180deg, #ffffff 0%, #fafcfb 100%);
+  .letters-page .panel-head{
+    padding:12px 14px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, #fcfdfc, #f8fbf9);
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap:12px;
-    flex-wrap:wrap;
-  }
-
-  .panel-title{
-    margin:0;
-    color:var(--wll-text);
-    font-size:1rem;
-    font-weight:900;
-  }
-
-  .panel-subtitle{
-    color:var(--wll-text-soft);
-    font-size:.84rem;
-    margin-top:4px;
-    line-height:1.8;
-  }
-
-  .head-actions{
-    display:flex;
     gap:10px;
     flex-wrap:wrap;
   }
 
-  .head-btn{
+  .letters-page .panel-title{
+    margin:0;
+    color:var(--txt);
+    font-size:12.9px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+  }
+
+  .letters-page .panel-subtitle{
+    color:var(--mut);
+    font-size:11px;
+    margin-top:4px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
+  }
+
+  .letters-page .head-actions{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  .letters-page .head-btn{
     appearance:none;
-    border:1px solid transparent;
-    border-radius:14px;
-    padding:10px 14px;
+    border:1px solid var(--line-strong);
+    border-radius:999px;
+    padding:0 14px;
+    height:38px;
     text-decoration:none;
-    font-weight:900;
-    font-size:.88rem;
+    font-weight:var(--fw-strong);
+    font-size:11.5px;
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    gap:8px;
+    gap:6px;
     cursor:pointer;
-    transition:.18s ease;
+    transition:.16s ease;
     white-space:nowrap;
-  }
-
-  .head-btn:hover{
-    transform:translateY(-1px);
-  }
-
-  .head-btn-primary{
-    color:#fff;
-    background:linear-gradient(135deg, var(--wll-green-1), var(--wll-green-2));
-    box-shadow:0 12px 24px rgba(24,56,43,.16);
-  }
-
-  .head-btn-light{
     background:#fff;
-    color:var(--wll-green-2);
-    border-color:#d7e1db;
+    color:var(--txt);
   }
 
-  .table-wrap{
+  .letters-page .head-btn:hover{
+    transform:translateY(-1px);
+    background:#fcfdfc;
+  }
+
+  .letters-page .head-btn.primary{
+    background:var(--primary);
+    border-color:var(--primary);
+    color:#fff;
+  }
+
+  .letters-page .head-btn.primary:hover{
+    background:var(--primary-2);
+    border-color:var(--primary-2);
+  }
+
+  .letters-page .head-btn.soft{
+    background:var(--primary-soft);
+    border-color:var(--primary-soft-br);
+    color:var(--primary);
+  }
+
+  .letters-page .table-wrap{
     width:100%;
     overflow:auto;
   }
 
-  .links-table{
+  .letters-page .links-table{
     width:100%;
     min-width:1120px;
     border-collapse:separate;
     border-spacing:0;
+    table-layout:fixed;
   }
 
-  .links-table thead th{
-    background:#f8fbf9;
-    color:var(--wll-text);
-    font-size:.86rem;
-    font-weight:900;
+  .letters-page .links-table thead th{
+    position:sticky;
+    top:0;
+    z-index:2;
+    background:#f7faf8;
+    color:#687a70;
+    font-size:11px;
+    font-weight:var(--fw-title);
     text-align:right;
-    padding:14px 16px;
-    border-bottom:1px solid var(--wll-line);
+    padding:11px 12px;
+    border-bottom:1px solid #d9e2dd;
     white-space:nowrap;
   }
 
-  .links-table tbody td{
-    padding:14px 16px;
-    border-bottom:1px solid #edf2ee;
+  .letters-page .links-table thead th:nth-child(1){ width:13%; }
+  .letters-page .links-table thead th:nth-child(2){ width:24%; }
+  .letters-page .links-table thead th:nth-child(3){ width:24%; }
+  .letters-page .links-table thead th:nth-child(4){ width:11%; }
+  .letters-page .links-table thead th:nth-child(5){ width:13%; }
+  .letters-page .links-table thead th:nth-child(6){ width:15%; }
+
+  .letters-page .links-table tbody td{
+    padding:14px 12px;
+    border-bottom:1px solid var(--line2);
     vertical-align:top;
-    color:var(--wll-text);
-    font-size:.92rem;
+    color:var(--txt);
+    font-size:12px;
+    background:#fff;
   }
 
-  .links-table tbody tr{
-    transition:.15s ease;
-  }
-
-  .links-table tbody tr:hover{
+  .letters-page .links-table tbody tr:nth-child(even) td{
     background:#fcfdfc;
   }
 
-  .week-badge{
+  .letters-page .links-table tbody tr:hover td{
+    background:#f8fbf9;
+  }
+
+  .letters-page .week-badge{
     display:inline-flex;
     align-items:center;
     gap:6px;
     padding:7px 12px;
     border-radius:999px;
-    background:var(--wll-gold-bg);
-    color:var(--wll-gold-tx);
-    border:1px solid var(--wll-gold-bd);
-    font-weight:900;
-    font-size:.84rem;
+    background:var(--warn-bg);
+    color:var(--warn);
+    border:1px solid var(--warn-br);
+    font-weight:var(--fw-title);
+    font-size:11px;
     white-space:nowrap;
   }
 
-  .title-main{
-    font-weight:900;
-    color:var(--wll-text);
+  .letters-page .title-main{
+    font-weight:var(--fw-title);
+    color:var(--txt);
     line-height:1.9;
+    font-size:12.6px;
   }
 
-  .title-sub{
+  .letters-page .title-sub{
     margin-top:4px;
-    color:var(--wll-text-soft);
-    font-size:.81rem;
-    line-height:1.8;
+    color:var(--mut);
+    font-size:10.9px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
   }
 
-  .note-box{
+  .letters-page .note-box{
     margin-top:8px;
     border:1px dashed #dbe6df;
     background:#fbfcfb;
     border-radius:12px;
     padding:8px 10px;
-    color:var(--wll-text-soft);
-    font-size:.79rem;
-    line-height:1.8;
+    color:var(--mut);
+    font-size:10.7px;
+    line-height:1.9;
   }
 
-  .url-box{
+  .letters-page .url-box{
     display:flex;
     flex-direction:column;
     gap:8px;
   }
 
-  .url-link{
+  .letters-page .url-link{
     display:inline-flex;
     align-items:center;
     gap:8px;
-    color:var(--wll-blue-tx);
+    color:var(--blue);
     text-decoration:none;
-    font-weight:800;
+    font-weight:var(--fw-title);
     width:fit-content;
   }
 
-  .url-link:hover{
+  .letters-page .url-link:hover{
     text-decoration:underline;
   }
 
-  .url-preview{
+  .letters-page .url-preview{
     direction:ltr;
     text-align:left;
-    font-size:.77rem;
+    font-size:10.6px;
     color:#6b7280;
     background:#fafbfc;
     border:1px solid #edf0f3;
@@ -275,63 +378,63 @@
     white-space:nowrap;
   }
 
-  .status-chip{
+  .letters-page .status-chip{
     display:inline-flex;
     align-items:center;
     justify-content:center;
     gap:8px;
     padding:7px 12px;
     border-radius:999px;
-    font-size:.82rem;
-    font-weight:900;
+    font-size:10.9px;
+    font-weight:var(--fw-title);
     white-space:nowrap;
   }
 
-  .status-chip.active{
-    background:var(--wll-ok-bg);
-    border:1px solid var(--wll-ok-bd);
-    color:var(--wll-ok-tx);
+  .letters-page .status-chip.active{
+    background:var(--ok-bg);
+    border:1px solid var(--ok-br);
+    color:var(--ok);
   }
 
-  .status-chip.inactive{
-    background:var(--wll-off-bg);
-    border:1px solid var(--wll-off-bd);
-    color:var(--wll-off-tx);
+  .letters-page .status-chip.inactive{
+    background:#f3f4f6;
+    border:1px solid #d9dde3;
+    color:#4b5563;
   }
 
-  .date-box{
+  .letters-page .date-box{
     display:flex;
     flex-direction:column;
     gap:4px;
   }
 
-  .date-main{
-    color:var(--wll-text);
-    font-weight:900;
+  .letters-page .date-main{
+    color:var(--txt);
+    font-weight:var(--fw-title);
     line-height:1.6;
   }
 
-  .date-sub{
-    color:var(--wll-text-soft);
-    font-size:.8rem;
+  .letters-page .date-sub{
+    color:var(--mut);
+    font-size:10.8px;
     line-height:1.6;
   }
 
-  .actions-row{
+  .letters-page .actions-row{
     display:flex;
     align-items:center;
     gap:8px;
     flex-wrap:wrap;
   }
 
-  .action-btn{
+  .letters-page .action-btn{
     appearance:none;
     border:1px solid transparent;
     border-radius:12px;
     padding:8px 12px;
     text-decoration:none;
-    font-weight:900;
-    font-size:.82rem;
+    font-weight:var(--fw-title);
+    font-size:10.9px;
     display:inline-flex;
     align-items:center;
     justify-content:center;
@@ -340,34 +443,34 @@
     white-space:nowrap;
   }
 
-  .action-btn:hover{
+  .letters-page .action-btn:hover{
     transform:translateY(-1px);
   }
 
-  .action-btn-edit{
+  .letters-page .action-btn-edit{
     background:#fff;
     border-color:#d8e3dc;
-    color:var(--wll-green-2);
+    color:var(--primary);
   }
 
-  .action-btn-open{
-    background:var(--wll-blue-bg);
-    border-color:var(--wll-blue-bd);
-    color:var(--wll-blue-tx);
+  .letters-page .action-btn-open{
+    background:var(--blue-bg);
+    border-color:var(--blue-br);
+    color:var(--blue);
   }
 
-  .action-btn-delete{
-    background:var(--wll-danger-bg);
-    border-color:var(--wll-danger-bd);
-    color:var(--wll-danger-tx);
+  .letters-page .action-btn-delete{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:var(--danger);
   }
 
-  .empty-state{
+  .letters-page .empty-state{
     padding:42px 20px;
     text-align:center;
   }
 
-  .empty-state-icon{
+  .letters-page .empty-state-icon{
     width:68px;
     height:68px;
     border-radius:20px;
@@ -377,193 +480,198 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    font-size:1.5rem;
+    font-size:24px;
   }
 
-  .empty-state h3{
+  .letters-page .empty-state h3{
     margin:0 0 8px;
-    color:var(--wll-text);
-    font-size:1.05rem;
-    font-weight:900;
+    color:var(--txt);
+    font-size:16px;
+    font-weight:800;
   }
 
-  .empty-state p{
+  .letters-page .empty-state p{
     margin:0 auto 16px;
     max-width:620px;
-    color:var(--wll-text-soft);
+    color:var(--mut);
     line-height:1.9;
+    font-size:12px;
   }
 
   @media (max-width: 1100px){
-    .stats-grid{
+    .letters-page .stats-grid{
       grid-template-columns:repeat(2, minmax(0, 1fr));
     }
   }
 
   @media (max-width: 760px){
-    .stats-grid{
+    .letters-page .stats-grid{
       grid-template-columns:1fr;
     }
 
-    .panel-head{
+    .letters-page .panel-head{
       padding:14px 16px;
+    }
+
+    .letters-page .summary-card{
+      padding:12px;
     }
   }
 </style>
 {% endblock %}
 
-{% block hero %}
-<div class="hero">
-  <div>
-    <h1>روابط الخطابات الأسبوعية</h1>
-    <p>إدارة روابط الخطابات المنشورة على Google Drive وربط كل أسبوع بالرابط المناسب داخل النظام بشكل واضح ومنظم.</p>
-  </div>
-  <div class="pill-row">
-    <div class="pill"><span class="dot blue"></span> إجمالي الروابط: {{ total_links }}</div>
-    <div class="pill"><span class="dot"></span> الروابط النشطة: {{ active_links }}</div>
-  </div>
-</div>
-{% endblock %}
-
 {% block content %}
-<div class="links-shell">
+<section class="letters-page">
+  <div class="wrap">
 
-  <section class="stats-grid">
-    <article class="stat-card">
-      <div class="stat-label">إجمالي الروابط المسجلة</div>
-      <div class="stat-value">{{ total_links }}</div>
-      <div class="stat-note">عدد جميع روابط الخطابات المحفوظة داخل النظام.</div>
-    </article>
-
-    <article class="stat-card">
-      <div class="stat-label">الروابط النشطة</div>
-      <div class="stat-value">{{ active_links }}</div>
-      <div class="stat-note">روابط مفعلة ويمكن فتحها مباشرة من النظام.</div>
-    </article>
-
-    <article class="stat-card">
-      <div class="stat-label">الروابط غير النشطة</div>
-      <div class="stat-value">{{ inactive_links }}</div>
-      <div class="stat-note">روابط محفوظة ولكنها معطلة حاليًا.</div>
-    </article>
-
-    <article class="stat-card">
-      <div class="stat-label">إجمالي الأسابيع</div>
-      <div class="stat-value">{{ total_weeks }}</div>
-      <div class="stat-note">عدد الأسابيع المعرفة في جدول الخطة الأسبوعية.</div>
-    </article>
-  </section>
-
-  <section class="panel-card">
-    <div class="panel-head">
-      <div>
-        <h3 class="panel-title">سجل الروابط الأسبوعية</h3>
-        <div class="panel-subtitle">استعراض جميع الروابط المسجلة مع أدوات الفتح والتعديل والحذف.</div>
+    <div class="summary-card">
+      <div class="summary-note">
+        إدارة روابط الخطابات المنشورة وربط كل أسبوع بالرابط المناسب داخل النظام، مع إتاحة الفتح المباشر والتعديل والحذف من شاشة موحدة وواضحة.
       </div>
 
-      <div class="head-actions">
-        <a href="{% url 'visits:weekly_letter_link_create' %}" class="head-btn head-btn-primary">إضافة رابط جديد</a>
-        <a href="{% url 'visits:admin_dashboard' %}" class="head-btn head-btn-light">لوحة الإدارة</a>
+      <div class="summary-right">
+        <span class="chip"><span class="dot ok"></span> إجمالي الروابط: <b>{{ total_links }}</b></span>
+        <span class="chip"><span class="dot"></span> الروابط النشطة: <b>{{ active_links }}</b></span>
       </div>
     </div>
 
-    {% if rows %}
-      <div class="table-wrap">
-        <table class="links-table">
-          <thead>
-            <tr>
-              <th>الأسبوع</th>
-              <th>العنوان والتفاصيل</th>
-              <th>الرابط</th>
-              <th>الحالة</th>
-              <th>آخر تحديث</th>
-              <th>الإجراءات</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for item in rows %}
+    <section class="stats-grid">
+      <article class="stat-card">
+        <div class="stat-label">إجمالي الروابط المسجلة</div>
+        <div class="stat-value">{{ total_links }}</div>
+        <div class="stat-note">عدد جميع روابط الخطابات المحفوظة داخل النظام.</div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-label">الروابط النشطة</div>
+        <div class="stat-value">{{ active_links }}</div>
+        <div class="stat-note">روابط مفعلة ويمكن فتحها مباشرة من النظام.</div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-label">الروابط غير النشطة</div>
+        <div class="stat-value">{{ inactive_links }}</div>
+        <div class="stat-note">روابط محفوظة ولكنها معطلة حاليًا.</div>
+      </article>
+
+      <article class="stat-card">
+        <div class="stat-label">إجمالي الأسابيع</div>
+        <div class="stat-value">{{ total_weeks }}</div>
+        <div class="stat-note">عدد الأسابيع المعرفة في جدول الخطة الأسبوعية.</div>
+      </article>
+    </section>
+
+    <section class="panel-card">
+      <div class="panel-head">
+        <div>
+          <h3 class="panel-title">سجل الروابط الأسبوعية</h3>
+          <div class="panel-subtitle">استعراض جميع الروابط المسجلة مع أدوات الفتح والتعديل والحذف.</div>
+        </div>
+
+        <div class="head-actions">
+          <a href="{% url 'visits:weekly_letter_link_create' %}" class="head-btn primary">إضافة رابط جديد</a>
+          <a href="{% url 'visits:admin_dashboard' %}" class="head-btn soft">لوحة الإدارة</a>
+        </div>
+      </div>
+
+      {% if rows %}
+        <div class="table-wrap">
+          <table class="links-table">
+            <thead>
               <tr>
-                <td>
-                  <span class="week-badge">الأسبوع {{ item.week.week_no }}</span>
-                  {% if item.week.start_sunday %}
-                    <div class="title-sub" style="margin-top:8px;">
-                      يبدأ {{ item.week.start_sunday }}
-                    </div>
-                  {% endif %}
-                </td>
-
-                <td>
-                  <div class="title-main">
-                    {% if item.title %}
-                      {{ item.title }}
-                    {% else %}
-                      خطاب الأسبوع {{ item.week.week_no }}
-                    {% endif %}
-                  </div>
-
-                  <div class="title-sub">
-                    {% if item.week.title %}
-                      {{ item.week.title }}
-                    {% else %}
-                      رابط الخطاب الأسبوعي المعتمد
-                    {% endif %}
-                  </div>
-
-                  {% if item.note %}
-                    <div class="note-box">{{ item.note }}</div>
-                  {% endif %}
-                </td>
-
-                <td>
-                  <div class="url-box">
-                    <a href="{{ item.drive_url }}" target="_blank" rel="noopener noreferrer" class="url-link">
-                      فتح الرابط
-                    </a>
-                    <div class="url-preview">{{ item.drive_url }}</div>
-                  </div>
-                </td>
-
-                <td>
-                  {% if item.is_active %}
-                    <span class="status-chip active">نشط</span>
-                  {% else %}
-                    <span class="status-chip inactive">غير نشط</span>
-                  {% endif %}
-                </td>
-
-                <td>
-                  <div class="date-box">
-                    <div class="date-main">{{ item.updated_at|date:"Y-m-d" }}</div>
-                    <div class="date-sub">{{ item.updated_at|time:"H:i" }}</div>
-                    {% if item.created_at %}
-                      <div class="date-sub">أُنشئ {{ item.created_at|date:"Y-m-d" }}</div>
-                    {% endif %}
-                  </div>
-                </td>
-
-                <td>
-                  <div class="actions-row">
-                    <a href="{{ item.drive_url }}" target="_blank" rel="noopener noreferrer" class="action-btn action-btn-open">فتح</a>
-                    <a href="{% url 'visits:weekly_letter_link_edit' item.pk %}" class="action-btn action-btn-edit">تعديل</a>
-                    <a href="{% url 'visits:weekly_letter_link_delete' item.pk %}" class="action-btn action-btn-delete">حذف</a>
-                  </div>
-                </td>
+                <th>الأسبوع</th>
+                <th>العنوان والتفاصيل</th>
+                <th>الرابط</th>
+                <th>الحالة</th>
+                <th>آخر تحديث</th>
+                <th>الإجراءات</th>
               </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    {% else %}
-      <div class="empty-state">
-        <div class="empty-state-icon">🗂️</div>
-        <h3>لا توجد روابط أسبوعية مسجلة حاليًا</h3>
-        <p>
-          لم يتم إضافة أي رابط خطاب بعد. ابدأ الآن بإضافة أول رابط وربطه بالأسبوع المناسب ليظهر داخل النظام بشكل مباشر وواضح.
-        </p>
-        <a href="{% url 'visits:weekly_letter_link_create' %}" class="head-btn head-btn-primary">إضافة أول رابط</a>
-      </div>
-    {% endif %}
-  </section>
+            </thead>
+            <tbody>
+              {% for item in rows %}
+                <tr>
+                  <td>
+                    <span class="week-badge">الأسبوع {{ item.week.week_no }}</span>
+                    {% if item.week.start_sunday %}
+                      <div class="title-sub" style="margin-top:8px;">
+                        يبدأ {{ item.week.start_sunday }}
+                      </div>
+                    {% endif %}
+                  </td>
 
-</div>
+                  <td>
+                    <div class="title-main">
+                      {% if item.title %}
+                        {{ item.title }}
+                      {% else %}
+                        خطاب الأسبوع {{ item.week.week_no }}
+                      {% endif %}
+                    </div>
+
+                    <div class="title-sub">
+                      {% if item.week.title %}
+                        {{ item.week.title }}
+                      {% else %}
+                        رابط الخطاب الأسبوعي المعتمد
+                      {% endif %}
+                    </div>
+
+                    {% if item.note %}
+                      <div class="note-box">{{ item.note }}</div>
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    <div class="url-box">
+                      <a href="{{ item.drive_url }}" target="_blank" rel="noopener noreferrer" class="url-link">
+                        فتح الرابط
+                      </a>
+                      <div class="url-preview">{{ item.drive_url }}</div>
+                    </div>
+                  </td>
+
+                  <td>
+                    {% if item.is_active %}
+                      <span class="status-chip active">نشط</span>
+                    {% else %}
+                      <span class="status-chip inactive">غير نشط</span>
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    <div class="date-box">
+                      <div class="date-main">{{ item.updated_at|date:"Y-m-d" }}</div>
+                      <div class="date-sub">{{ item.updated_at|time:"H:i" }}</div>
+                      {% if item.created_at %}
+                        <div class="date-sub">أُنشئ {{ item.created_at|date:"Y-m-d" }}</div>
+                      {% endif %}
+                    </div>
+                  </td>
+
+                  <td>
+                    <div class="actions-row">
+                      <a href="{{ item.drive_url }}" target="_blank" rel="noopener noreferrer" class="action-btn action-btn-open">فتح</a>
+                      <a href="{% url 'visits:weekly_letter_link_edit' item.pk %}" class="action-btn action-btn-edit">تعديل</a>
+                      <a href="{% url 'visits:weekly_letter_link_delete' item.pk %}" class="action-btn action-btn-delete">حذف</a>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-state-icon">🗂️</div>
+          <h3>لا توجد روابط أسبوعية مسجلة حاليًا</h3>
+          <p>
+            لم يتم إضافة أي رابط خطاب بعد. ابدأ الآن بإضافة أول رابط وربطه بالأسبوع المناسب ليظهر داخل النظام بشكل مباشر وواضح.
+          </p>
+          <a href="{% url 'visits:weekly_letter_link_create' %}" class="head-btn primary">إضافة أول رابط</a>
+        </div>
+      {% endif %}
+    </section>
+
+  </div>
+</section>
 {% endblock %}

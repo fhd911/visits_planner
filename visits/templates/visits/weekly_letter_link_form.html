@@ -1,147 +1,241 @@
 {% extends "visits/base.html" %}
 
 {% block title %}{{ page_title }}{% endblock %}
+{% block page_messages %}{% endblock %}
+
 {% block header_title %}روابط الخطابات{% endblock %}
 {% block header_subtitle %}{{ page_title }}{% endblock %}
 
 {% block extra_css %}
 <style>
-  :root{
-    --wlf-card:#ffffff;
-    --wlf-card-2:#fbfdfb;
-    --wlf-line:#d9e3dd;
-    --wlf-line-2:#e8eeea;
+  .letter-form-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
 
-    --wlf-text:#16241d;
-    --wlf-text-soft:#62746a;
-    --wlf-text-faint:#8a988f;
+    --fw-title:700;
+    --fw-strong:600;
+    --fw-normal:500;
 
-    --wlf-green-1:#18382b;
-    --wlf-green-2:#24503d;
-    --wlf-green-3:#3d6c58;
+    --card:#ffffff;
+    --card-soft:#fbfcfb;
+    --soft:#f7f9f8;
 
-    --wlf-blue-bg:#eef5ff;
-    --wlf-blue-bd:#d7e6fb;
-    --wlf-blue-tx:#2f5f98;
+    --txt:var(--vp-text);
+    --mut:var(--vp-text-soft);
+    --mut2:var(--vp-text-faint);
 
-    --wlf-danger:#b42318;
-    --wlf-danger-bg:#fff3f1;
-    --wlf-danger-bd:#f1c8c3;
+    --line:var(--vp-line);
+    --line2:var(--vp-line-2);
+    --line-strong:var(--vp-line-strong);
 
-    --wlf-shadow:0 18px 40px rgba(17,24,39,.06);
-    --wlf-radius:22px;
+    --ok:var(--vp-ok-text);
+    --ok-bg:var(--vp-ok-bg);
+    --ok-br:var(--vp-ok-border);
+
+    --warn:var(--vp-warn-text);
+    --warn-bg:var(--vp-warn-bg);
+    --warn-br:var(--vp-warn-border);
+
+    --danger:var(--vp-danger-text);
+    --danger-bg:var(--vp-danger-bg);
+    --danger-br:var(--vp-danger-border);
+
+    --primary:var(--vp-primary);
+    --primary-2:var(--vp-primary-2);
+    --primary-soft:var(--vp-primary-soft);
+    --primary-soft-br:var(--vp-primary-soft-border);
+
+    --blue:#245fd6;
+    --blue-bg:rgba(37,99,235,.08);
+    --blue-br:rgba(37,99,235,.16);
+
+    --shadow:var(--vp-shadow);
+    --shadow2:var(--vp-shadow-soft);
   }
 
-  .letter-form-shell{
+  .letter-form-page *{
+    box-sizing:border-box;
+    font-family:var(--ff) !important;
+  }
+
+  .letter-form-page .wrap{
+    display:grid;
+    gap:12px;
+    margin-top:2px;
+  }
+
+  .letter-form-page .summary-card,
+  .letter-form-page .form-card,
+  .letter-form-page .preview-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    box-shadow:var(--shadow);
+  }
+
+  .letter-form-page .summary-card{
+    border-radius:20px;
+    padding:14px 16px;
     display:flex;
-    flex-direction:column;
-    gap:16px;
-    margin-top:16px;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,252,251,.98));
   }
 
-  .letter-form-card{
-    border:1px solid var(--wlf-line);
-    border-radius:var(--wlf-radius);
-    background:linear-gradient(180deg, var(--wlf-card) 0%, var(--wlf-card-2) 100%);
-    box-shadow:var(--wlf-shadow);
+  .letter-form-page .summary-note{
+    color:var(--mut);
+    font-size:12px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
+    max-width:860px;
+  }
+
+  .letter-form-page .summary-right{
+    display:flex;
+    gap:7px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+
+  .letter-form-page .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    min-height:32px;
+    padding:6px 11px;
+    border-radius:999px;
+    background:var(--soft);
+    border:1px solid var(--line);
+    color:var(--mut);
+    font-size:11.2px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+  }
+
+  .letter-form-page .dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#5e8d7a;
+    box-shadow:0 0 0 4px rgba(94,141,122,.10);
+    flex:0 0 auto;
+  }
+
+  .letter-form-page .dot.ok{
+    background:#2f6250;
+    box-shadow:0 0 0 4px rgba(47,98,80,.10);
+  }
+
+  .letter-form-page .form-card,
+  .letter-form-page .preview-card{
+    border-radius:20px;
     overflow:hidden;
   }
 
-  .letter-form-head{
-    padding:16px 20px;
-    border-bottom:1px solid var(--wlf-line-2);
-    background:linear-gradient(180deg, #ffffff 0%, #fafcfb 100%);
+  .letter-form-page .card-head{
+    padding:12px 14px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, #fcfdfc, #f8fbf9);
   }
 
-  .letter-form-head-title{
+  .letter-form-page .card-title{
     margin:0;
-    color:var(--wlf-text);
-    font-size:1rem;
-    font-weight:900;
+    color:var(--txt);
+    font-size:12.9px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
   }
 
-  .letter-form-body{
-    padding:24px;
+  .letter-form-page .card-subtitle{
+    margin-top:4px;
+    color:var(--mut);
+    font-size:11px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
   }
 
-  .letter-grid{
+  .letter-form-page .form-body{
+    padding:16px 14px 14px;
+  }
+
+  .letter-form-page .letter-grid{
     display:grid;
-    grid-template-columns:repeat(2, minmax(0, 1fr));
-    gap:20px;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:14px;
     align-items:start;
   }
 
-  .field-block{
+  .letter-form-page .field-block{
     display:flex;
     flex-direction:column;
-    gap:8px;
+    gap:6px;
     min-width:0;
   }
 
-  .field-block.full{
+  .letter-form-page .field-block.full{
     grid-column:1 / -1;
   }
 
-  .field-label{
-    font-size:1rem;
-    font-weight:900;
-    color:var(--wlf-text);
-    line-height:1.5;
+  .letter-form-page .field-label{
+    font-size:12.5px;
+    font-weight:var(--fw-title);
+    color:var(--txt);
+    line-height:1.6;
   }
 
-  .field-help{
-    margin-top:2px;
-    color:var(--wlf-text-soft);
-    font-size:.84rem;
-    line-height:1.8;
+  .letter-form-page .field-help{
+    color:var(--mut);
+    font-size:10.9px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
   }
 
-  .letter-form-body select,
-  .letter-form-body input[type="text"],
-  .letter-form-body input[type="url"],
-  .letter-form-body textarea{
+  .letter-form-page select,
+  .letter-form-page input[type="text"],
+  .letter-form-page input[type="url"],
+  .letter-form-page textarea{
     width:100%;
-    min-height:52px;
-    border:1px solid #d6e0da;
+    border:1px solid var(--line);
     border-radius:14px;
-    background:#fff;
+    background:#f9fbfa;
     padding:12px 14px;
-    font-family:"Cairo",system-ui,-apple-system,"Segoe UI",Arial;
-    font-size:.95rem;
-    color:var(--wlf-text);
+    font-family:inherit;
+    font-size:12.4px;
+    color:var(--txt);
     outline:none;
-    transition:.18s ease;
+    transition:.16s ease;
     box-sizing:border-box;
-    box-shadow:0 1px 2px rgba(15,23,42,.02);
+    min-height:50px;
   }
 
-  .letter-form-body textarea{
-    min-height:110px;
+  .letter-form-page textarea{
+    min-height:130px;
     resize:vertical;
+    line-height:1.9;
   }
 
-  .letter-form-body select:focus,
-  .letter-form-body input[type="text"]:focus,
-  .letter-form-body input[type="url"]:focus,
-  .letter-form-body textarea:focus{
-    border-color:#9eb8aa;
-    box-shadow:0 0 0 4px rgba(36,80,61,.08);
+  .letter-form-page select:focus,
+  .letter-form-page input[type="text"]:focus,
+  .letter-form-page input[type="url"]:focus,
+  .letter-form-page textarea:focus{
+    border-color:#c7d6ce;
+    box-shadow:0 0 0 4px rgba(47,98,80,.06);
     background:#fff;
   }
 
-  .field-url input{
+  .letter-form-page .field-url input{
     direction:ltr;
     text-align:left;
   }
 
-  .check-card{
-    border:1px solid #e2e8e4;
+  .letter-form-page .check-card{
+    border:1px solid var(--line);
     border-radius:16px;
-    background:#fcfdfc;
+    background:#fbfcfb;
     padding:14px 16px;
   }
 
-  .check-wrap{
+  .letter-form-page .check-wrap{
     display:flex;
     align-items:center;
     justify-content:flex-end;
@@ -149,312 +243,322 @@
     min-height:28px;
   }
 
-  .check-wrap input[type="checkbox"]{
+  .letter-form-page .check-wrap input[type="checkbox"]{
     width:18px;
     height:18px;
-    accent-color:#24503d;
+    accent-color:var(--primary);
     margin:0;
     flex:0 0 auto;
   }
 
-  .check-wrap label{
+  .letter-form-page .check-wrap label{
     margin:0;
-    font-weight:800;
-    color:var(--wlf-text);
+    font-weight:var(--fw-title);
+    color:var(--txt);
     cursor:pointer;
   }
 
-  .field-errors{
+  .letter-form-page .field-errors{
     margin:0;
     padding:10px 12px;
     list-style:none;
-    border:1px solid var(--wlf-danger-bd);
-    background:var(--wlf-danger-bg);
+    border:1px solid var(--danger-br);
+    background:var(--danger-bg);
     border-radius:12px;
-    color:var(--wlf-danger);
-    font-size:.84rem;
-    line-height:1.7;
+    color:var(--danger);
+    font-size:10.9px;
+    line-height:1.8;
   }
 
-  .non-field-errors{
-    margin-bottom:18px;
+  .letter-form-page .non-field-errors{
+    margin-bottom:14px;
   }
 
-  .quick-tip{
+  .letter-form-page .quick-tip{
     margin-top:16px;
     border:1px dashed #d8e3dc;
     border-radius:14px;
     background:#fbfcfb;
     padding:14px;
-    color:var(--wlf-text-soft);
-    font-size:.86rem;
-    line-height:1.9;
+    color:var(--mut);
+    font-size:11.1px;
+    line-height:1.95;
+    font-weight:var(--fw-normal);
   }
 
-  .preview-box{
-    margin-top:18px;
-    border:1px solid #e4ebe6;
-    border-radius:18px;
-    background:linear-gradient(180deg, #ffffff 0%, #fbfdfb 100%);
-    overflow:hidden;
-  }
-
-  .preview-head{
-    padding:14px 16px;
-    border-bottom:1px solid #edf2ee;
-    font-weight:900;
-    color:var(--wlf-text);
-    background:#fcfdfc;
-  }
-
-  .preview-body{
-    padding:16px;
+  .letter-form-page .preview-body{
+    padding:14px;
     display:grid;
     grid-template-columns:repeat(2, minmax(0, 1fr));
-    gap:14px;
+    gap:12px;
   }
 
-  .preview-item{
-    border:1px solid #edf2ee;
+  .letter-form-page .preview-item{
+    border:1px solid var(--line2);
     border-radius:14px;
     background:#fff;
     padding:12px 14px;
   }
 
-  .preview-item.full{
+  .letter-form-page .preview-item.full{
     grid-column:1 / -1;
   }
 
-  .preview-label{
-    color:var(--wlf-text-soft);
-    font-size:.78rem;
-    font-weight:800;
+  .letter-form-page .preview-label{
+    color:var(--mut);
+    font-size:10.8px;
+    font-weight:var(--fw-title);
     margin-bottom:6px;
+    line-height:1.7;
   }
 
-  .preview-value{
-    color:var(--wlf-text);
-    font-size:.92rem;
-    font-weight:900;
-    line-height:1.8;
+  .letter-form-page .preview-value{
+    color:var(--txt);
+    font-size:12px;
+    font-weight:var(--fw-title);
+    line-height:1.9;
     word-break:break-word;
   }
 
-  .preview-value.url{
+  .letter-form-page .preview-value.url{
     direction:ltr;
     text-align:left;
-    font-size:.83rem;
+    font-size:11px;
+    font-weight:var(--fw-normal);
   }
 
-  .form-actions{
+  .letter-form-page .form-actions{
     display:flex;
-    gap:10px;
+    gap:8px;
     flex-wrap:wrap;
     justify-content:flex-start;
-    margin-top:22px;
+    margin-top:18px;
   }
 
-  .form-btn{
+  .letter-form-page .form-btn{
     appearance:none;
-    border:1px solid transparent;
-    border-radius:14px;
-    padding:11px 18px;
+    border:1px solid var(--line-strong);
+    border-radius:999px;
+    height:38px;
+    padding:0 16px;
     font-family:inherit;
-    font-size:.94rem;
-    font-weight:900;
+    font-size:11.5px;
+    font-weight:var(--fw-strong);
     text-decoration:none;
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    gap:8px;
+    gap:7px;
     cursor:pointer;
-    transition:.18s ease;
-  }
-
-  .form-btn:hover{
-    transform:translateY(-1px);
-  }
-
-  .form-btn-primary{
-    background:linear-gradient(135deg, var(--wlf-green-1), var(--wlf-green-2));
-    color:#fff;
-    box-shadow:0 12px 24px rgba(24,56,43,.16);
-  }
-
-  .form-btn-light{
+    transition:.16s ease;
     background:#fff;
-    color:var(--wlf-green-2);
+    color:var(--txt);
+    white-space:nowrap;
+  }
+
+  .letter-form-page .form-btn:hover{
+    transform:translateY(-1px);
+    background:#fcfdfc;
+  }
+
+  .letter-form-page .form-btn-primary{
+    background:var(--primary);
+    border-color:var(--primary);
+    color:#fff;
+  }
+
+  .letter-form-page .form-btn-primary:hover{
+    background:var(--primary-2);
+    border-color:var(--primary-2);
+  }
+
+  .letter-form-page .form-btn-light{
+    background:#fff;
+    color:var(--primary);
     border-color:#d7e1db;
   }
 
-  .form-btn-open{
-    background:var(--wlf-blue-bg);
-    color:var(--wlf-blue-tx);
-    border-color:var(--wlf-blue-bd);
+  .letter-form-page .form-btn-open{
+    background:var(--blue-bg);
+    color:var(--blue);
+    border-color:var(--blue-br);
   }
 
   @media (max-width: 860px){
-    .letter-grid,
-    .preview-body{
+    .letter-form-page .letter-grid,
+    .letter-form-page .preview-body{
       grid-template-columns:1fr;
     }
 
-    .preview-item.full{
+    .letter-form-page .preview-item.full{
       grid-column:auto;
+    }
+
+    .letter-form-page .summary-card{
+      padding:12px;
     }
   }
 </style>
 {% endblock %}
 
-{% block hero %}
-<div class="hero">
-  <div>
-    <h1>{{ page_title }}</h1>
-    <p>إدخال أو تعديل بيانات رابط الخطاب الأسبوعي مع ربطه مباشرة بالأسبوع المناسب داخل النظام.</p>
-  </div>
-  <div class="pill-row">
-    <div class="pill"><span class="dot blue"></span> نموذج الإدارة</div>
-    <div class="pill"><span class="dot"></span> الربط مباشر مع الأسبوع</div>
-  </div>
-</div>
-{% endblock %}
-
 {% block content %}
-<div class="letter-form-shell">
-  <section class="letter-form-card">
-    <div class="letter-form-head">
-      <h3 class="letter-form-head-title">بيانات رابط الخطاب</h3>
+<section class="letter-form-page">
+  <div class="wrap">
+
+    <div class="summary-card">
+      <div class="summary-note">
+        إدخال أو تعديل بيانات رابط الخطاب الأسبوعي مع ربطه مباشرة بالأسبوع المناسب داخل النظام، بحيث يسهل الوصول إليه من شاشة الإدارة لاحقًا.
+      </div>
+
+      <div class="summary-right">
+        <span class="chip"><span class="dot ok"></span> نموذج الإدارة</span>
+        <span class="chip"><span class="dot"></span> الربط مباشر مع الأسبوع</span>
+      </div>
     </div>
 
-    <div class="letter-form-body">
-      <form method="post" novalidate>
-        {% csrf_token %}
+    <section class="form-card">
+      <div class="card-head">
+        <h3 class="card-title">بيانات رابط الخطاب</h3>
+        <div class="card-subtitle">أدخل بيانات الرابط بعناية، ثم احفظ السجل ليظهر ضمن قائمة روابط الخطابات الأسبوعية.</div>
+      </div>
 
-        {% if form.non_field_errors %}
-          <div class="non-field-errors">
-            <ul class="field-errors">
-              {% for err in form.non_field_errors %}
-                <li>{{ err }}</li>
-              {% endfor %}
-            </ul>
-          </div>
-        {% endif %}
+      <div class="form-body">
+        <form method="post" novalidate>
+          {% csrf_token %}
 
-        <div class="letter-grid">
-          <div class="field-block">
-            <label class="field-label" for="{{ form.week.id_for_label }}">{{ form.week.label }}</label>
-            {{ form.week }}
-            {% if form.week.errors %}
+          {% if form.non_field_errors %}
+            <div class="non-field-errors">
               <ul class="field-errors">
-                {% for err in form.week.errors %}
+                {% for err in form.non_field_errors %}
                   <li>{{ err }}</li>
                 {% endfor %}
               </ul>
-            {% endif %}
-            <div class="field-help">اختر الأسبوع الذي تريد ربطه بالخطاب.</div>
-          </div>
+            </div>
+          {% endif %}
 
-          <div class="field-block">
-            <label class="field-label" for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
-            {{ form.title }}
-            {% if form.title.errors %}
-              <ul class="field-errors">
-                {% for err in form.title.errors %}
-                  <li>{{ err }}</li>
-                {% endfor %}
-              </ul>
-            {% endif %}
-            <div class="field-help">العنوان اختياري لكنه يسهل التعرف على الخطاب داخل الإدارة.</div>
-          </div>
-
-          <div class="field-block full field-url">
-            <label class="field-label" for="{{ form.drive_url.id_for_label }}">{{ form.drive_url.label }}</label>
-            {{ form.drive_url }}
-            {% if form.drive_url.errors %}
-              <ul class="field-errors">
-                {% for err in form.drive_url.errors %}
-                  <li>{{ err }}</li>
-                {% endfor %}
-              </ul>
-            {% endif %}
-            <div class="field-help">ضع رابط Google Drive الكامل للخطاب، ويفضل أن يكون رابطًا نهائيًا ثابتًا.</div>
-          </div>
-
-          <div class="field-block full">
-            <label class="field-label" for="{{ form.note.id_for_label }}">{{ form.note.label }}</label>
-            {{ form.note }}
-            {% if form.note.errors %}
-              <ul class="field-errors">
-                {% for err in form.note.errors %}
-                  <li>{{ err }}</li>
-                {% endfor %}
-              </ul>
-            {% endif %}
-            <div class="field-help">ملاحظة داخلية اختيارية، مثل نوع الخطاب أو الجهة المرتبطة أو ملاحظات النشر.</div>
-          </div>
-
-          <div class="field-block full">
-            <div class="check-card">
-              <div class="check-wrap">
-                <label for="{{ form.is_active.id_for_label }}">{{ form.is_active.label }}</label>
-                {{ form.is_active }}
-              </div>
-
-              {% if form.is_active.errors %}
-                <ul class="field-errors" style="margin-top:10px;">
-                  {% for err in form.is_active.errors %}
+          <div class="letter-grid">
+            <div class="field-block">
+              <label class="field-label" for="{{ form.week.id_for_label }}">{{ form.week.label }}</label>
+              {{ form.week }}
+              {% if form.week.errors %}
+                <ul class="field-errors">
+                  {% for err in form.week.errors %}
                     <li>{{ err }}</li>
                   {% endfor %}
                 </ul>
               {% endif %}
+              <div class="field-help">اختر الأسبوع الذي تريد ربطه بالخطاب.</div>
+            </div>
 
-              <div class="field-help">عند تفعيل الرابط يمكن فتحه مباشرة من النظام.</div>
+            <div class="field-block">
+              <label class="field-label" for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+              {{ form.title }}
+              {% if form.title.errors %}
+                <ul class="field-errors">
+                  {% for err in form.title.errors %}
+                    <li>{{ err }}</li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+              <div class="field-help">العنوان اختياري لكنه يسهل التعرف على الخطاب داخل الإدارة.</div>
+            </div>
+
+            <div class="field-block full field-url">
+              <label class="field-label" for="{{ form.drive_url.id_for_label }}">{{ form.drive_url.label }}</label>
+              {{ form.drive_url }}
+              {% if form.drive_url.errors %}
+                <ul class="field-errors">
+                  {% for err in form.drive_url.errors %}
+                    <li>{{ err }}</li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+              <div class="field-help">ضع رابط Google Drive الكامل للخطاب، ويفضل أن يكون رابطًا نهائيًا ثابتًا.</div>
+            </div>
+
+            <div class="field-block full">
+              <label class="field-label" for="{{ form.note.id_for_label }}">{{ form.note.label }}</label>
+              {{ form.note }}
+              {% if form.note.errors %}
+                <ul class="field-errors">
+                  {% for err in form.note.errors %}
+                    <li>{{ err }}</li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+              <div class="field-help">ملاحظة داخلية اختيارية، مثل نوع الخطاب أو الجهة المرتبطة أو ملاحظات النشر.</div>
+            </div>
+
+            <div class="field-block full">
+              <div class="check-card">
+                <div class="check-wrap">
+                  <label for="{{ form.is_active.id_for_label }}">{{ form.is_active.label }}</label>
+                  {{ form.is_active }}
+                </div>
+
+                {% if form.is_active.errors %}
+                  <ul class="field-errors" style="margin-top:10px;">
+                    {% for err in form.is_active.errors %}
+                      <li>{{ err }}</li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
+
+                <div class="field-help">عند تفعيل الرابط يمكن فتحه مباشرة من النظام.</div>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="quick-tip">
-          تأكد من أن رابط Google Drive المضاف يملك صلاحية الوصول المناسبة للمستخدمين المخولين، حتى لا تظهر رسالة منع صلاحية عند فتحه من داخل النظام.
-        </div>
-
-        {% if obj %}
-          <div class="preview-box">
-            <div class="preview-head">ملخص السجل الحالي</div>
-            <div class="preview-body">
-              <div class="preview-item">
-                <div class="preview-label">الأسبوع</div>
-                <div class="preview-value">الأسبوع {{ obj.week.week_no }} — يبدأ {{ obj.week.start_sunday }}</div>
-              </div>
-
-              <div class="preview-item">
-                <div class="preview-label">الحالة</div>
-                <div class="preview-value">{% if obj.is_active %}نشط{% else %}غير نشط{% endif %}</div>
-              </div>
-
-              <div class="preview-item">
-                <div class="preview-label">العنوان الحالي</div>
-                <div class="preview-value">{{ obj.title|default:"—" }}</div>
-              </div>
-
-              <div class="preview-item full">
-                <div class="preview-label">الرابط الحالي</div>
-                <div class="preview-value url">{{ obj.drive_url|default:"—" }}</div>
-              </div>
-            </div>
+          <div class="quick-tip">
+            تأكد من أن رابط Google Drive المضاف يملك صلاحية الوصول المناسبة للمستخدمين المخولين، حتى لا تظهر رسالة منع صلاحية عند فتحه من داخل النظام.
           </div>
-        {% endif %}
 
-        <div class="form-actions">
-        <button type="submit" class="form-btn form-btn-primary">
-         {% if submit_label %}{{ submit_label }}{% else %}حفظ{% endif %}
-        </button>
-          <a href="{% url 'visits:weekly_letter_links_list' %}" class="form-btn form-btn-light">إلغاء</a>
-          {% if obj and obj.drive_url %}
-            <a href="{{ obj.drive_url }}" target="_blank" rel="noopener noreferrer" class="form-btn form-btn-open">فتح الرابط</a>
+          {% if obj %}
+            <section class="preview-card" style="margin-top:16px;">
+              <div class="card-head">
+                <h3 class="card-title">ملخص السجل الحالي</h3>
+                <div class="card-subtitle">عرض مختصر للسجل الحالي قبل الحفظ أو التعديل.</div>
+              </div>
+
+              <div class="preview-body">
+                <div class="preview-item">
+                  <div class="preview-label">الأسبوع</div>
+                  <div class="preview-value">الأسبوع {{ obj.week.week_no }} — يبدأ {{ obj.week.start_sunday }}</div>
+                </div>
+
+                <div class="preview-item">
+                  <div class="preview-label">الحالة</div>
+                  <div class="preview-value">{% if obj.is_active %}نشط{% else %}غير نشط{% endif %}</div>
+                </div>
+
+                <div class="preview-item">
+                  <div class="preview-label">العنوان الحالي</div>
+                  <div class="preview-value">{{ obj.title|default:"—" }}</div>
+                </div>
+
+                <div class="preview-item full">
+                  <div class="preview-label">الرابط الحالي</div>
+                  <div class="preview-value url">{{ obj.drive_url|default:"—" }}</div>
+                </div>
+              </div>
+            </section>
           {% endif %}
-        </div>
-      </form>
-    </div>
-  </section>
-</div>
+
+          <div class="form-actions">
+            <button type="submit" class="form-btn form-btn-primary">
+              {% if submit_label %}{{ submit_label }}{% else %}حفظ{% endif %}
+            </button>
+
+            <a href="{% url 'visits:weekly_letter_links_list' %}" class="form-btn form-btn-light">إلغاء</a>
+
+            {% if obj and obj.drive_url %}
+              <a href="{{ obj.drive_url }}" target="_blank" rel="noopener noreferrer" class="form-btn form-btn-open">فتح الرابط</a>
+            {% endif %}
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </div>
+</section>
 {% endblock %}

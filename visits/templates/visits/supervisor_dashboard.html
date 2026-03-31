@@ -1,0 +1,535 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}بوابة المشرف{% endblock %}
+{% block page_messages %}{% endblock %}
+{% block hero %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .sup-dashboard{
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 12px 0 8px;
+    display: grid;
+    gap: 12px;
+  }
+
+  .sup-panel{
+    background: var(--vp-card);
+    border: 1px solid var(--vp-line);
+    border-radius: var(--vp-radius-xl);
+    box-shadow: var(--vp-shadow);
+    overflow: hidden;
+  }
+
+  .sup-hero{
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--vp-line);
+    background: linear-gradient(180deg, #fafcfb, #ffffff);
+  }
+
+  .sup-hero-main{
+    display: grid;
+    gap: 6px;
+    min-width: 260px;
+  }
+
+  .sup-title-row{
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .sup-icon{
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: var(--vp-primary-soft);
+    border: 1px solid var(--vp-primary-soft-border);
+    color: var(--vp-primary);
+    font-size: 18px;
+  }
+
+  .sup-title{
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--vp-text);
+    line-height: 1.4;
+  }
+
+  .sup-subtitle{
+    margin: 0;
+    font-size: 12.7px;
+    line-height: 1.8;
+    color: var(--vp-text-soft);
+    font-weight: 500;
+  }
+
+  .sup-hero-side{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .sup-chip{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 34px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid var(--vp-line);
+    background: var(--vp-card-soft);
+    color: var(--vp-text-soft);
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .sup-chip b{
+    color: var(--vp-text);
+    font-weight: 700;
+  }
+
+  .sup-dot{
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #94a3b8;
+    box-shadow: 0 0 0 4px rgba(148,163,184,.10);
+  }
+
+  .sup-dot.ok{
+    background: #2f7a4f;
+    box-shadow: 0 0 0 4px rgba(47,122,79,.08);
+  }
+
+  .sup-stats{
+    padding: 14px 16px 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  .sup-stat{
+    background: #fff;
+    border: 1px solid var(--vp-line);
+    border-radius: 18px;
+    padding: 12px 13px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    min-height: 72px;
+  }
+
+  .sup-stat-meta{
+    display: grid;
+    gap: 4px;
+  }
+
+  .sup-stat-label{
+    font-size: 11.2px;
+    color: var(--vp-text-soft);
+    font-weight: 500;
+  }
+
+  .sup-stat-value{
+    font-size: 18px;
+    color: var(--vp-text);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .sup-stat-icon{
+    width: 38px;
+    height: 38px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: var(--vp-card-soft);
+    border: 1px solid var(--vp-line);
+    font-size: 16px;
+    flex: 0 0 auto;
+  }
+
+  .sup-body{
+    padding: 14px 16px 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .sup-card{
+    background: #fff;
+    border: 1px solid var(--vp-line);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .sup-card-head{
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--vp-line);
+    background: linear-gradient(180deg, #fafcfb, #ffffff);
+  }
+
+  .sup-card-title{
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--vp-text);
+  }
+
+  .sup-card-sub{
+    margin: 3px 0 0;
+    font-size: 11.4px;
+    line-height: 1.7;
+    color: var(--vp-text-soft);
+    font-weight: 500;
+  }
+
+  .sup-card-body{
+    padding: 14px;
+  }
+
+  .quick-grid{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .quick-link{
+    border: 1px solid var(--vp-line);
+    border-radius: 16px;
+    background: #fff;
+    padding: 12px;
+    display: grid;
+    gap: 7px;
+    text-decoration: none;
+    transition: .16s ease;
+  }
+
+  .quick-link:hover{
+    transform: translateY(-1px);
+    border-color: #c4d0c9;
+    background: #fcfdfc;
+  }
+
+  .quick-link-icon{
+    width: 34px;
+    height: 34px;
+    border-radius: 12px;
+    display: grid;
+    place-items: center;
+    background: var(--vp-primary-soft);
+    border: 1px solid var(--vp-primary-soft-border);
+    color: var(--vp-primary);
+    font-size: 15px;
+  }
+
+  .quick-link-title{
+    font-size: 12.4px;
+    color: var(--vp-text);
+    font-weight: 700;
+    line-height: 1.6;
+  }
+
+  .quick-link-sub{
+    font-size: 11.3px;
+    color: var(--vp-text-soft);
+    font-weight: 500;
+    line-height: 1.75;
+  }
+
+  .info-list{
+    display: grid;
+    gap: 10px;
+  }
+
+  .info-item{
+    border: 1px solid var(--vp-line);
+    border-radius: 16px;
+    background: #fff;
+    padding: 12px 13px;
+    display: grid;
+    gap: 5px;
+  }
+
+  .info-label{
+    font-size: 11.1px;
+    color: var(--vp-text-faint);
+    font-weight: 600;
+  }
+
+  .info-value{
+    font-size: 12.7px;
+    color: var(--vp-text);
+    font-weight: 700;
+    line-height: 1.8;
+    word-break: break-word;
+  }
+
+  .status-box{
+    border: 1px solid var(--vp-line);
+    border-radius: 16px;
+    background: #fff;
+    padding: 12px 13px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .status-row{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .status-name{
+    font-size: 12px;
+    color: var(--vp-text-soft);
+    font-weight: 600;
+  }
+
+  .status-pill{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 30px;
+    padding: 0 10px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 11.4px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .status-pill.ok{
+    background: var(--vp-ok-bg);
+    border-color: var(--vp-ok-border);
+    color: var(--vp-ok-text);
+  }
+
+  .status-pill.warn{
+    background: var(--vp-warn-bg);
+    border-color: var(--vp-warn-border);
+    color: var(--vp-warn-text);
+  }
+
+  .status-pill.info{
+    background: var(--vp-primary-soft);
+    border-color: var(--vp-primary-soft-border);
+    color: var(--vp-primary);
+  }
+
+  .status-note{
+    border: 1px solid var(--vp-warn-border);
+    background: var(--vp-warn-bg);
+    color: var(--vp-warn-text);
+    border-radius: 16px;
+    padding: 12px 13px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.85;
+  }
+
+  @media (max-width: 1100px){
+    .sup-stats{
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .sup-body{
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 720px){
+    .sup-stats{
+      grid-template-columns: 1fr;
+    }
+
+    .quick-grid{
+      grid-template-columns: 1fr;
+    }
+
+    .sup-hero-side{
+      justify-content: flex-start;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="sup-dashboard">
+  <div class="sup-panel">
+
+    <div class="sup-hero">
+      <div class="sup-hero-main">
+        <div class="sup-title-row">
+          <div class="sup-icon">👤</div>
+          <h1 class="sup-title">بوابة المشرف</h1>
+        </div>
+        <p class="sup-subtitle">
+          هذه الصفحة تعرض لك ملخصًا سريعًا للوضع الحالي، مع وصول مباشر إلى أهم الصفحات التنفيذية.
+        </p>
+      </div>
+
+      <div class="sup-hero-side">
+        <span class="sup-chip"><span class="sup-dot ok"></span> المشرف: <b>{{ sup.full_name }}</b></span>
+        <span class="sup-chip"><span class="sup-dot"></span> الهوية: <b>{{ sup.national_id }}</b></span>
+      </div>
+    </div>
+
+    <div class="sup-stats">
+      <div class="sup-stat">
+        <div class="sup-stat-meta">
+          <div class="sup-stat-label">الأسبوع الحالي</div>
+          <div class="sup-stat-value">{{ current_week|default:week|default:"—" }}</div>
+        </div>
+        <div class="sup-stat-icon">📅</div>
+      </div>
+
+      <div class="sup-stat">
+        <div class="sup-stat-meta">
+          <div class="sup-stat-label">المدارس المسندة</div>
+          <div class="sup-stat-value">{{ assignment_count|default:"0" }}</div>
+        </div>
+        <div class="sup-stat-icon">🏫</div>
+      </div>
+
+      <div class="sup-stat">
+        <div class="sup-stat-meta">
+          <div class="sup-stat-label">الإشعارات غير المقروءة</div>
+          <div class="sup-stat-value">{{ unread_count|default:"0" }}</div>
+        </div>
+        <div class="sup-stat-icon">🔔</div>
+      </div>
+
+      <div class="sup-stat">
+        <div class="sup-stat-meta">
+          <div class="sup-stat-label">البريد الإلكتروني</div>
+          <div class="sup-stat-value">
+            {% if supervisor_email %}جاهز{% else %}غير مضاف{% endif %}
+          </div>
+        </div>
+        <div class="sup-stat-icon">📧</div>
+      </div>
+    </div>
+
+    <div class="sup-body">
+      <div class="sup-card">
+        <div class="sup-card-head">
+          <h2 class="sup-card-title">الإجراءات السريعة</h2>
+          <p class="sup-card-sub">اختصارات مباشرة لأهم الصفحات التي يستخدمها المشرف.</p>
+        </div>
+
+        <div class="sup-card-body">
+          <div class="quick-grid">
+            <a class="quick-link" href="{% url 'visits:plan' %}?week={{ current_week|default:week }}">
+              <div class="quick-link-icon">📝</div>
+              <div class="quick-link-title">الخطة الأسبوعية</div>
+              <div class="quick-link-sub">فتح الخطة الحالية ومتابعة الحفظ أو الاعتماد.</div>
+            </a>
+
+            <a class="quick-link" href="{% url 'visits:notifications' %}?week={{ current_week|default:week }}">
+              <div class="quick-link-icon">🔔</div>
+              <div class="quick-link-title">الإشعارات</div>
+              <div class="quick-link-sub">استعراض التنبيهات والإشعارات المرتبطة بالخطة.</div>
+            </a>
+
+            <a class="quick-link" href="{% url 'visits:supervisor_email_settings' %}?next={{ request.get_full_path|urlencode }}">
+              <div class="quick-link-icon">📧</div>
+              <div class="quick-link-title">إعداد البريد الإلكتروني</div>
+              <div class="quick-link-sub">إضافة البريد الإلكتروني أو تعديله وتفعيل التنبيهات.</div>
+            </a>
+
+            <a class="quick-link" href="{% url 'visits:print_assignment_letter' %}">
+              <div class="quick-link-icon">🖨️</div>
+              <div class="quick-link-title">خطاب الإسناد</div>
+              <div class="quick-link-sub">عرض وطباعة خطاب الإسناد الخاص بك.</div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="sup-card">
+        <div class="sup-card-head">
+          <h2 class="sup-card-title">ملخص الحالة الحالية</h2>
+          <p class="sup-card-sub">عرض مختصر للبيانات الأساسية والحالة التنفيذية الحالية.</p>
+        </div>
+
+        <div class="sup-card-body">
+          <div class="info-list">
+            <div class="info-item">
+              <div class="info-label">اسم المشرف</div>
+              <div class="info-value">{{ sup.full_name }}</div>
+            </div>
+
+            <div class="info-item">
+              <div class="info-label">رقم الهوية</div>
+              <div class="info-value">{{ sup.national_id }}</div>
+            </div>
+
+            <div class="status-box">
+              <div class="status-row">
+                <div class="status-name">الأسبوع الحالي</div>
+                <span class="status-pill info">{{ current_week|default:week|default:"—" }}</span>
+              </div>
+
+              <div class="status-row">
+                <div class="status-name">التنبيهات البريدية</div>
+                {% if supervisor_email and email_notifications_enabled %}
+                  <span class="status-pill ok">مفعلة</span>
+                {% elif supervisor_email %}
+                  <span class="status-pill warn">غير مفعلة</span>
+                {% else %}
+                  <span class="status-pill info">لا يوجد بريد</span>
+                {% endif %}
+              </div>
+
+              <div class="status-row">
+                <div class="status-name">الإشعارات غير المقروءة</div>
+                {% if unread_count and unread_count > 0 %}
+                  <span class="status-pill warn">{{ unread_count }}</span>
+                {% else %}
+                  <span class="status-pill ok">0</span>
+                {% endif %}
+              </div>
+
+              <div class="status-row">
+                <div class="status-name">عدد المدارس المسندة</div>
+                <span class="status-pill info">{{ assignment_count|default:"0" }}</span>
+              </div>
+            </div>
+
+            {% if supervisor_email %}
+              <div class="info-item">
+                <div class="info-label">البريد الإلكتروني المسجل</div>
+                <div class="info-value">{{ supervisor_email }}</div>
+              </div>
+            {% else %}
+              <div class="status-note">
+                لا يوجد بريد إلكتروني مسجل حاليًا. يوصى بإضافته لتفعيل التنبيهات والإشعارات المرتبطة بالخطة.
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -8,42 +8,44 @@
 
 {% block extra_css %}
 <style>
-  :root{
-    --v2-bg:#f4f7fb;
-    --v2-card:#ffffff;
-    --v2-card-2:#f8fbff;
-    --v2-line:#dbe4ee;
-    --v2-line-2:#e9eef5;
+  .plan-page{
+    --v2-bg:var(--vp-bg);
+    --v2-card:var(--vp-card);
+    --v2-card-2:var(--vp-card-soft);
 
-    --v2-text:#0f172a;
-    --v2-text-2:#334155;
-    --v2-muted:#64748b;
-    --v2-soft:#94a3b8;
+    --v2-line:var(--vp-line);
+    --v2-line-2:var(--vp-line-2);
+    --v2-line-strong:var(--vp-line-strong);
 
-    --v2-shadow:0 14px 34px rgba(15,23,42,.06);
-    --v2-shadow-soft:0 8px 18px rgba(15,23,42,.04);
+    --v2-text:var(--vp-text);
+    --v2-text-2:var(--vp-text-soft);
+    --v2-muted:var(--vp-text-soft);
+    --v2-soft:var(--vp-text-faint);
 
-    --v2-ok-bg:#eef9f0;
-    --v2-ok-bd:#b8e3c0;
-    --v2-ok-tx:#166534;
+    --v2-shadow:var(--vp-shadow);
+    --v2-shadow-soft:var(--vp-shadow-soft);
 
-    --v2-pri-bg:#eef4ff;
-    --v2-pri-bd:#bfd2ff;
-    --v2-pri-tx:#1d4ed8;
+    --v2-ok-bg:var(--vp-ok-bg);
+    --v2-ok-bd:var(--vp-ok-border);
+    --v2-ok-tx:var(--vp-ok-text);
 
-    --v2-warn-bg:#fff7ed;
-    --v2-warn-bd:#fed7aa;
-    --v2-warn-tx:#9a3412;
+    --v2-pri-bg:var(--vp-primary-soft);
+    --v2-pri-bd:var(--vp-primary-soft-border);
+    --v2-pri-tx:var(--vp-primary);
 
-    --v2-danger-bg:#fef2f2;
-    --v2-danger-bd:#fecaca;
-    --v2-danger-tx:#991b1b;
+    --v2-warn-bg:var(--vp-warn-bg);
+    --v2-warn-bd:var(--vp-warn-border);
+    --v2-warn-tx:var(--vp-warn-text);
 
-    --v2-gray-bg:#f1f5f9;
-    --v2-gray-bd:#d7e0ea;
-    --v2-gray-tx:#475569;
+    --v2-danger-bg:var(--vp-danger-bg);
+    --v2-danger-bd:var(--vp-danger-border);
+    --v2-danger-tx:var(--vp-danger-text);
 
-    --fw-title:800;
+    --v2-gray-bg:#f6f8f7;
+    --v2-gray-bd:#dce4df;
+    --v2-gray-tx:#55645c;
+
+    --fw-title:700;
     --fw-strong:700;
     --fw-mid:600;
     --fw-normal:500;
@@ -61,7 +63,7 @@
   .panel{
     background:var(--v2-card);
     border:1px solid var(--v2-line);
-    border-radius:24px;
+    border-radius:22px;
     box-shadow:var(--v2-shadow);
     overflow:hidden;
   }
@@ -69,8 +71,8 @@
   .email-strip{
     margin:12px 16px 0;
     border:1px solid var(--v2-line);
-    border-radius:18px;
-    background:linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+    border-radius:16px;
+    background:linear-gradient(180deg, #ffffff 0%, var(--v2-card-2) 100%);
     box-shadow:var(--v2-shadow-soft);
     padding:12px 14px;
     display:flex;
@@ -144,22 +146,6 @@
     margin:0;
   }
 
-  .page-wrap{
-    max-width:1280px;
-    margin:0 auto;
-    padding:0;
-    display:grid;
-    gap:10px;
-  }
-
-  .panel{
-    background:var(--v2-card);
-    border:1px solid var(--v2-line);
-    border-radius:24px;
-    box-shadow:var(--v2-shadow);
-    overflow:hidden;
-  }
-
   .plan-topbar{
     padding:18px 20px 16px;
     display:grid;
@@ -168,9 +154,9 @@
     gap:18px;
     border-bottom:1px solid var(--v2-line);
     background:
-      radial-gradient(520px 180px at 100% 0%, rgba(59,130,246,.06), transparent 65%),
-      radial-gradient(440px 180px at 0% 100%, rgba(34,197,94,.04), transparent 65%),
-      linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+      radial-gradient(520px 180px at 100% 0%, rgba(31,75,58,.045), transparent 65%),
+      radial-gradient(440px 180px at 0% 100%, rgba(47,98,80,.035), transparent 65%),
+      linear-gradient(180deg, #ffffff 0%, var(--v2-card-2) 100%);
   }
 
   .plan-topbar-right{
@@ -192,7 +178,7 @@
 
   .plan-title{
     margin:0;
-    font-size:25px;
+    font-size:24px;
     line-height:1.1;
     font-weight:var(--fw-title);
     color:var(--v2-text);
@@ -203,69 +189,69 @@
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    height:36px;
-    padding:0 15px;
+    height:34px;
+    padding:0 14px;
     border-radius:999px;
-    background:linear-gradient(180deg, #f4f7ff 0%, #edf3ff 100%);
-    border:1px solid #c9d8ff;
+    background:linear-gradient(180deg, #f7faf8 0%, var(--v2-pri-bg) 100%);
+    border:1px solid var(--v2-pri-bd);
     color:var(--v2-pri-tx);
-    font-size:12.5px;
+    font-size:12.4px;
     font-weight:var(--fw-strong);
     white-space:nowrap;
-    box-shadow:0 8px 18px rgba(59,130,246,.07);
+    box-shadow:none;
   }
 
   .status-inline{
     display:inline-flex;
     align-items:center;
     gap:8px;
-    height:36px;
+    height:34px;
     padding:0 14px;
     border-radius:999px;
     border:1px solid var(--v2-line);
     background:#fff;
-    font-size:12.5px;
+    font-size:12.4px;
     font-weight:var(--fw-mid);
     color:var(--v2-text);
     white-space:nowrap;
-    box-shadow:var(--v2-shadow-soft);
+    box-shadow:none;
   }
 
   .s-dot{
-    width:9px;
-    height:9px;
+    width:8px;
+    height:8px;
     border-radius:999px;
     background:#94a3b8;
   }
 
   .status-inline.ok{
-    background:linear-gradient(180deg, #f3fcf5 0%, #eef9f0 100%);
+    background:linear-gradient(180deg, #f7fcf8 0%, var(--v2-ok-bg) 100%);
     border-color:var(--v2-ok-bd);
     color:var(--v2-ok-tx);
   }
   .status-inline.ok .s-dot{
-    background:#16a34a;
-    box-shadow:0 0 0 4px rgba(22,163,74,.12);
+    background:#2f7a4f;
+    box-shadow:0 0 0 4px rgba(47,122,79,.08);
   }
 
   .status-inline.warn{
-    background:linear-gradient(180deg, #fffaf4 0%, #fff7ed 100%);
+    background:linear-gradient(180deg, #fefbf7 0%, var(--v2-warn-bg) 100%);
     border-color:var(--v2-warn-bd);
     color:var(--v2-warn-tx);
   }
   .status-inline.warn .s-dot{
-    background:#f59e0b;
-    box-shadow:0 0 0 4px rgba(245,158,11,.12);
+    background:#b7791f;
+    box-shadow:0 0 0 4px rgba(183,121,31,.08);
   }
 
   .status-inline.draft{
-    background:linear-gradient(180deg, #f4f8ff 0%, #eef4ff 100%);
+    background:linear-gradient(180deg, #f7faf8 0%, var(--v2-pri-bg) 100%);
     border-color:var(--v2-pri-bd);
     color:var(--v2-pri-tx);
   }
   .status-inline.draft .s-dot{
-    background:#2563eb;
-    box-shadow:0 0 0 4px rgba(37,99,235,.12);
+    background:var(--v2-pri-tx);
+    box-shadow:0 0 0 4px rgba(31,75,58,.08);
   }
 
   .plan-subtitle{
@@ -316,12 +302,12 @@
     font-weight:var(--fw-mid);
     color:var(--v2-text);
     outline:none;
-    box-shadow:var(--v2-shadow-soft);
+    box-shadow:none;
     transition:.16s ease;
   }
   .select:focus{
-    border-color:#93c5fd;
-    box-shadow:0 0 0 4px rgba(59,130,246,.08);
+    border-color:#8fae9f;
+    box-shadow:0 0 0 3px rgba(47, 98, 80, .08);
   }
 
   .plan-topbar-left{
@@ -341,7 +327,7 @@
     gap:8px;
     height:40px;
     padding:0 14px;
-    border-radius:14px;
+    border-radius:12px;
     border:1px solid transparent;
     font-family:"Cairo", Arial;
     font-weight:var(--fw-mid);
@@ -358,14 +344,14 @@
   .btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none; }
 
   .btn-outline{
-    background:linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+    background:#fff;
     border-color:var(--v2-line);
     color:var(--v2-text);
-    box-shadow:var(--v2-shadow-soft);
+    box-shadow:none;
   }
   .btn-outline:hover{
-    border-color:#c7d3e0;
-    background:#ffffff;
+    border-color:#c4d0c9;
+    background:#fcfdfc;
   }
 
   .btn-text{
@@ -387,48 +373,48 @@
 
   .btn-save{
     background:#fff;
-    border-color:#cbd5e1;
+    border-color:var(--v2-line-strong);
     color:var(--v2-text);
-    box-shadow:var(--v2-shadow-soft);
+    box-shadow:none;
   }
   .btn-save:hover{
-    background:#f8fafc;
-    border-color:#b8c4d1;
+    background:#f8faf8;
+    border-color:#c4d0c9;
   }
 
   .btn-approve{
-    background:#166534;
-    border-color:#166534;
+    background:var(--vp-primary);
+    border-color:var(--vp-primary);
     color:#fff;
-    box-shadow:0 8px 20px rgba(22,101,52,.16);
+    box-shadow:none;
   }
   .btn-approve:hover{
-    background:#14532d;
-    border-color:#14532d;
+    background:var(--vp-primary-2);
+    border-color:var(--vp-primary-2);
   }
 
   .btn-warn{
     background:var(--v2-warn-bg);
     border-color:var(--v2-warn-bd);
     color:var(--v2-warn-tx);
-    box-shadow:var(--v2-shadow-soft);
+    box-shadow:none;
   }
-  .btn-warn:hover{ background:#fff1df; }
+  .btn-warn:hover{ background:#fdf7ef; }
 
   .btn-ghost{
     background:#fff;
     border-color:var(--v2-line);
     color:var(--v2-text);
   }
-  .btn-ghost:hover{ background:#f8fafc; }
+  .btn-ghost:hover{ background:#f8faf8; }
 
   .btn-danger{
     background:var(--v2-danger-bg);
     border:1px solid var(--v2-danger-bd);
     color:var(--v2-danger-tx);
-    box-shadow:var(--v2-shadow-soft);
+    box-shadow:none;
   }
-  .btn-danger:hover{ background:#fee2e2; }
+  .btn-danger:hover{ background:#fcf0ef; }
 
   .notif-wrap{
     position:relative;
@@ -447,7 +433,7 @@
     height:18px;
     padding:0 5px;
     border-radius:999px;
-    background:#dc2626;
+    background:#b42318;
     color:#fff;
     font-size:10px;
     font-weight:var(--fw-strong);
@@ -455,7 +441,7 @@
     align-items:center;
     justify-content:center;
     border:2px solid #fff;
-    box-shadow:0 8px 16px rgba(220,38,38,.18);
+    box-shadow:none;
   }
 
   .notif-panel{
@@ -465,8 +451,8 @@
     width:min(370px, calc(100vw - 32px));
     background:#fff;
     border:1px solid var(--v2-line);
-    border-radius:18px;
-    box-shadow:0 24px 50px rgba(15,23,42,.12);
+    border-radius:16px;
+    box-shadow:0 18px 40px rgba(22,36,29,.10);
     overflow:hidden;
     display:none;
     z-index:50;
@@ -480,7 +466,7 @@
     justify-content:space-between;
     gap:10px;
     border-bottom:1px solid var(--v2-line);
-    background:#fafcff;
+    background:#fafcfb;
   }
 
   .notif-title{
@@ -499,7 +485,7 @@
   .notif-link{
     font-size:11.25px;
     font-weight:var(--fw-mid);
-    color:#1d4ed8;
+    color:var(--vp-primary);
     text-decoration:none;
   }
   .notif-link:hover{ text-decoration:underline; }
@@ -522,8 +508,8 @@
   }
 
   .notif-item.unread{
-    background:#f8fbff;
-    border-color:#d5e7ff;
+    background:#fafcfb;
+    border-color:var(--v2-pri-bd);
   }
 
   .notif-row{
@@ -548,10 +534,10 @@
     border-radius:999px;
     background:#94a3b8;
   }
-  .notif-dot.approved{ background:#16a34a; }
-  .notif-dot.returned{ background:#f59e0b; }
-  .notif-dot.unlock_approved{ background:#0f766e; }
-  .notif-dot.unlock_rejected{ background:#dc2626; }
+  .notif-dot.approved{ background:#2f7a4f; }
+  .notif-dot.returned{ background:#b7791f; }
+  .notif-dot.unlock_approved{ background:#2f6250; }
+  .notif-dot.unlock_rejected{ background:#b42318; }
 
   .notif-item h4{
     margin:0;
@@ -571,7 +557,7 @@
 
   .notif-time{
     font-size:10.75px;
-    color:#94a3b8;
+    color:var(--v2-soft);
     font-weight:var(--fw-mid);
     white-space:nowrap;
   }
@@ -608,7 +594,7 @@
 
   .table-box{
     border:1px solid var(--v2-line);
-    border-radius:18px;
+    border-radius:16px;
     overflow:hidden;
     background:#fff;
   }
@@ -634,7 +620,7 @@
     font-size:13px;
     font-weight:var(--fw-strong);
     color:var(--v2-text);
-    background:#f8fafc;
+    background:#fafcfb;
     border-bottom:1px solid var(--v2-line);
     text-align:center;
     white-space:nowrap;
@@ -642,14 +628,14 @@
 
   tbody td{
     padding:10px;
-    border-bottom:1px solid #eef2f7;
+    border-bottom:1px solid #edf2ee;
     vertical-align:middle;
     text-align:center;
     background:#fff;
   }
 
   tbody tr:last-child td{ border-bottom:none; }
-  tbody tr:hover td{ background:#fcfdff; }
+  tbody tr:hover td{ background:#fcfdfc; }
 
   th.col-day,   td.col-day   { width: 12%; }
   th.col-gdate, td.col-gdate { width: 14%; }
@@ -661,7 +647,7 @@
     position:sticky;
     right:0;
     z-index:6;
-    background:#f8fafc;
+    background:#fafcfb;
   }
   tbody td.col-day{
     background:#fff;
@@ -670,7 +656,7 @@
 
   .dayname{
     font-weight:var(--fw-title);
-    font-size:14.5px;
+    font-size:14.2px;
     color:var(--v2-text);
     letter-spacing:-.1px;
   }
@@ -691,10 +677,10 @@
   }
 
   tr.today td{
-    background:linear-gradient(180deg, rgba(239,246,255,.82), rgba(255,255,255,1));
+    background:linear-gradient(180deg, rgba(243,247,244,.85), rgba(255,255,255,1));
   }
   tr.today td.col-day{
-    background:#eef6ff;
+    background:#f3f7f4;
   }
 
   .in-select{
@@ -713,12 +699,12 @@
     transition:.15s ease;
   }
   .in-select:focus{
-    border-color:#93c5fd;
-    box-shadow:0 0 0 3px rgba(59,130,246,.08);
+    border-color:#8fae9f;
+    box-shadow:0 0 0 3px rgba(47, 98, 80, .08);
   }
   .in-select[disabled]{
     opacity:.65;
-    background:#f8fafc;
+    background:#f8faf8;
     cursor:not-allowed;
   }
 
@@ -776,8 +762,8 @@
     margin-top:8px;
     padding:9px 10px;
     border-radius:12px;
-    border:1px dashed #d9e2ec;
-    background:#fafcff;
+    border:1px dashed #d8e1dc;
+    background:#fafcfb;
     text-align:right;
     display:none;
   }
@@ -818,7 +804,7 @@
   .novisit .hint2{
     margin-top:6px;
     font-size:11.2px;
-    color:#7b8796;
+    color:#76847c;
     font-weight:var(--fw-normal);
     line-height:1.7;
   }
@@ -867,7 +853,7 @@
   .mm-backdrop{
     position:fixed;
     inset:0;
-    background:rgba(15,23,42,.45);
+    background:rgba(31,44,37,.34);
     display:none;
     align-items:center;
     justify-content:center;
@@ -880,10 +866,10 @@
   .modal-card,
   .mm-card{
     width:min(540px, 100%);
-    border-radius:18px;
+    border-radius:16px;
     background:#fff;
     border:1px solid var(--v2-line);
-    box-shadow:0 26px 70px rgba(15,23,42,.18);
+    box-shadow:0 20px 46px rgba(22,36,29,.12);
     overflow:hidden;
     transform:translateY(6px);
     animation:modalIn .14s ease-out;
@@ -902,7 +888,7 @@
     justify-content:space-between;
     gap:10px;
     border-bottom:1px solid var(--v2-line);
-    background:#f8fafc;
+    background:#fafcfb;
   }
 
   .modal-title,
@@ -924,7 +910,7 @@
     font-weight:var(--fw-strong);
   }
   .xbtn:hover,
-  .mm-x:hover{ background:#f8fafc; }
+  .mm-x:hover{ background:#f8faf8; }
 
   .modal-body,
   .mm-body{
@@ -964,7 +950,7 @@
 
   .mm-note{
     border:1px solid var(--v2-line);
-    background:#f8fafc;
+    background:#fafcfb;
     color:var(--v2-text-2);
   }
 
@@ -1072,320 +1058,322 @@
 {% endblock %}
 
 {% block content %}
-<div class="page-wrap">
-  <div class="panel">
+<div class="plan-page">
+  <div class="page-wrap">
+    <div class="panel">
 
-    <div class="plan-topbar">
-      <div class="plan-topbar-right">
-        <div class="plan-title-row">
-          <h1 class="plan-title">خطة الأسبوع</h1>
-          <span class="plan-badge">الأسبوع {{ week }}</span>
+      <div class="plan-topbar">
+        <div class="plan-topbar-right">
+          <div class="plan-title-row">
+            <h1 class="plan-title">خطة الأسبوع</h1>
+            <span class="plan-badge">الأسبوع {{ week }}</span>
 
-          {% if plan.status == plan.STATUS_APPROVED %}
-            <div class="status-inline ok" title="حالة الخطة"><span class="s-dot"></span><span>معتمدة</span></div>
-          {% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}
-            <div class="status-inline warn" title="حالة الخطة"><span class="s-dot"></span><span>طلب فك اعتماد</span></div>
-          {% else %}
-            <div class="status-inline draft" title="حالة الخطة"><span class="s-dot"></span><span>مسودة</span></div>
-          {% endif %}
-        </div>
-
-        <div class="plan-subtitle">
-          المشرف: <b>{{ sup.full_name }}</b>
-          — رقم الهوية: <b>{{ sup.national_id }}</b>
-        </div>
-      </div>
-
-      <div class="plan-topbar-center">
-        <div class="field">
-          <label>اختيار الأسبوع</label>
-          <select class="select" id="weekSelect">
-            {% for w,label in week_choices %}
-              <option value="{{ w }}" {% if w == week %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-      </div>
-
-      <div class="plan-topbar-left">
-        <div class="notif-wrap">
-          <button type="button" class="btn btn-outline btn-icon notif-btn" id="notifBtn" title="الإشعارات" aria-label="الإشعارات">
-            🔔
-            {% if unread_count and unread_count > 0 %}
-              <span class="notif-count">{{ unread_count }}</span>
-            {% endif %}
-          </button>
-
-          <div class="notif-panel" id="notifPanel">
-            <div class="notif-head">
-              <div class="notif-title">الإشعارات</div>
-              <div class="notif-tools">
-                <a class="notif-link" href="{% url 'visits:notifications' %}?week={{ week }}">عرض الكل</a>
-
-                {% if unread_count and unread_count > 0 %}
-                  <form method="post" action="{% url 'visits:mark_all_notifications_read' %}" style="margin:0">
-                    {% csrf_token %}
-                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                    <button type="submit" class="notif-mini-btn">تعيين الكل كمقروء</button>
-                  </form>
-                {% endif %}
-              </div>
-            </div>
-
-            {% if notifications %}
-              <div class="notif-list">
-                {% for n in notifications %}
-                  <div class="notif-item {% if not n.is_read %}unread{% endif %}">
-                    <div class="notif-row">
-                      <div class="notif-kind">
-                        <span class="notif-dot {{ n.notif_type }}"></span>
-                        <span>
-                          {% if n.notif_type == "approved" %}اعتماد
-                          {% elif n.notif_type == "returned" %}إعادة للمراجعة
-                          {% elif n.notif_type == "unlock_approved" %}قبول فك الاعتماد
-                          {% elif n.notif_type == "unlock_rejected" %}رفض فك الاعتماد
-                          {% else %}إشعار{% endif %}
-                        </span>
-                      </div>
-                      <div class="notif-time">{{ n.created_at|date:"Y-m-d" }} {{ n.created_at|time:"H:i" }}</div>
-                    </div>
-
-                    <h4>{{ n.title }}</h4>
-                    {% if n.message %}
-                      <p>{{ n.message }}</p>
-                    {% endif %}
-
-                    {% if not n.is_read %}
-                      <div class="notif-actions">
-                        <form method="post" action="{% url 'visits:mark_notification_read' n.id %}" style="margin:0">
-                          {% csrf_token %}
-                          <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                          <button type="submit" class="notif-mini-btn">تمت القراءة</button>
-                        </form>
-                      </div>
-                    {% endif %}
-                  </div>
-                {% endfor %}
-              </div>
+            {% if plan.status == plan.STATUS_APPROVED %}
+              <div class="status-inline ok" title="حالة الخطة"><span class="s-dot"></span><span>معتمدة</span></div>
+            {% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}
+              <div class="status-inline warn" title="حالة الخطة"><span class="s-dot"></span><span>طلب فك اعتماد</span></div>
             {% else %}
-              <div class="notif-empty">لا توجد إشعارات حاليًا.</div>
+              <div class="status-inline draft" title="حالة الخطة"><span class="s-dot"></span><span>مسودة</span></div>
             {% endif %}
+          </div>
+
+          <div class="plan-subtitle">
+            المشرف: <b>{{ sup.full_name }}</b>
+            — رقم الهوية: <b>{{ sup.national_id }}</b>
           </div>
         </div>
 
-        <a class="btn btn-outline btn-logout" href="{% url 'visits:logout' %}" title="خروج">خروج</a>
-        <a class="btn btn-outline btn-text" href="{% url 'visits:export_supervisor_assignments_excel' %}">
-          المدارس المسندة لي
-        </a>
-        <a class="btn btn-outline btn-text" href="{% url 'visits:plan_export' %}?week={{ week }}">
-          تصدير Excel
-        </a>
-      </div>
-    </div>
-
-    <div class="email-strip">
-      <div class="email-strip-info">
-        <div class="email-strip-title">البريد الإلكتروني والتنبيهات</div>
-
-        {% if supervisor_email %}
-          <div class="email-pill">
-            <span>📧</span>
-            <span>{{ supervisor_email }}</span>
+        <div class="plan-topbar-center">
+          <div class="field">
+            <label>اختيار الأسبوع</label>
+            <select class="select" id="weekSelect">
+              {% for w,label in week_choices %}
+                <option value="{{ w }}" {% if w == week %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
           </div>
+        </div>
 
-          {% if email_notifications_enabled %}
-            <div class="email-strip-subtitle">
-              <span class="email-pill enabled">التنبيهات البريدية مفعلة</span>
-            </div>
-          {% else %}
-            <div class="email-strip-subtitle">
-              <span class="email-pill disabled">التنبيهات البريدية غير مفعلة</span>
-            </div>
-          {% endif %}
-        {% else %}
-          <div class="email-pill empty">
-            <span>⚠</span>
-            <span>لا يوجد بريد إلكتروني مسجل حاليًا</span>
-          </div>
-          <div class="email-strip-subtitle">
-            يمكنك تسجيل البريد الآن ليصلك كل جديد على البريد الإلكتروني.
-          </div>
-        {% endif %}
-      </div>
+        <div class="plan-topbar-left">
+          <div class="notif-wrap">
+            <button type="button" class="btn btn-outline btn-icon notif-btn" id="notifBtn" title="الإشعارات" aria-label="الإشعارات">
+              🔔
+              {% if unread_count and unread_count > 0 %}
+                <span class="notif-count">{{ unread_count }}</span>
+              {% endif %}
+            </button>
 
-      <div class="email-strip-actions">
-        <a class="btn btn-outline btn-text" href="{% url 'visits:supervisor_email_settings' %}?next={{ request.get_full_path|urlencode }}">
-          {% if supervisor_email %}تعديل البريد{% else %}تسجيل البريد{% endif %}
-        </a>
+            <div class="notif-panel" id="notifPanel">
+              <div class="notif-head">
+                <div class="notif-title">الإشعارات</div>
+                <div class="notif-tools">
+                  <a class="notif-link" href="{% url 'visits:notifications' %}?week={{ week }}">عرض الكل</a>
 
-        {% if supervisor_email %}
-          <form method="post" action="{% url 'visits:toggle_email_notifications' %}" class="mini-form">
-            {% csrf_token %}
-            <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            {% if email_notifications_enabled %}
-              <button type="submit" class="btn btn-warn">إيقاف التنبيه البريدي</button>
-            {% else %}
-              <button type="submit" class="btn btn-save">تفعيل التنبيه البريدي</button>
-            {% endif %}
-          </form>
-        {% endif %}
-      </div>
-    </div>
+                  {% if unread_count and unread_count > 0 %}
+                    <form method="post" action="{% url 'visits:mark_all_notifications_read' %}" style="margin:0">
+                      {% csrf_token %}
+                      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                      <button type="submit" class="notif-mini-btn">تعيين الكل كمقروء</button>
+                    </form>
+                  {% endif %}
+                </div>
+              </div>
 
-    {% if messages %}
-      <script id="djMessages" type="application/json">
-        [
-          {% for message in messages %}
-            {"text":"{{ message|escapejs }}","tags":"{{ message.tags|escapejs }}"}{% if not forloop.last %},{% endif %}
-          {% endfor %}
-        ]
-      </script>
-    {% endif %}
-
-    <form method="post" id="planForm">
-      {% csrf_token %}
-      <input type="hidden" name="week" value="{{ week }}">
-
-      <div class="plan-table-area">
-        <div class="table-box">
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th class="col-day">اليوم</th>
-                  <th class="col-gdate">التاريخ (ميلادي)</th>
-                  <th class="col-hdate">التاريخ (هجري)</th>
-                  <th class="col-school">المدرسة / سبب اليوم</th>
-                  <th class="col-visit">نوع اليوم</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {% for wd,name in weekdays %}
-                  {% with d=day_dates|get_item:wd %}
-                  {% with day=days_map|get_item:wd %}
-                  {% with current=day.visit_type|default:visit_in_value %}
-                  <tr class="{% if d|date:'Y-m-d' == today|date:'Y-m-d' %}today{% endif %}" data-row="{{ wd }}">
-
-                    <td class="col-day">
-                      <span class="dayname">{{ name }}</span>
-                    </td>
-
-                    <td class="col-gdate">
-                      <span class="pill">{{ d|date:"d-m-Y" }}</span>
-                    </td>
-
-                    <td class="col-hdate">
-                      <span class="pill">{{ d|to_hijri }}</span>
-                    </td>
-
-                    <td class="col-school">
-                      <select class="in-select js-school"
-                              name="school_{{ wd }}"
-                              data-school="{{ wd }}"
-                              {% if plan.status == plan.STATUS_APPROVED or plan.status == plan.STATUS_UNLOCK_REQUESTED %}disabled{% endif %}>
-                        <option value="">— اختر —</option>
-                        {% for s in schools %}
-                          <option value="{{ s.id }}" {% if day and day.school_id == s.id %}selected{% endif %}>
-                            {{ s.name }}
-                          </option>
-                        {% endfor %}
-                      </select>
-
-                      <div class="novisit js-novisit" data-novisit="{{ wd }}">
-                        <div class="novisit-row">
-                          <label>السبب</label>
-                          <select name="reason_{{ wd }}"
-                                  data-reason="{{ wd }}"
-                                  {% if plan.status == plan.STATUS_APPROVED or plan.status == plan.STATUS_UNLOCK_REQUESTED %}disabled{% endif %}>
-                            <option value="">— اختر السبب —</option>
-                            <option value="meeting" {% if day and day.no_visit_reason == "meeting" %}selected{% endif %}>اجتماع</option>
-                            <option value="training" {% if day and day.no_visit_reason == "training" %}selected{% endif %}>تدريب</option>
-                            <option value="event" {% if day and day.no_visit_reason == "event" %}selected{% endif %}>لقاء/فعالية</option>
-                            <option value="office" {% if day and day.no_visit_reason == "office" %}selected{% endif %}>عمل مكتبي</option>
-                            <option value="other" {% if day and day.no_visit_reason == "other" %}selected{% endif %}>أخرى</option>
-                          </select>
-
-                          <label>ملاحظة</label>
-                          <input type="text"
-                                 name="note_{{ wd }}"
-                                 data-note="{{ wd }}"
-                                 value="{% if day and day.note %}{{ day.note }}{% endif %}"
-                                 placeholder="اختياري…"
-                                 {% if plan.status == plan.STATUS_APPROVED or plan.status == plan.STATUS_UNLOCK_REQUESTED %}disabled{% endif %}>
+              {% if notifications %}
+                <div class="notif-list">
+                  {% for n in notifications %}
+                    <div class="notif-item {% if not n.is_read %}unread{% endif %}">
+                      <div class="notif-row">
+                        <div class="notif-kind">
+                          <span class="notif-dot {{ n.notif_type }}"></span>
+                          <span>
+                            {% if n.notif_type == "approved" %}اعتماد
+                            {% elif n.notif_type == "returned" %}إعادة للمراجعة
+                            {% elif n.notif_type == "unlock_approved" %}قبول فك الاعتماد
+                            {% elif n.notif_type == "unlock_rejected" %}رفض فك الاعتماد
+                            {% else %}إشعار{% endif %}
+                          </span>
                         </div>
-                        <div class="hint2">عند اختيار “بدون زيارة” يجب تحديد السبب، وسيتم تعطيل المدرسة تلقائيًا.</div>
+                        <div class="notif-time">{{ n.created_at|date:"Y-m-d" }} {{ n.created_at|time:"H:i" }}</div>
                       </div>
-                    </td>
 
-                    <td class="col-visit">
-                      <input type="hidden"
-                             name="visit_{{ wd }}"
-                             value="{{ current }}"
-                             data-visit-input="{{ wd }}">
+                      <h4>{{ n.title }}</h4>
+                      {% if n.message %}
+                        <p>{{ n.message }}</p>
+                      {% endif %}
 
-                      <button type="button"
-                        class="vchip {% if plan.status == plan.STATUS_APPROVED or plan.status == plan.STATUS_UNLOCK_REQUESTED %}is-disabled{% endif %}"
-                        data-visit-chip="{{ wd }}"
-                        data-value="{{ current }}"
-                        title="اضغط للتبديل بين حضوري / عن بعد / بدون زيارة"
-                        aria-label="اضغط للتبديل بين حضوري وعن بعد وبدون زيارة"
-                        {% if plan.status == plan.STATUS_APPROVED or plan.status == plan.STATUS_UNLOCK_REQUESTED %}disabled{% endif %}>
-                        <span data-visit-text>
-                          {% if current == visit_remote_value %}عن بعد
-                          {% elif current == visit_none_value %}بدون زيارة
-                          {% else %}حضوري{% endif %}
-                        </span>
-                        <span class="caret">▼</span>
-                      </button>
-                    </td>
-
-                  </tr>
-                  {% endwith %}
-                  {% endwith %}
-                  {% endwith %}
-                {% endfor %}
-              </tbody>
-            </table>
+                      {% if not n.is_read %}
+                        <div class="notif-actions">
+                          <form method="post" action="{% url 'visits:mark_notification_read' n.id %}" style="margin:0">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                            <button type="submit" class="notif-mini-btn">تمت القراءة</button>
+                          </form>
+                        </div>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="notif-empty">لا توجد إشعارات حاليًا.</div>
+              {% endif %}
+            </div>
           </div>
-        </div>
 
-        <div class="inline-msg" id="inlineMsg"></div>
+          <a class="btn btn-outline btn-logout" href="{% url 'visits:logout' %}" title="خروج">خروج</a>
+          <a class="btn btn-outline btn-text" href="{% url 'visits:export_supervisor_assignments_excel' %}">
+            المدارس المسندة لي
+          </a>
+          <a class="btn btn-outline btn-text" href="{% url 'visits:plan_export' %}?week={{ week }}">
+            تصدير Excel
+          </a>
+        </div>
       </div>
 
-      <div class="actions">
-        <div class="hint">
-          يمكنك الحفظ أكثر من مرة قبل الاعتماد، ولا يتفعّل الاعتماد إلا بعد اكتمال جميع الأيام مع مراعاة اختيار سبب عدم الزيارة عند الحاجة.
+      <div class="email-strip">
+        <div class="email-strip-info">
+          <div class="email-strip-title">البريد الإلكتروني والتنبيهات</div>
+
+          {% if supervisor_email %}
+            <div class="email-pill">
+              <span>📧</span>
+              <span>{{ supervisor_email }}</span>
+            </div>
+
+            {% if email_notifications_enabled %}
+              <div class="email-strip-subtitle">
+                <span class="email-pill enabled">التنبيهات البريدية مفعلة</span>
+              </div>
+            {% else %}
+              <div class="email-strip-subtitle">
+                <span class="email-pill disabled">التنبيهات البريدية غير مفعلة</span>
+              </div>
+            {% endif %}
+          {% else %}
+            <div class="email-pill empty">
+              <span>⚠</span>
+              <span>لا يوجد بريد إلكتروني مسجل حاليًا</span>
+            </div>
+            <div class="email-strip-subtitle">
+              يمكنك تسجيل البريد الآن ليصلك كل جديد على البريد الإلكتروني.
+            </div>
+          {% endif %}
         </div>
 
-        <div class="btn-row">
-          {% if plan.status == plan.STATUS_APPROVED %}
-            <button class="btn btn-warn" type="button" id="unlockOpenBtn" title="إرسال طلب للإدارة لفك اعتماد هذه الخطة">
-              طلب فك الاعتماد
-            </button>
-            <button class="btn btn-approve" disabled>الخطة معتمدة</button>
+        <div class="email-strip-actions">
+          <a class="btn btn-outline btn-text" href="{% url 'visits:supervisor_email_settings' %}?next={{ request.get_full_path|urlencode }}">
+            {% if supervisor_email %}تعديل البريد{% else %}تسجيل البريد{% endif %}
+          </a>
 
-          {% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}
-            <button class="btn btn-warn" disabled>تم إرسال طلب فك الاعتماد</button>
-            <button class="btn btn-outline" disabled>بانتظار الإدارة</button>
-
-          {% else %}
-            <button class="btn btn-save" name="action" value="save" type="submit" id="saveBtn">حفظ</button>
-            <button class="btn btn-approve" name="action" value="approve" type="submit" id="approveBtn"
-                    title="لا يمكن الاعتماد إلا بعد اكتمال جميع الأيام">
-              اعتماد
-            </button>
+          {% if supervisor_email %}
+            <form method="post" action="{% url 'visits:toggle_email_notifications' %}" class="mini-form">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ request.get_full_path }}">
+              {% if email_notifications_enabled %}
+                <button type="submit" class="btn btn-warn">إيقاف التنبيه البريدي</button>
+              {% else %}
+                <button type="submit" class="btn btn-save">تفعيل التنبيه البريدي</button>
+              {% endif %}
+            </form>
           {% endif %}
         </div>
       </div>
-    </form>
 
-    {% if plan.status == plan.STATUS_APPROVED %}
-      <form method="post" action="{% url 'visits:request_unlock' %}" id="unlockForm" style="display:none;">
+      {% if messages %}
+        <script id="djMessages" type="application/json">
+          [
+            {% for message in messages %}
+              {"text":"{{ message|escapejs }}","tags":"{{ message.tags|escapejs }}"}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+          ]
+        </script>
+      {% endif %}
+
+      <form method="post" id="planForm">
         {% csrf_token %}
-        <input type="hidden" name="plan" value="{{ plan.id }}">
+        <input type="hidden" name="week" value="{{ week }}">
+
+        <div class="plan-table-area">
+          <div class="table-box">
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="col-day">اليوم</th>
+                    <th class="col-gdate">التاريخ (ميلادي)</th>
+                    <th class="col-hdate">التاريخ (هجري)</th>
+                    <th class="col-school">المدرسة / سبب اليوم</th>
+                    <th class="col-visit">نوع اليوم</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {% for wd,name in weekdays %}
+                    {% with d=day_dates|get_item:wd %}
+                    {% with day=days_map|get_item:wd %}
+                    {% with current=day.visit_type|default:visit_in_value %}
+                    <tr class="{% if d|date:'Y-m-d' == today|date:'Y-m-d' %}today{% endif %}" data-row="{{ wd }}">
+
+                      <td class="col-day">
+                        <span class="dayname">{{ name }}</span>
+                      </td>
+
+                      <td class="col-gdate">
+                        <span class="pill">{{ d|date:"d-m-Y" }}</span>
+                      </td>
+
+                      <td class="col-hdate">
+                        <span class="pill">{{ d|to_hijri }}</span>
+                      </td>
+
+                      <td class="col-school">
+                        <select class="in-select js-school"
+                                name="school_{{ wd }}"
+                                data-school="{{ wd }}"
+                                {% if plan.status == plan.STATUS_APPROVED or plan.status == plan.STATUS_UNLOCK_REQUESTED %}disabled{% endif %}>
+                          <option value="">— اختر —</option>
+                          {% for s in schools %}
+                            <option value="{{ s.id }}" {% if day and day.school_id == s.id %}selected{% endif %}>
+                              {{ s.name }}
+                            </option>
+                          {% endfor %}
+                        </select>
+
+                        <div class="novisit js-novisit" data-novisit="{{ wd }}">
+                          <div class="novisit-row">
+                            <label>السبب</label>
+                            <select name="reason_{{ wd }}"
+                                    data-reason="{{ wd }}"
+                                    {% if plan.status == plan.STATUS_APPROVED or plan.status == plan.STATUS_UNLOCK_REQUESTED %}disabled{% endif %}>
+                              <option value="">— اختر السبب —</option>
+                              <option value="meeting" {% if day and day.no_visit_reason == "meeting" %}selected{% endif %}>اجتماع</option>
+                              <option value="training" {% if day and day.no_visit_reason == "training" %}selected{% endif %}>تدريب</option>
+                              <option value="event" {% if day and day.no_visit_reason == "event" %}selected{% endif %}>لقاء/فعالية</option>
+                              <option value="office" {% if day and day.no_visit_reason == "office" %}selected{% endif %}>عمل مكتبي</option>
+                              <option value="other" {% if day and day.no_visit_reason == "other" %}selected{% endif %}>أخرى</option>
+                            </select>
+
+                            <label>ملاحظة</label>
+                            <input type="text"
+                                   name="note_{{ wd }}"
+                                   data-note="{{ wd }}"
+                                   value="{% if day and day.note %}{{ day.note }}{% endif %}"
+                                   placeholder="اختياري…"
+                                   {% if plan.status == plan.STATUS_APPROVED or plan.status == plan.STATUS_UNLOCK_REQUESTED %}disabled{% endif %}>
+                          </div>
+                          <div class="hint2">عند اختيار “بدون زيارة” يجب تحديد السبب، وسيتم تعطيل المدرسة تلقائيًا.</div>
+                        </div>
+                      </td>
+
+                      <td class="col-visit">
+                        <input type="hidden"
+                               name="visit_{{ wd }}"
+                               value="{{ current }}"
+                               data-visit-input="{{ wd }}">
+
+                        <button type="button"
+                          class="vchip {% if plan.status == plan.STATUS_APPROVED or plan.status == plan.STATUS_UNLOCK_REQUESTED %}is-disabled{% endif %}"
+                          data-visit-chip="{{ wd }}"
+                          data-value="{{ current }}"
+                          title="اضغط للتبديل بين حضوري / عن بعد / بدون زيارة"
+                          aria-label="اضغط للتبديل بين حضوري وعن بعد وبدون زيارة"
+                          {% if plan.status == plan.STATUS_APPROVED or plan.status == plan.STATUS_UNLOCK_REQUESTED %}disabled{% endif %}>
+                          <span data-visit-text>
+                            {% if current == visit_remote_value %}عن بعد
+                            {% elif current == visit_none_value %}بدون زيارة
+                            {% else %}حضوري{% endif %}
+                          </span>
+                          <span class="caret">▼</span>
+                        </button>
+                      </td>
+
+                    </tr>
+                    {% endwith %}
+                    {% endwith %}
+                    {% endwith %}
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="inline-msg" id="inlineMsg"></div>
+        </div>
+
+        <div class="actions">
+          <div class="hint">
+            يمكنك الحفظ أكثر من مرة قبل الاعتماد، ولا يتفعّل الاعتماد إلا بعد اكتمال جميع الأيام مع مراعاة اختيار سبب عدم الزيارة عند الحاجة.
+          </div>
+
+          <div class="btn-row">
+            {% if plan.status == plan.STATUS_APPROVED %}
+              <button class="btn btn-warn" type="button" id="unlockOpenBtn" title="إرسال طلب للإدارة لفك اعتماد هذه الخطة">
+                طلب فك الاعتماد
+              </button>
+              <button class="btn btn-approve" disabled>الخطة معتمدة</button>
+
+            {% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}
+              <button class="btn btn-warn" disabled>تم إرسال طلب فك الاعتماد</button>
+              <button class="btn btn-outline" disabled>بانتظار الإدارة</button>
+
+            {% else %}
+              <button class="btn btn-save" name="action" value="save" type="submit" id="saveBtn">حفظ</button>
+              <button class="btn btn-approve" name="action" value="approve" type="submit" id="approveBtn"
+                      title="لا يمكن الاعتماد إلا بعد اكتمال جميع الأيام">
+                اعتماد
+              </button>
+            {% endif %}
+          </div>
+        </div>
       </form>
-    {% endif %}
+
+      {% if plan.status == plan.STATUS_APPROVED %}
+        <form method="post" action="{% url 'visits:request_unlock' %}" id="unlockForm" style="display:none;">
+          {% csrf_token %}
+          <input type="hidden" name="plan" value="{{ plan.id }}">
+        </form>
+      {% endif %}
+    </div>
   </div>
 </div>
 

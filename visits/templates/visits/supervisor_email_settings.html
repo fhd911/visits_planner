@@ -4,8 +4,8 @@
 {% block title %}إعداد البريد الإلكتروني{% endblock %}
 {% block page_messages %}{% endblock %}
 
-{% block header_title %}إعداد البريد الإلكتروني{% endblock %}
-{% block header_subtitle %}سجل بريدك الإلكتروني لتصلك التنبيهات والإشعارات المهمة{% endblock %}
+{% block header_title %}بوابة المشرف{% endblock %}
+{% block header_subtitle %}إدارة الخطة الأسبوعية ومتابعة التنفيذ والاطلاع على الإشعارات المرتبطة بالزيارات.{% endblock %}
 
 {% block topbar_actions %}
   <a href="{% url 'visits:logout' %}" class="logout-link">خروج</a>
@@ -14,88 +14,82 @@
 {% block extra_css %}
 <style>
   .email-settings-page{
-    --bg:#f4f7fb;
-    --card:#ffffff;
-    --card-soft:#fbfdff;
-    --line:#e7edf5;
-    --line-strong:#d8e3ee;
-
-    --text:#16263d;
-    --text-soft:#4d6278;
-    --muted:#7b8da1;
-
-    --primary:#1d4ed8;
-    --primary-dark:#163fae;
-    --primary-soft:#eff6ff;
-
-    --success:#15803d;
-    --warn:#b45309;
-
-    --shadow:0 20px 50px rgba(15, 23, 42, .08);
-    --radius:24px;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 18px;
   }
 
-  .email-settings-page{
-    max-width: 760px;
-    margin: 0 auto;
+  .email-shell{
+    background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.985));
+    border: 1px solid var(--vp-line-2);
+    border-radius: var(--vp-radius-xl);
+    box-shadow: var(--vp-shadow);
+    padding: 18px;
   }
 
   .email-card{
-    background: linear-gradient(180deg, var(--card) 0%, var(--card-soft) 100%);
-    border: 1px solid var(--line);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 28px;
+    max-width: 680px;
+    margin: 0 auto;
+    background: var(--vp-card);
+    border: 1px solid var(--vp-line-2);
+    border-radius: var(--vp-radius-lg);
+    padding: 24px 22px 18px;
   }
 
   .email-card-head{
-    margin-bottom: 22px;
+    text-align: right;
+    margin-bottom: 14px;
   }
 
   .email-card-title{
     margin: 0 0 8px;
-    font-size: 1.35rem;
-    font-weight: 800;
-    color: var(--text);
+    font-size: 1.34rem;
+    line-height: 1.25;
+    font-weight: 700;
+    color: var(--vp-primary);
   }
 
   .email-card-subtitle{
     margin: 0;
-    color: var(--text-soft);
-    line-height: 1.8;
-    font-size: .98rem;
+    font-size: .95rem;
+    line-height: 1.9;
+    color: var(--vp-text-soft);
+    font-weight: 500;
   }
 
   .email-info{
     display: grid;
     grid-template-columns: 1fr;
     gap: 12px;
-    margin-bottom: 22px;
+    margin-top: 14px;
+    margin-bottom: 16px;
   }
 
   .email-info-item{
-    background: #fff;
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    padding: 14px 16px;
+    background: var(--vp-card-soft);
+    border: 1px solid var(--vp-line);
+    border-radius: var(--vp-radius-md);
+    padding: 12px 15px;
   }
 
   .email-info-label{
     display: block;
-    font-size: .85rem;
-    color: var(--muted);
-    margin-bottom: 6px;
+    margin-bottom: 5px;
+    font-size: .83rem;
+    color: var(--vp-text-faint);
+    font-weight: 700;
   }
 
   .email-info-value{
-    color: var(--text);
-    font-weight: 700;
-    font-size: .98rem;
+    font-size: .95rem;
+    color: var(--vp-text);
+    font-weight: 600;
+    word-break: break-word;
   }
 
   .email-form{
     display: grid;
-    gap: 18px;
+    gap: 14px;
   }
 
   .form-field{
@@ -104,75 +98,83 @@
   }
 
   .form-label{
+    font-size: .94rem;
     font-weight: 700;
-    color: var(--text);
-    font-size: .95rem;
+    color: var(--vp-primary);
   }
 
   .form-input{
     width: 100%;
-    height: 52px;
-    border-radius: 16px;
-    border: 1px solid var(--line-strong);
+    height: 50px;
+    border-radius: 14px;
+    border: 1.4px solid var(--vp-line);
     background: #fff;
-    padding: 0 16px;
-    font-size: 1rem;
-    color: var(--text);
+    padding: 0 15px;
+    font-size: .96rem;
+    color: var(--vp-text);
     outline: none;
-    transition: .2s ease;
+    transition: .16s ease;
+    box-shadow: none;
   }
 
   .form-input:focus{
-    border-color: rgba(29, 78, 216, .45);
-    box-shadow: 0 0 0 4px rgba(29, 78, 216, .10);
+    border-color: #8fae9f;
+    box-shadow: 0 0 0 3px rgba(47, 98, 80, .08);
   }
 
   .form-help{
     font-size: .88rem;
-    color: var(--muted);
-    line-height: 1.7;
+    color: var(--vp-text-soft);
+    line-height: 1.8;
+    font-weight: 500;
   }
 
   .toggle-box{
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 16px;
-    border: 1px solid var(--line);
-    border-radius: 18px;
-    background: #fff;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid var(--vp-line);
+    border-radius: var(--vp-radius-md);
+    background: var(--vp-card-soft);
   }
 
   .toggle-box input[type="checkbox"]{
-    width: 18px;
-    height: 18px;
-    accent-color: var(--primary);
+    width: 17px;
+    height: 17px;
+    accent-color: var(--vp-primary);
     margin: 0;
     flex: 0 0 auto;
   }
 
   .toggle-box label{
     margin: 0;
-    color: var(--text);
-    font-weight: 700;
+    color: var(--vp-text);
+    font-weight: 600;
+    font-size: .94rem;
     cursor: pointer;
   }
 
   .email-note{
-    background: #fffbeb;
-    color: #92400e;
-    border: 1px solid #fde7b0;
-    border-radius: 18px;
-    padding: 14px 16px;
+    margin-top: 2px;
+    padding: 11px 14px;
+    border-radius: 14px;
+    border: 1px solid var(--vp-warn-border);
+    background: var(--vp-warn-bg);
+    color: var(--vp-warn-text);
+    font-size: .9rem;
     line-height: 1.8;
-    font-size: .92rem;
+    text-align: center;
+    font-weight: 500;
   }
 
   .form-actions{
+    margin-top: 2px;
     display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
     flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 4px;
   }
 
   .btn-main,
@@ -180,47 +182,65 @@
     appearance: none;
     border: 0;
     text-decoration: none;
-    border-radius: 16px;
-    height: 48px;
-    padding: 0 18px;
+    cursor: pointer;
+    border-radius: var(--vp-radius-sm);
+    padding: 10px 16px;
+    min-width: 120px;
+    font-size: .93rem;
+    font-weight: 700;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-weight: 800;
-    font-size: .95rem;
-    cursor: pointer;
-    transition: .2s ease;
+    transition: .16s ease;
   }
 
   .btn-main{
-    background: var(--primary);
+    background: var(--vp-primary);
     color: #fff;
-    box-shadow: 0 12px 26px rgba(29, 78, 216, .20);
+    box-shadow: none;
   }
 
   .btn-main:hover{
-    background: var(--primary-dark);
-    transform: translateY(-1px);
+    background: var(--vp-primary-2);
   }
 
   .btn-sub{
-    background: var(--primary-soft);
-    color: var(--primary-dark);
-    border: 1px solid #dbe7ff;
+    background: var(--vp-primary-soft);
+    color: var(--vp-primary);
+    border: 1px solid var(--vp-primary-soft-border);
   }
 
   .btn-sub:hover{
-    background: #e4efff;
+    background: #edf3ef;
   }
 
-  @media (max-width: 640px){
+  @media (max-width: 768px){
+    .email-settings-page{
+      padding: 12px;
+    }
+
+    .email-shell{
+      padding: 14px 10px;
+      border-radius: 18px;
+    }
+
     .email-card{
-      padding: 20px;
-      border-radius: 20px;
+      padding: 18px 14px 16px;
+      border-radius: 16px;
+    }
+
+    .email-card-title{
+      font-size: 1.14rem;
+    }
+
+    .email-card-subtitle{
+      font-size: .91rem;
+      line-height: 1.8;
     }
 
     .form-actions{
       flex-direction: column;
+      align-items: stretch;
     }
 
     .btn-main,
@@ -233,67 +253,69 @@
 
 {% block content %}
 <div class="email-settings-page">
-  <div class="email-card">
-    <div class="email-card-head">
-      <h2 class="email-card-title">تسجيل البريد الإلكتروني</h2>
-      <p class="email-card-subtitle">
-        يرجى تسجيل بريدك الإلكتروني حتى تصلك الإشعارات والتنبيهات المهمة الخاصة بالخطة والاعتماد والتنبيهات الإدارية.
-      </p>
-    </div>
-
-    <div class="email-info">
-      <div class="email-info-item">
-        <span class="email-info-label">اسم المشرف</span>
-        <div class="email-info-value">{{ sup.full_name }}</div>
+  <div class="email-shell">
+    <div class="email-card">
+      <div class="email-card-head">
+        <h2 class="email-card-title">إعداد البريد الإلكتروني</h2>
+        <p class="email-card-subtitle">
+          يرجى تسجيل بريدكم الإلكتروني لتصلكم الإشعارات والتنبيهات المهمة المرتبطة بالخطة الأسبوعية والاعتماد والتنبيهات الإدارية.
+        </p>
       </div>
 
-      <div class="email-info-item">
-        <span class="email-info-label">السجل المدني</span>
-        <div class="email-info-value">{{ sup.national_id }}</div>
-      </div>
-    </div>
+      <div class="email-info">
+        <div class="email-info-item">
+          <span class="email-info-label">اسم المشرف</span>
+          <div class="email-info-value">{{ sup.full_name }}</div>
+        </div>
 
-    <form method="post" class="email-form">
-      {% csrf_token %}
-      <input type="hidden" name="next" value="{{ next_url|default:'' }}">
-
-      <div class="form-field">
-        <label class="form-label" for="id_email">البريد الإلكتروني</label>
-        <input
-          type="email"
-          name="email"
-          id="id_email"
-          class="form-input"
-          value="{{ sup.email|default:'' }}"
-          placeholder="name@example.com"
-          required
-          dir="ltr"
-        >
-        <div class="form-help">
-          أدخل بريدًا إلكترونيًا صحيحًا ليتم استخدامه لإرسال التنبيهات المهمة.
+        <div class="email-info-item">
+          <span class="email-info-label">السجل المدني</span>
+          <div class="email-info-value">{{ sup.national_id }}</div>
         </div>
       </div>
 
-      <div class="toggle-box">
-        <input
-          type="checkbox"
-          name="email_notifications_enabled"
-          id="id_email_notifications_enabled"
-          value="1"
-          {% if sup.email_notifications_enabled or sup.email_notifications_enabled is None %}checked{% endif %}
-        >
-        <label for="id_email_notifications_enabled">تفعيل التنبيهات البريدية</label>
-      </div>
+      <form method="post" class="email-form">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next_url|default:'' }}">
 
-      <div class="email-note">
-        يمكنك تعديل البريد لاحقًا، كما يمكن للإدارة إضافته أو تحديثه عند الحاجة.
-      </div>
+        <div class="form-field">
+          <label class="form-label" for="id_email">البريد الإلكتروني</label>
+          <input
+            type="email"
+            name="email"
+            id="id_email"
+            class="form-input"
+            value="{{ supervisor_email|default:sup.email|default:'' }}"
+            placeholder="name@example.com"
+            required
+            dir="ltr"
+          >
+          <div class="form-help">
+            أدخل بريدًا إلكترونيًا صحيحًا ليتم اعتماده في إرسال التنبيهات والإشعارات المهمة.
+          </div>
+        </div>
 
-      <div class="form-actions">
-        <button type="submit" class="btn-main">حفظ البريد والمتابعة</button>
-        <a href="{% url 'visits:plan' %}" class="btn-sub">العودة إلى الخطة</a>
-      </div>
-    </form>
+        <div class="toggle-box">
+          <input
+            type="checkbox"
+            name="email_notifications_enabled"
+            id="id_email_notifications_enabled"
+            value="1"
+            {% if email_notifications_enabled %}checked{% endif %}
+          >
+          <label for="id_email_notifications_enabled">تفعيل التنبيهات البريدية</label>
+        </div>
+
+        <div class="email-note">
+          يمكن تعديل البريد الإلكتروني لاحقًا، كما يمكن للإدارة إضافته أو تحديثه عند الحاجة.
+        </div>
+
+        <div class="form-actions">
+          <a href="{{ next_url|default:'' }}" class="btn-sub">العودة إلى الخطة</a>
+          <button type="submit" class="btn-main">حفظ البريد والمتابعة</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 {% endblock %}

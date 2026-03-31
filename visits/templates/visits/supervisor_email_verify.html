@@ -1,0 +1,425 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}التحقق من البريد الإلكتروني{% endblock %}
+{% block page_messages %}{% endblock %}
+
+{% block header_title %}بوابة المشرف{% endblock %}
+{% block header_subtitle %}إدارة الخطة الأسبوعية ومتابعة التنفيذ والاطلاع على الإشعارات المرتبطة بالزيارات.{% endblock %}
+
+{% block extra_css %}
+<style>
+  .verify-page{
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 18px;
+  }
+
+  .verify-shell{
+    background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.985));
+    border: 1px solid var(--vp-line-2);
+    border-radius: var(--vp-radius-xl);
+    box-shadow: var(--vp-shadow);
+    padding: 18px;
+  }
+
+  .verify-card{
+    max-width: 680px;
+    margin: 0 auto;
+    background: var(--vp-card);
+    border: 1px solid var(--vp-line-2);
+    border-radius: var(--vp-radius-lg);
+    padding: 24px 22px 18px;
+  }
+
+  .verify-head{
+    text-align: right;
+    margin-bottom: 14px;
+  }
+
+  .verify-title{
+    margin: 0 0 8px;
+    font-size: 1.34rem;
+    line-height: 1.25;
+    font-weight: 700;
+    color: var(--vp-primary);
+  }
+
+  .verify-subtitle{
+    margin: 0;
+    font-size: .95rem;
+    line-height: 1.9;
+    color: var(--vp-text-soft);
+    font-weight: 500;
+  }
+
+  .verify-grid{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .info-box{
+    background: var(--vp-card-soft);
+    border: 1px solid var(--vp-line);
+    border-radius: var(--vp-radius-md);
+    padding: 12px 15px;
+  }
+
+  .info-label{
+    display: block;
+    margin-bottom: 5px;
+    font-size: .83rem;
+    color: var(--vp-text-faint);
+    font-weight: 700;
+  }
+
+  .info-value{
+    font-size: .95rem;
+    color: var(--vp-text);
+    font-weight: 600;
+    word-break: break-word;
+  }
+
+  .notice-box{
+    margin-top: 12px;
+    padding: 11px 14px;
+    border-radius: 14px;
+    border: 1px solid var(--vp-warn-border);
+    background: var(--vp-warn-bg);
+    color: var(--vp-warn-text);
+    font-size: .9rem;
+    line-height: 1.8;
+    text-align: center;
+    font-weight: 500;
+  }
+
+  .otp-section{
+    margin-top: 16px;
+  }
+
+  .otp-label{
+    display: block;
+    margin-bottom: 10px;
+    text-align: center;
+    font-size: .98rem;
+    font-weight: 700;
+    color: var(--vp-primary);
+  }
+
+  .otp-wrap{
+    direction: ltr;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+
+  .otp-input{
+    width: 54px;
+    height: 56px;
+    border-radius: 13px;
+    border: 1.4px solid var(--vp-line);
+    background: #fff;
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--vp-text);
+    outline: none;
+    transition: .16s ease;
+    box-shadow: none;
+  }
+
+  .otp-input:focus{
+    border-color: #8fae9f;
+    box-shadow: 0 0 0 3px rgba(47, 98, 80, .08);
+  }
+
+  .otp-help{
+    text-align: center;
+    color: var(--vp-text-soft);
+    font-size: .88rem;
+    margin: 6px 0 0;
+    font-weight: 500;
+  }
+
+  .actions-row{
+    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .btn-main,
+  .btn-soft,
+  .btn-warn{
+    appearance: none;
+    border: 0;
+    text-decoration: none;
+    cursor: pointer;
+    border-radius: var(--vp-radius-sm);
+    padding: 10px 16px;
+    font-size: .93rem;
+    font-weight: 700;
+    transition: .16s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 112px;
+    font-family: inherit;
+  }
+
+  .btn-main{
+    background: var(--vp-primary);
+    color: #fff;
+    box-shadow: none;
+  }
+
+  .btn-main:hover{
+    background: var(--vp-primary-2);
+  }
+
+  .btn-soft{
+    background: var(--vp-primary-soft);
+    color: var(--vp-primary);
+    border: 1px solid var(--vp-primary-soft-border);
+  }
+
+  .btn-soft:hover{
+    background: #edf3ef;
+  }
+
+  .btn-warn{
+    background: #fff;
+    color: var(--vp-warn-text);
+    border: 1px solid var(--vp-warn-border);
+  }
+
+  .btn-warn:hover{
+    background: #fdfaf5;
+  }
+
+  .hidden-input{
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @media (max-width: 768px){
+    .verify-page{
+      padding: 12px;
+    }
+
+    .verify-shell{
+      padding: 14px 10px;
+      border-radius: 18px;
+    }
+
+    .verify-card{
+      padding: 18px 14px 16px;
+      border-radius: 16px;
+    }
+
+    .verify-title{
+      font-size: 1.14rem;
+    }
+
+    .verify-subtitle{
+      font-size: .91rem;
+      line-height: 1.8;
+    }
+
+    .otp-wrap{
+      gap: 7px;
+    }
+
+    .otp-input{
+      width: 42px;
+      height: 48px;
+      border-radius: 11px;
+      font-size: 1.02rem;
+    }
+
+    .actions-row{
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .btn-main,
+    .btn-soft,
+    .btn-warn,
+    .actions-row form{
+      width: 100%;
+    }
+
+    .actions-row form button{
+      width: 100%;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="verify-page">
+  <div class="verify-shell">
+    <div class="verify-card">
+      <div class="verify-head">
+        <h1 class="verify-title">إدخال رمز التحقق</h1>
+        <p class="verify-subtitle">
+          تم إرسال رمز تحقق مكوّن من 6 أرقام إلى بريدك الإلكتروني. يرجى إدخاله أدناه لإتمام تأكيد البريد وتفعيل التنبيهات.
+        </p>
+      </div>
+
+      <div class="verify-grid">
+        <div class="info-box">
+          <span class="info-label">اسم المشرف</span>
+          <div class="info-value">{{ sup.full_name }}</div>
+        </div>
+
+        <div class="info-box">
+          <span class="info-label">البريد الإلكتروني</span>
+          <div class="info-value" dir="ltr">{{ masked_email|default:"—" }}</div>
+        </div>
+      </div>
+
+      <div class="notice-box">
+        صلاحية رمز التحقق محدودة. وفي حال عدم وصوله، يمكنكم إعادة الإرسال من الزر المخصص أدناه.
+      </div>
+
+      <form method="post" id="otpForm" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next_url|default:'' }}">
+        <input type="hidden" name="otp_code" id="otp_code" class="hidden-input">
+
+        <div class="otp-section">
+          <label class="otp-label" for="otp_1">رمز التحقق</label>
+
+          <div class="otp-wrap" dir="ltr">
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-input" id="otp_1" autocomplete="one-time-code">
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-input" id="otp_2">
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-input" id="otp_3">
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-input" id="otp_4">
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-input" id="otp_5">
+            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-input" id="otp_6">
+          </div>
+
+          <p class="otp-help">أدخل الرمز كما وصلك في البريد الإلكتروني دون مسافات.</p>
+        </div>
+      </form>
+
+      <div class="actions-row">
+        <form method="post" action="{% url 'visits:supervisor_email_resend_otp' %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ next_url|default:'' }}">
+          <button type="submit" class="btn-warn">إعادة إرسال الرمز</button>
+        </form>
+
+        <a href="{% url 'visits:supervisor_email_settings' %}?next={{ next_url|urlencode }}" class="btn-soft">
+          تعديل البريد
+        </a>
+
+        <button type="submit" form="otpForm" class="btn-main">تأكيد البريد</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    const inputs = Array.from(document.querySelectorAll(".otp-input"));
+    const hidden = document.getElementById("otp_code");
+    const form = document.getElementById("otpForm");
+
+    function syncHidden() {
+      hidden.value = inputs.map(input => input.value).join("");
+    }
+
+    function focusInput(index) {
+      if (inputs[index]) {
+        inputs[index].focus();
+        inputs[index].select();
+      }
+    }
+
+    inputs.forEach((input, index) => {
+      input.addEventListener("input", function () {
+        let value = this.value.replace(/\D/g, "");
+        this.value = value ? value.charAt(0) : "";
+        syncHidden();
+
+        if (this.value && index < inputs.length - 1) {
+          focusInput(index + 1);
+        }
+      });
+
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Backspace") {
+          if (!this.value && index > 0) {
+            e.preventDefault();
+            focusInput(index - 1);
+          } else {
+            this.value = "";
+            syncHidden();
+          }
+        }
+
+        if (e.key === "ArrowLeft" && index > 0) {
+          e.preventDefault();
+          focusInput(index - 1);
+        }
+
+        if (e.key === "ArrowRight" && index < inputs.length - 1) {
+          e.preventDefault();
+          focusInput(index + 1);
+        }
+      });
+
+      input.addEventListener("paste", function (e) {
+        e.preventDefault();
+        const pasted = (e.clipboardData || window.clipboardData)
+          .getData("text")
+          .replace(/\D/g, "")
+          .slice(0, 6);
+
+        if (!pasted) return;
+
+        inputs.forEach(input => input.value = "");
+        pasted.split("").forEach((char, i) => {
+          if (inputs[i]) inputs[i].value = char;
+        });
+
+        syncHidden();
+
+        const nextEmpty = inputs.findIndex(el => !el.value);
+        if (nextEmpty === -1) {
+          focusInput(inputs.length - 1);
+        } else {
+          focusInput(nextEmpty);
+        }
+      });
+
+      input.addEventListener("focus", function () {
+        this.select();
+      });
+    });
+
+    form.addEventListener("submit", function (e) {
+      syncHidden();
+      if (!/^\d{6}$/.test(hidden.value)) {
+        e.preventDefault();
+        alert("يرجى إدخال رمز تحقق صحيح مكوّن من 6 أرقام.");
+        focusInput(0);
+      }
+    });
+
+    if (inputs.length) {
+      focusInput(0);
+    }
+  })();
+</script>
+{% endblock %}

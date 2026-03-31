@@ -1,0 +1,579 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}متابعة الزيارات — الإدارة{% endblock %}
+
+{% block header_title %}متابعة الزيارات{% endblock %}
+{% block header_subtitle %}متابعة المدارس المزارة وغير المزارة على مستوى جميع الأسابيع{% endblock %}
+
+{% block topbar_actions %}{% endblock %}
+{% block page_actions %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .followup-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+    --fw-hero:800;
+    --fw-title:700;
+    --fw-strong:600;
+    --fw-normal:500;
+
+    --card:rgba(255,255,255,.97);
+    --soft:rgba(248,250,252,.95);
+
+    --txt:#0f172a;
+    --mut:#64748b;
+    --mut2:#94a3b8;
+
+    --line:rgba(148,163,184,.18);
+    --line2:rgba(148,163,184,.10);
+
+    --ok:#16a34a;
+    --warn:#f59e0b;
+    --danger:#dc2626;
+    --blue:#2563eb;
+    --cyan:#0891b2;
+
+    --shadow:0 12px 28px rgba(15,23,42,.06);
+    --shadow2:0 6px 16px rgba(15,23,42,.045);
+
+    font-family:var(--ff);
+    direction:rtl;
+    color:var(--txt);
+  }
+
+  .followup-page *{
+    font-family:var(--ff);
+    box-sizing:border-box;
+  }
+
+  .followup-page .wrap{
+    display:grid;
+    gap:10px;
+  }
+
+  .followup-page .head,
+  .followup-page .filters,
+  .followup-page .table-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:20px;
+    box-shadow:var(--shadow);
+  }
+
+  .followup-page .head{
+    padding:12px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .followup-page .head .title{
+    display:grid;
+    gap:3px;
+    min-width:260px;
+  }
+
+  .followup-page .head h1{
+    margin:0;
+    font-size:14px;
+    font-weight:var(--fw-hero);
+    color:var(--txt);
+    line-height:1.5;
+  }
+
+  .followup-page .head p{
+    margin:0;
+    font-size:11.7px;
+    font-weight:var(--fw-normal);
+    color:var(--mut);
+    line-height:1.8;
+  }
+
+  .followup-page .head-right{
+    display:flex;
+    gap:6px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+
+  .followup-page .btn{
+    height:34px;
+    padding:0 12px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--txt);
+    font-weight:var(--fw-strong);
+    font-size:11.5px;
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    box-shadow:0 5px 12px rgba(15,23,42,.045);
+    white-space:nowrap;
+    transition:transform .16s ease, background .16s ease, border-color .16s ease;
+  }
+
+  .followup-page .btn.primary{
+    background:linear-gradient(135deg, rgba(37,99,235,.95), rgba(96,165,250,.95));
+    border-color:rgba(37,99,235,.14);
+    color:#fff;
+  }
+
+  .followup-page .btn.warn{
+    background:rgba(245,158,11,.10);
+    border-color:rgba(245,158,11,.18);
+    color:#7c2d12;
+  }
+
+  .followup-page .btn.soft{
+    background:rgba(8,145,178,.09);
+    border-color:rgba(8,145,178,.16);
+    color:#0f766e;
+  }
+
+  .followup-page .btn:hover{
+    transform:translateY(-1px);
+  }
+
+  .followup-page .stats{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:8px;
+  }
+
+  .followup-page .stat{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:var(--shadow2);
+    padding:11px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    min-height:60px;
+  }
+
+  .followup-page .stat .meta{
+    display:grid;
+    gap:3px;
+  }
+
+  .followup-page .stat .label{
+    font-size:11px;
+    color:var(--mut);
+    font-weight:var(--fw-normal);
+  }
+
+  .followup-page .stat .value{
+    font-size:17px;
+    color:var(--txt);
+    font-weight:var(--fw-title);
+    line-height:1.2;
+  }
+
+  .followup-page .stat .icon{
+    width:34px;
+    height:34px;
+    border-radius:12px;
+    display:grid;
+    place-items:center;
+    background:var(--soft);
+    border:1px solid var(--line);
+    font-size:14px;
+    flex:0 0 auto;
+  }
+
+  .followup-page .filters{
+    padding:10px;
+    display:grid;
+    gap:8px;
+  }
+
+  .followup-page .filters-grid{
+    display:grid;
+    grid-template-columns:1.2fr 1fr 1fr auto auto;
+    gap:8px;
+    align-items:end;
+  }
+
+  .followup-page .field label{
+    display:block;
+    font-size:11px;
+    color:var(--mut);
+    margin-bottom:5px;
+    font-weight:var(--fw-normal);
+  }
+
+  .followup-page .input,
+  .followup-page .select{
+    width:100%;
+    height:36px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:rgba(248,250,252,.95);
+    padding:0 11px;
+    outline:none;
+    color:var(--txt);
+    font-size:11.8px;
+    font-weight:var(--fw-strong);
+    transition:.16s ease;
+  }
+
+  .followup-page .input:focus,
+  .followup-page .select:focus{
+    border-color:rgba(59,130,246,.30);
+    box-shadow:0 0 0 4px rgba(59,130,246,.06);
+    background:#fff;
+  }
+
+  .followup-page .check-wrap{
+    height:36px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:0 12px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:rgba(248,250,252,.95);
+    color:var(--txt);
+    font-size:11.5px;
+    font-weight:var(--fw-strong);
+  }
+
+  .followup-page .check-wrap input{
+    width:16px;
+    height:16px;
+    accent-color:#2563eb;
+    margin:0;
+  }
+
+  .followup-page .table-head{
+    padding:10px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(245,248,252,.98), rgba(255,255,255,.95));
+    flex-wrap:wrap;
+  }
+
+  .followup-page .hint{
+    color:var(--mut);
+    font-size:11.1px;
+    font-weight:var(--fw-normal);
+  }
+
+  .followup-page .table-wrap{
+    overflow:auto;
+  }
+
+  .followup-page table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    table-layout:auto;
+  }
+
+  .followup-page thead th{
+    position:sticky;
+    top:0;
+    z-index:2;
+    background:rgba(246,249,252,.99);
+    border-bottom:1px solid rgba(148,163,184,.18);
+    padding:11px 12px;
+    font-size:11px;
+    font-weight:var(--fw-strong);
+    color:var(--mut);
+    text-align:right;
+    white-space:nowrap;
+  }
+
+  .followup-page tbody td{
+    border-bottom:1px solid var(--line2);
+    padding:11px 12px;
+    font-size:12px;
+    color:var(--txt);
+    vertical-align:middle;
+  }
+
+  .followup-page tbody tr:nth-child(even){
+    background:rgba(2,6,23,.012);
+  }
+
+  .followup-page tbody tr:hover{
+    background:rgba(37,99,235,.025);
+  }
+
+  .followup-page .sup-name{
+    font-weight:var(--fw-title);
+    color:var(--txt);
+    line-height:1.6;
+  }
+
+  .followup-page .sup-sub{
+    margin-top:4px;
+    color:var(--mut2);
+    font-size:10.8px;
+    line-height:1.7;
+  }
+
+  .followup-page .count{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:60px;
+    min-height:28px;
+    padding:5px 9px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:rgba(248,250,252,.94);
+    font-size:11px;
+    font-weight:var(--fw-strong);
+  }
+
+  .followup-page .count.ok{
+    border-color:rgba(22,163,74,.20);
+    background:rgba(22,163,74,.10);
+    color:#166534;
+  }
+
+  .followup-page .count.bad{
+    border-color:rgba(245,158,11,.22);
+    background:rgba(245,158,11,.10);
+    color:#7c2d12;
+  }
+
+  .followup-page .progress-wrap{
+    min-width:130px;
+    display:grid;
+    gap:5px;
+  }
+
+  .followup-page .progress-bar{
+    width:100%;
+    height:8px;
+    border-radius:999px;
+    background:#e9eef5;
+    overflow:hidden;
+  }
+
+  .followup-page .progress-fill{
+    height:100%;
+    border-radius:999px;
+    background:linear-gradient(90deg,#16a34a,#22c55e);
+  }
+
+  .followup-page .progress-text{
+    font-size:10.8px;
+    color:var(--mut);
+    font-weight:var(--fw-strong);
+  }
+
+  .followup-page .empty{
+    padding:18px;
+    color:var(--mut);
+    font-size:11.5px;
+    font-weight:var(--fw-normal);
+  }
+
+  @media (max-width: 1100px){
+    .followup-page .stats{
+      grid-template-columns:repeat(2,1fr);
+    }
+
+    .followup-page .filters-grid{
+      grid-template-columns:1fr 1fr;
+    }
+  }
+
+  @media (max-width: 560px){
+    .followup-page .stats{
+      grid-template-columns:1fr;
+    }
+
+    .followup-page .filters-grid{
+      grid-template-columns:1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="followup-page">
+  <div class="wrap">
+
+    <div class="head">
+      <div class="title">
+        <h1>متابعة الزيارات على مستوى جميع الأسابيع</h1>
+        <p>هذه الصفحة مستقلة عن لوحة الأسبوع، وتعرض إجمالي المدارس المزارة وغير المزارة لكل مشرف، مع إمكانية التنبيه الفوري والتصدير إلى Excel.</p>
+      </div>
+
+      <div class="head-right">
+        <a
+          class="btn primary"
+          href="{% url 'visits:admin_visit_followup_export_excel' %}?q={{ q|urlencode }}&sector={{ sector_id }}{% if only_remaining %}&only_remaining=1{% endif %}"
+        >
+          ⬇️ تصدير Excel
+        </a>
+
+        <form method="post" action="{% url 'visits:admin_notify_all_supervisors_visit_followup' %}" style="margin:0;">
+          {% csrf_token %}
+          <button class="btn warn" type="submit">🔔 تنبيه جميع المتأخرين</button>
+        </form>
+
+        <a class="btn soft" href="{% url 'visits:admin_dashboard' %}">↩ العودة للوحة الإدارة</a>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="meta">
+          <div class="label">إجمالي المدارس المسندة</div>
+          <div class="value">{{ visit_followup_total_assigned }}</div>
+        </div>
+        <div class="icon">🏫</div>
+      </div>
+
+      <div class="stat">
+        <div class="meta">
+          <div class="label">تمت زيارتها</div>
+          <div class="value">{{ visit_followup_total_visited }}</div>
+        </div>
+        <div class="icon">✅</div>
+      </div>
+
+      <div class="stat">
+        <div class="meta">
+          <div class="label">لم تتم زيارتها</div>
+          <div class="value">{{ visit_followup_total_remaining }}</div>
+        </div>
+        <div class="icon">⏳</div>
+      </div>
+
+      <div class="stat">
+        <div class="meta">
+          <div class="label">مشرفون لديهم تأخر</div>
+          <div class="value">{{ visit_followup_supervisors_with_remaining }}</div>
+        </div>
+        <div class="icon">👤</div>
+      </div>
+    </div>
+
+    <form class="filters" method="get">
+      <div class="filters-grid">
+        <div class="field">
+          <label>بحث</label>
+          <input class="input" type="text" name="q" value="{{ q }}" placeholder="اسم المشرف أو رقم الهوية">
+        </div>
+
+        <div class="field">
+          <label>القطاع</label>
+          <select class="select" name="sector">
+            <option value="">كل القطاعات</option>
+            {% for s in sectors %}
+              <option value="{{ s.id }}" {% if sector_id == s.id %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label>العرض</label>
+          <label class="check-wrap" for="id_only_remaining">
+            <input type="checkbox" name="only_remaining" id="id_only_remaining" value="1" {% if only_remaining %}checked{% endif %}>
+            <span>المتأخرون فقط</span>
+          </label>
+        </div>
+
+        <div style="display:flex;gap:6px;align-items:end;flex-wrap:wrap;">
+          <button class="btn primary" type="submit">تطبيق</button>
+          <a class="btn" href="{% url 'visits:admin_visit_followup_dashboard' %}">إعادة ضبط</a>
+        </div>
+      </div>
+    </form>
+
+    <div class="table-card">
+      <div class="table-head">
+        <div class="hint">متابعة تنفيذ الزيارات الفعلية للمشرفين عبر جميع الأسابيع.</div>
+        <div class="hint">عدد النتائج: <b>{{ rows|length }}</b></div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>المشرف</th>
+              <th>القطاع</th>
+              <th>المدارس المسندة</th>
+              <th>تمت زيارتها</th>
+              <th>المتبقي</th>
+              <th>نسبة الإنجاز</th>
+              <th>إجراء</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+              <tr>
+                <td>
+                  <div class="sup-name">{{ row.supervisor.full_name }}</div>
+                  <div class="sup-sub">هوية: {{ row.supervisor.national_id }}</div>
+                </td>
+
+                <td>
+                  {% if row.supervisor.sector %}
+                    {{ row.supervisor.sector.name }}
+                  {% else %}
+                    <span style="color:var(--mut2)">—</span>
+                  {% endif %}
+                </td>
+
+                <td>{{ row.assigned_count }}</td>
+                <td>{{ row.visited_count }}</td>
+
+                <td>
+                  {% if row.remaining_count > 0 %}
+                    <span class="count bad">{{ row.remaining_count }}</span>
+                  {% else %}
+                    <span class="count ok">0</span>
+                  {% endif %}
+                </td>
+
+                <td>
+                  <div class="progress-wrap">
+                    <div class="progress-bar">
+                      <div class="progress-fill" style="width: {{ row.progress_percent }}%;"></div>
+                    </div>
+                    <div class="progress-text">{{ row.progress_percent }}%</div>
+                  </div>
+                </td>
+
+                <td>
+                  {% if row.remaining_count > 0 %}
+                    <form method="post" action="{% url 'visits:admin_notify_supervisor_visit_followup' row.supervisor.id %}" style="margin:0;">
+                      {% csrf_token %}
+                      <button class="btn warn" type="submit">تنبيه الآن</button>
+                    </form>
+                  {% else %}
+                    <span style="color:var(--mut2);font-weight:600">مكتمل</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="7" class="empty">لا توجد نتائج مطابقة.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}
