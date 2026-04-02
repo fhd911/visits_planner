@@ -1225,6 +1225,151 @@ def _build_supervisor_assignments_excel_workbook(supervisor: Supervisor) -> Work
 
     return wb
 
+def _build_unassigned_schools_excel_workbook(
+    *,
+    q: str = "",
+    gender: str = "",
+    sector_id: int = 0,
+    only_active: bool = True,
+) -> Workbook:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "المدارس غير المسندة"
+    ws.sheet_view.rightToLeft = True
+
+    title_font = Font(name="Cairo", bold=True, size=14)
+    bold_font = Font(name="Cairo", bold=True, size=12)
+    normal_font = Font(name="Cairo", size=11)
+
+    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    right = Alignment(horizontal="right", vertical="center", wrap_text=True)
+
+    header_fill = PatternFill("solid", fgColor="F1F5F9")
+    title_fill = PatternFill("solid", fgColor="E8F5E9")
+
+    thin = Side(style="thin", color="CBD5E1")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    assigned_school_ids = _globally_assigned_school_ids()
+
+    schools = (
+        School.objects.select_related("sector")
+        .exclude(id__in=assigned_school_ids)
+        .order_by("name")
+    )
+
+    if only_active:
+        schools = schools.filter(is_active=True)
+
+    if q:
+        schools = schools.filter(
+            Q(name__icontains=q) | Q(stat_code__icontains=q)
+        )
+
+    if gender in ("boys", "girls"):
+        schools = schools.filter(gender=gender)
+
+    if sector_id:
+        schools = schools.filter(sector_id=sector_id)
+
+    school_ids = list(schools.values_list("id", flat=True))
+    principals_map = {
+        p.school_id: p
+        for p in Principal.objects.filter(school_id__in=school_ids)
+    }
+
+    sector_name = ""
+    if sector_id:
+        sector_name = (
+            Sector.objects.filter(id=sector_id)
+            .values_list("name", flat=True)
+            .first()
+            or ""
+        )
+
+    filters_text = []
+    if q:
+        filters_text.append(f"البحث: {q}")
+    if gender in ("boys", "girls"):
+        filters_text.append(f"الجنس: {_gender_label(gender)}")
+    if sector_name:
+        filters_text.append(f"القطاع: {sector_name}")
+    filters_text.append("المدارس النشطة فقط" if only_active else "جميع المدارس")
+
+    ws.merge_cells("A1:I1")
+    ws["A1"] = "المدارس غير المسندة"
+    ws["A1"].font = title_font
+    ws["A1"].alignment = center
+    ws["A1"].fill = title_fill
+
+    ws.merge_cells("A2:I2")
+    ws["A2"] = " — ".join(filters_text) if filters_text else "بدون فلاتر"
+    ws["A2"].font = bold_font
+    ws["A2"].alignment = center
+
+    ws.merge_cells("A3:I3")
+    ws["A3"] = f"عدد المدارس: {schools.count()}"
+    ws["A3"].font = bold_font
+    ws["A3"].alignment = center
+
+    headers = [
+        "م",
+        "الرقم الإحصائي",
+        "اسم المدرسة",
+        "الجنس",
+        "القطاع",
+        "مدير المدرسة",
+        "جوال المدير",
+        "حالة المدرسة",
+        "حالة الإسناد",
+    ]
+
+    header_row = 5
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=header_row, column=col, value=header)
+        cell.font = bold_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    row_idx = header_row + 1
+    for i, school in enumerate(schools, start=1):
+        principal = principals_map.get(school.id)
+
+        values = [
+            i,
+            school.stat_code or "—",
+            school.name or "—",
+            _gender_label(getattr(school, "gender", "")),
+            getattr(school.sector, "name", "") or "—",
+            getattr(principal, "full_name", "") or "—",
+            getattr(principal, "mobile", "") or "—",
+            "نشطة" if school.is_active else "غير نشطة",
+            "غير مسندة",
+        ]
+
+        for col, value in enumerate(values, start=1):
+            cell = ws.cell(row=row_idx, column=col, value=value)
+            cell.font = normal_font
+            cell.border = border
+            cell.alignment = center if col in (1, 2, 4, 7, 8, 9) else right
+
+        row_idx += 1
+
+    for col_i, width in {
+        1: 8,
+        2: 18,
+        3: 42,
+        4: 12,
+        5: 24,
+        6: 28,
+        7: 18,
+        8: 14,
+        9: 16,
+    }.items():
+        ws.column_dimensions[get_column_letter(col_i)].width = width
+
+    return wb
 
 def _build_admin_week_excel_workbook(week_obj: PlanWeek, plans) -> Workbook:
     wb = Workbook()
@@ -2507,13 +2652,29 @@ def admin_assignments_overview_view(request: HttpRequest) -> HttpResponse:
     if only_active:
         supervisors = supervisors.filter(is_active=True)
     if q:
-        supervisors = supervisors.filter(Q(full_name__icontains=q) | Q(national_id__icontains=q))
+        supervisors = supervisors.filter(
+            Q(full_name__icontains=q) | Q(national_id__icontains=q)
+        )
     if gender in ("boys", "girls"):
         supervisors = supervisors.filter(gender=gender)
     if sector_id:
         supervisors = supervisors.filter(sector_id=sector_id)
 
     sectors = Sector.objects.filter(is_active=True).order_by("name")
+
+    assigned_school_ids = _globally_assigned_school_ids()
+
+    unassigned_schools_qs = School.objects.exclude(id__in=assigned_school_ids)
+    if only_active:
+        unassigned_schools_qs = unassigned_schools_qs.filter(is_active=True)
+    if q:
+        unassigned_schools_qs = unassigned_schools_qs.filter(
+            Q(name__icontains=q) | Q(stat_code__icontains=q)
+        )
+    if gender in ("boys", "girls"):
+        unassigned_schools_qs = unassigned_schools_qs.filter(gender=gender)
+    if sector_id:
+        unassigned_schools_qs = unassigned_schools_qs.filter(sector_id=sector_id)
 
     return render(
         request,
@@ -2526,11 +2687,65 @@ def admin_assignments_overview_view(request: HttpRequest) -> HttpResponse:
             "only_active": only_active,
             "sectors": sectors,
             "kpi_supervisors": supervisors.count(),
-            "kpi_assignments": Assignment.objects.filter(is_active=True, school__is_active=True).count(),
+            "kpi_assignments": Assignment.objects.filter(
+                is_active=True,
+                school__is_active=True,
+            ).count(),
             "kpi_schools": School.objects.filter(is_active=True).count(),
+            "kpi_unassigned_schools": unassigned_schools_qs.count(),
         },
     )
 
+    return render(
+        request,
+        "visits/admin_assignments_overview.html",
+        {
+            "rows": supervisors,
+            "q": q,
+            "gender": gender,
+            "sector_id": sector_id,
+            "only_active": only_active,
+            "sectors": sectors,
+            "kpi_supervisors": supervisors.count(),
+            "kpi_assignments": Assignment.objects.filter(
+                is_active=True,
+                school__is_active=True,
+            ).count(),
+            "kpi_schools": School.objects.filter(is_active=True).count(),
+            "kpi_unassigned_schools": unassigned_schools_qs.count(),
+        },
+    )
+
+
+@admin_only_view
+def admin_export_unassigned_schools_excel(request: HttpRequest) -> HttpResponse:
+    q = _cell_str(request.GET.get("q"))
+    gender = _cell_str(request.GET.get("gender"))
+    sector_id = _safe_int(request.GET.get("sector") or 0, default=0)
+    only_active = request.GET.get("active", "1") == "1"
+
+    wb = _build_unassigned_schools_excel_workbook(
+        q=q,
+        gender=gender,
+        sector_id=sector_id,
+        only_active=only_active,
+    )
+    return _excel_response(wb, "المدارس_غير_المسندة.xlsx")
+
+@admin_only_view
+def admin_export_unassigned_schools_excel(request: HttpRequest) -> HttpResponse:
+    q = _cell_str(request.GET.get("q"))
+    gender = _cell_str(request.GET.get("gender"))
+    sector_id = _safe_int(request.GET.get("sector") or 0, default=0)
+    only_active = request.GET.get("active", "1") == "1"
+
+    wb = _build_unassigned_schools_excel_workbook(
+        q=q,
+        gender=gender,
+        sector_id=sector_id,
+        only_active=only_active,
+    )
+    return _excel_response(wb, "المدارس_غير_المسندة.xlsx")
 
 @admin_only_view
 def admin_supervisor_assignments_view(request: HttpRequest, supervisor_id: int) -> HttpResponse:

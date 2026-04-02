@@ -44,6 +44,10 @@
     --pink-bg:rgba(219,39,119,.08);
     --pink-br:rgba(219,39,119,.16);
 
+    --amber:#9a6700;
+    --amber-bg:rgba(245,158,11,.10);
+    --amber-br:rgba(245,158,11,.18);
+
     --shadow:0 10px 24px rgba(22,36,29,.045);
     --shadow2:0 6px 16px rgba(22,36,29,.032);
   }
@@ -124,7 +128,7 @@
 
   .assign-page .kpis{
     display:grid;
-    grid-template-columns:repeat(3, minmax(0,1fr));
+    grid-template-columns:repeat(4, minmax(0,1fr));
     gap:10px;
   }
 
@@ -287,6 +291,16 @@
   .assign-page .btn.primary:hover{
     background:var(--vp-primary-2);
     border-color:var(--vp-primary-2);
+  }
+
+  .assign-page .btn.export{
+    background:linear-gradient(180deg, #fffdf7, #fffaf0);
+    border-color:var(--amber-br);
+    color:#7a5400;
+  }
+
+  .assign-page .btn.export:hover{
+    background:#fff8eb;
   }
 
   .assign-page .table-card{
@@ -513,11 +527,13 @@
     background:linear-gradient(180deg, #fff, #fbfcfb);
   }
 
-  @media (max-width: 980px){
+  @media (max-width: 1100px){
     .assign-page .kpis{
-      grid-template-columns:1fr;
+      grid-template-columns:repeat(2, minmax(0,1fr));
     }
+  }
 
+  @media (max-width: 980px){
     .assign-page .filters-grid{
       grid-template-columns:1fr 1fr;
     }
@@ -532,6 +548,10 @@
   }
 
   @media (max-width: 640px){
+    .assign-page .kpis{
+      grid-template-columns:1fr;
+    }
+
     .assign-page .filters-grid{
       grid-template-columns:1fr;
     }
@@ -568,6 +588,7 @@
         <span class="chip"><span class="dot"></span> المشرفون: <b>{{ kpi_supervisors }}</b></span>
         <span class="chip">الإسنادات النشطة: <b>{{ kpi_assignments }}</b></span>
         <span class="chip">المدارس النشطة: <b>{{ kpi_schools }}</b></span>
+        <span class="chip">غير المسندة: <b>{{ kpi_unassigned_schools }}</b></span>
       </div>
     </div>
 
@@ -594,6 +615,14 @@
           <div class="kpi-value">{{ kpi_schools }}</div>
         </div>
         <div class="kpi-icon">03</div>
+      </div>
+
+      <div class="kpi">
+        <div class="kpi-meta">
+          <div class="kpi-label">المدارس غير المسندة</div>
+          <div class="kpi-value">{{ kpi_unassigned_schools }}</div>
+        </div>
+        <div class="kpi-icon">04</div>
       </div>
     </div>
 
@@ -654,6 +683,13 @@
 
         <div class="table-head-right">
           <div class="hint">عدد النتائج: <b>{{ rows|length }}</b></div>
+
+          <a
+            class="btn export"
+            href="{% url 'visits:admin_export_unassigned_schools_excel' %}?q={{ q|urlencode }}&gender={{ gender|urlencode }}&sector={{ sector_id }}&active={% if only_active %}1{% else %}0{% endif %}"
+          >
+            تصدير المدارس غير المسندة
+          </a>
         </div>
       </div>
 

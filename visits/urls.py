@@ -133,6 +133,11 @@ urlpatterns = [
     # =========================================================
     path("manager/assignments/", views.admin_assignments_overview_view, name="admin_assignments_overview"),
     path(
+        "manager/assignments/unassigned/export/",
+        views.admin_export_unassigned_schools_excel,
+        name="admin_export_unassigned_schools_excel",
+    ),
+    path(
         "manager/supervisors/<int:supervisor_id>/assignments/",
         views.admin_supervisor_assignments_view,
         name="admin_supervisor_assignments",
