@@ -33,6 +33,16 @@ urlpatterns = [
     path("plan/", views.plan_view, name="plan"),
     path("plan/export/", views.export_plan_excel, name="plan_export"),
     path(
+        "plan/export/planned-schools/",
+        views.export_plan_planned_schools_excel,
+        name="plan_export_planned_schools",
+    ),
+    path(
+        "plan/export/unplanned-schools/",
+        views.export_plan_unplanned_schools_excel,
+        name="plan_export_unplanned_schools",
+    ),
+    path(
         "plan/assignments/export/",
         views.export_supervisor_assignments_excel,
         name="export_supervisor_assignments_excel",

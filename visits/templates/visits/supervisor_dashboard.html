@@ -461,6 +461,18 @@
               <div class="quick-link-title">خطاب الإسناد</div>
               <div class="quick-link-sub">عرض وطباعة خطاب الإسناد الخاص بك.</div>
             </a>
+
+            <a class="quick-link" href="{% url 'visits:plan_export_planned_schools' %}?week={{ current_week|default:week }}">
+              <div class="quick-link-icon">📗</div>
+              <div class="quick-link-title">تصدير المدارس المدرجة</div>
+              <div class="quick-link-sub">المدارس المدرجة في الخطط.</div>
+            </a>
+
+            <a class="quick-link" href="{% url 'visits:plan_export_unplanned_schools' %}?week={{ current_week|default:week }}">
+              <div class="quick-link-icon">📙</div>
+              <div class="quick-link-title">تصدير المدارس غير المدرجة</div>
+              <div class="quick-link-sub">المدارس غير المدرجة في الخطط.</div>
+            </a>
           </div>
         </div>
       </div>

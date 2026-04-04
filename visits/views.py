@@ -1225,6 +1225,118 @@ def _build_supervisor_assignments_excel_workbook(supervisor: Supervisor) -> Work
 
     return wb
 
+
+def _plan_school_tracking(target: Plan | Supervisor) -> dict[str, Any]:
+    supervisor = target.supervisor if isinstance(target, Plan) else target
+
+    assigned_schools = list(_supervisor_schools_qs(supervisor))
+    assigned_school_ids = {school.id for school in assigned_schools}
+
+    planned_school_ids = (
+        set(
+            PlanDay.objects.filter(
+                plan__supervisor=supervisor,
+                plan__week__is_break=False,
+                school_id__isnull=False,
+            ).values_list("school_id", flat=True)
+        )
+        & assigned_school_ids
+    )
+
+    planned_schools = [school for school in assigned_schools if school.id in planned_school_ids]
+    unplanned_schools = [school for school in assigned_schools if school.id not in planned_school_ids]
+
+    return {
+        "assigned_schools": assigned_schools,
+        "planned_schools": planned_schools,
+        "unplanned_schools": unplanned_schools,
+        "assigned_count": len(assigned_schools),
+        "planned_count": len(planned_schools),
+        "unplanned_count": len(unplanned_schools),
+    }
+
+
+def _build_supervisor_school_list_workbook(
+    *,
+    supervisor: Supervisor,
+    schools: list[School],
+    report_title: str,
+    report_scope_label: str = "من الأسبوع الأول إلى آخر أسبوع في الخطة",
+) -> Workbook:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "المدارس"
+    ws.sheet_view.rightToLeft = True
+
+    title_font = Font(name="Cairo", bold=True, size=14)
+    bold_font = Font(name="Cairo", bold=True, size=12)
+    normal_font = Font(name="Cairo", size=11)
+
+    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    right = Alignment(horizontal="right", vertical="center", wrap_text=True)
+
+    header_fill = PatternFill("solid", fgColor="F1F5F9")
+    title_fill = PatternFill("solid", fgColor="E8F5E9")
+
+    thin = Side(style="thin", color="CBD5E1")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    ws.merge_cells("A1:E1")
+    ws["A1"] = f"{report_title} — {report_scope_label}"
+    ws["A1"].font = title_font
+    ws["A1"].alignment = center
+    ws["A1"].fill = title_fill
+
+    ws.merge_cells("A2:E2")
+    ws["A2"] = f"المشرف: {supervisor.full_name} — الهوية: {_sup_nid_value(supervisor)}"
+    ws["A2"].font = bold_font
+    ws["A2"].alignment = center
+
+    ws.merge_cells("A3:E3")
+    ws["A3"] = f"عدد المدارس: {len(schools)}"
+    ws["A3"].font = bold_font
+    ws["A3"].alignment = center
+
+    headers = ["م", "الرقم الإحصائي", "اسم المدرسة", "الجنس", "القطاع"]
+    header_row = 5
+
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=header_row, column=col, value=header)
+        cell.font = bold_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    row_idx = header_row + 1
+    for i, school in enumerate(schools, start=1):
+        values = [
+            i,
+            school.stat_code or "—",
+            school.name or "—",
+            _gender_label(getattr(school, "gender", "")),
+            getattr(school.sector, "name", "") or "—",
+        ]
+
+        for col, value in enumerate(values, start=1):
+            cell = ws.cell(row=row_idx, column=col, value=value)
+            cell.font = normal_font
+            cell.border = border
+            cell.alignment = center if col in (1, 2, 4) else right
+
+        row_idx += 1
+
+    for col_i, width in {
+        1: 8,
+        2: 18,
+        3: 42,
+        4: 12,
+        5: 24,
+    }.items():
+        ws.column_dimensions[get_column_letter(col_i)].width = width
+
+    return wb
+
+
 def _build_unassigned_schools_excel_workbook(
     *,
     q: str = "",
@@ -1758,6 +1870,36 @@ def weekly_letters_drive_view(request: HttpRequest, week_number: int) -> HttpRes
 # =============================================================================
 # Supervisor plan views
 # =============================================================================
+def _plan_school_tracking(target: Plan | Supervisor) -> dict[str, Any]:
+    supervisor = target.supervisor if isinstance(target, Plan) else target
+
+    assigned_schools = list(_supervisor_schools_qs(supervisor))
+    assigned_school_ids = {school.id for school in assigned_schools}
+
+    planned_school_ids = (
+        set(
+            PlanDay.objects.filter(
+                plan__supervisor=supervisor,
+                plan__week__is_break=False,
+                school_id__isnull=False,
+            ).values_list("school_id", flat=True)
+        )
+        & assigned_school_ids
+    )
+
+    planned_schools = [school for school in assigned_schools if school.id in planned_school_ids]
+    unplanned_schools = [school for school in assigned_schools if school.id not in planned_school_ids]
+
+    return {
+        "assigned_schools": assigned_schools,
+        "planned_schools": planned_schools,
+        "unplanned_schools": unplanned_schools,
+        "assigned_count": len(assigned_schools),
+        "planned_count": len(planned_schools),
+        "unplanned_count": len(unplanned_schools),
+    }
+
+
 def plan_view(request: HttpRequest) -> HttpResponse:
     setting = _get_site_setting()
     if _maintenance_is_active(setting, persist=True) and not _maintenance_allowed_for_request(request, setting):
@@ -1774,6 +1916,7 @@ def plan_view(request: HttpRequest) -> HttpResponse:
         messages.info(request, "يرجى تسجيل بريدك الإلكتروني أولًا وتأكيده برمز تحقق لتصلك التنبيهات والإشعارات.")
         settings_url = reverse("visits:supervisor_email_settings")
         return redirect(f"{settings_url}?next={_plan_url(week_no)}")
+
     week_obj = _resolve_week_or_404(week_no, allow_inactive=False)
 
     plan, _ = Plan.objects.get_or_create(supervisor=supervisor, week=week_obj)
@@ -1867,7 +2010,7 @@ def plan_view(request: HttpRequest) -> HttpResponse:
 
         return redirect(_plan_url(week_obj.week_no))
 
-    visit_counts = _plan_visit_counts(plan)
+    school_tracking = _plan_school_tracking(supervisor)
 
     return render(
         request,
@@ -1889,9 +2032,17 @@ def plan_view(request: HttpRequest) -> HttpResponse:
             "visit_in_value": getattr(PlanDay, "VISIT_IN", "in"),
             "visit_remote_value": getattr(PlanDay, "VISIT_REMOTE", "remote"),
             "week_letter": week_letter,
-            "assigned_count": visit_counts["assigned_count"],
-            "visited_count": visit_counts["visited_count"],
-            "remaining_count": visit_counts["remaining_count"],
+
+            "assigned_count": school_tracking["assigned_count"],
+            "planned_count": school_tracking["planned_count"],
+            "unplanned_count": school_tracking["unplanned_count"],
+            "assigned_schools": school_tracking["assigned_schools"],
+            "planned_schools": school_tracking["planned_schools"],
+            "unplanned_schools": school_tracking["unplanned_schools"],
+
+            "visited_count": school_tracking["planned_count"],
+            "remaining_count": school_tracking["unplanned_count"],
+
             "supervisor_email": _supervisor_email_value(supervisor),
             "email_notifications_enabled": _supervisor_email_notifications_enabled(supervisor),
         },
@@ -2361,6 +2512,42 @@ def export_plan_excel(request: HttpRequest) -> HttpResponse:
     )
     wb = _build_plan_excel_workbook(plan)
     filename = f"خطة_الأسبوع_{week_obj.week_no}_{_sup_nid_value(supervisor)}.xlsx"
+    return _excel_response(wb, filename)
+
+
+def export_plan_planned_schools_excel(request: HttpRequest) -> HttpResponse:
+    try:
+        supervisor = _require_supervisor(request)
+    except Supervisor.DoesNotExist:
+        return redirect("visits:login")
+
+    tracking = _plan_school_tracking(supervisor)
+
+    wb = _build_supervisor_school_list_workbook(
+        supervisor=supervisor,
+        schools=tracking["planned_schools"],
+        report_title="المدارس المدرجة في الخطة",
+        report_scope_label="من الأسبوع الأول إلى آخر أسبوع في الخطة",
+    )
+    filename = f"المدارس_المدرجة_جميع_الأسابيع_{_sup_nid_value(supervisor)}.xlsx"
+    return _excel_response(wb, filename)
+
+
+def export_plan_unplanned_schools_excel(request: HttpRequest) -> HttpResponse:
+    try:
+        supervisor = _require_supervisor(request)
+    except Supervisor.DoesNotExist:
+        return redirect("visits:login")
+
+    tracking = _plan_school_tracking(supervisor)
+
+    wb = _build_supervisor_school_list_workbook(
+        supervisor=supervisor,
+        schools=tracking["unplanned_schools"],
+        report_title="المدارس غير المدرجة في الخطة",
+        report_scope_label="من الأسبوع الأول إلى آخر أسبوع في الخطة",
+    )
+    filename = f"المدارس_غير_المدرجة_جميع_الأسابيع_{_sup_nid_value(supervisor)}.xlsx"
     return _excel_response(wb, filename)
 
 
