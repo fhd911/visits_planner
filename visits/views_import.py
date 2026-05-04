@@ -16,6 +16,11 @@ from openpyxl import Workbook, load_workbook
 
 from .forms import ImportExcelForm
 from .models import Assignment, Principal, School, Supervisor
+from .utils.import_schools_with_supervisors import (
+    build_schools_with_supervisors_template,
+    commit_schools_with_supervisors_import,
+    parse_schools_with_supervisors_workbook,
+)
 
 
 # ============================================================================
@@ -34,6 +39,7 @@ class ImportStats:
 SESSION_REJ_HEADERS = "import_rejected_headers"
 SESSION_REJ_ROWS = "import_rejected_rows"
 MAX_REJECTED_IN_SESSION = 3000
+SCHOOLS_WITH_SUPERVISORS_IMPORT_SESSION_KEY = "schools_with_supervisors_import_preview"
 
 
 def _rej_add(rejected: list[dict], row: dict, reason: str, importer: str) -> None:
@@ -169,6 +175,84 @@ def _sheet_rows(file) -> list[dict]:
         out.append(rec)
 
     return out
+
+
+
+
+# ============================================================================
+# Schools + Supervisors Assignment Import Helpers
+# ============================================================================
+def _import_bool(value: object, default: bool = False) -> bool:
+    if value is None:
+        return default
+    return str(value).strip().lower() in ("1", "true", "yes", "on")
+
+
+def _schools_supervisors_default_options() -> dict[str, bool]:
+    return {
+        "create_missing_schools": False,
+        "update_schools": True,
+        "create_missing_supervisors": True,
+        "update_supervisors": True,
+        "create_missing_sectors": False,
+        "allow_transfer": False,
+        "deactivate_when_supervisor_blank": False,
+    }
+
+
+def _schools_supervisors_options_from_post(request: HttpRequest) -> dict[str, bool]:
+    return {
+        "create_missing_schools": _import_bool(request.POST.get("create_missing_schools"), False),
+        "update_schools": _import_bool(request.POST.get("update_schools"), True),
+        "create_missing_supervisors": _import_bool(request.POST.get("create_missing_supervisors"), True),
+        "update_supervisors": _import_bool(request.POST.get("update_supervisors"), True),
+        "create_missing_sectors": _import_bool(request.POST.get("create_missing_sectors"), False),
+        "allow_transfer": _import_bool(request.POST.get("allow_transfer"), False),
+        "deactivate_when_supervisor_blank": _import_bool(
+            request.POST.get("deactivate_when_supervisor_blank"),
+            False,
+        ),
+    }
+
+
+def _uploaded_excel_file(request: HttpRequest):
+    return (
+        request.FILES.get("file")
+        or request.FILES.get("excel_file")
+        or request.FILES.get("upload")
+    )
+
+
+def _store_rejected_errors_for_download(request: HttpRequest, errors: list[dict]) -> None:
+    if not errors:
+        request.session.pop(SESSION_REJ_HEADERS, None)
+        request.session.pop(SESSION_REJ_ROWS, None)
+        request.session.modified = True
+        return
+
+    normalized_rows: list[dict] = []
+    for err in errors[:MAX_REJECTED_IN_SESSION]:
+        normalized_rows.append(
+            {
+                "_importer": "schools_with_supervisors",
+                "_reason": err.get("message", ""),
+                "row_no": err.get("row_no", ""),
+                "school_stat_code": err.get("school_stat_code", ""),
+                "school_name": err.get("school_name", ""),
+                "supervisor": err.get("supervisor", ""),
+            }
+        )
+
+    request.session[SESSION_REJ_HEADERS] = [
+        "_importer",
+        "_reason",
+        "row_no",
+        "school_stat_code",
+        "school_name",
+        "supervisor",
+    ]
+    request.session[SESSION_REJ_ROWS] = normalized_rows
+    request.session.modified = True
 
 
 # ============================================================================
@@ -441,6 +525,320 @@ def manager_import_view(request: HttpRequest) -> HttpResponse:
             "results": {k: asdict(v) for k, v in results.items()},
         },
     )
+
+
+
+
+# ============================================================================
+# View: Import Schools With Assigned Supervisors
+# ============================================================================
+@staff_member_required
+def admin_schools_with_supervisors_import_view(request: HttpRequest) -> HttpResponse:
+    """
+    صفحة استيراد المدارس وإسنادها للمشرفين.
+
+    آلية العمل:
+    1. رفع ملف Excel.
+    2. فحص الملف دون حفظ.
+    3. عند نجاح الفحص، تحفظ البيانات مؤقتًا في session.
+    4. الضغط على تنفيذ الاستيراد يحفظ المدارس/المشرفين/الإسنادات حسب الخيارات.
+    """
+    context = {
+        "result": None,
+        "commit_result": None,
+        "options": _schools_supervisors_default_options(),
+    }
+
+    if request.method == "POST":
+        action = (request.POST.get("action") or "preview").strip()
+
+        if action == "commit":
+            payload = request.session.get(SCHOOLS_WITH_SUPERVISORS_IMPORT_SESSION_KEY)
+
+            if not payload or not payload.get("rows"):
+                messages.error(request, "لا توجد بيانات جاهزة للتنفيذ. ارفع الملف وافحصه أولًا.")
+                return render(request, "visits/admin_schools_with_supervisors_import.html", context)
+
+            rows = payload["rows"]
+            options = payload.get("options", _schools_supervisors_default_options())
+
+            try:
+                commit_result = commit_schools_with_supervisors_import(
+                    rows,
+                    create_missing_schools=bool(options.get("create_missing_schools", False)),
+                    update_schools=bool(options.get("update_schools", True)),
+                    create_missing_supervisors=bool(options.get("create_missing_supervisors", True)),
+                    update_supervisors=bool(options.get("update_supervisors", True)),
+                    create_missing_sectors=bool(options.get("create_missing_sectors", False)),
+                    allow_transfer=bool(options.get("allow_transfer", False)),
+                    deactivate_when_supervisor_blank=bool(options.get("deactivate_when_supervisor_blank", False)),
+                )
+
+                request.session.pop(SCHOOLS_WITH_SUPERVISORS_IMPORT_SESSION_KEY, None)
+                request.session.pop(SESSION_REJ_HEADERS, None)
+                request.session.pop(SESSION_REJ_ROWS, None)
+                request.session.modified = True
+
+                messages.success(request, "تم تنفيذ استيراد المدارس وإسنادها للمشرفين بنجاح ✅")
+
+                context["commit_result"] = commit_result
+                context["options"] = options
+
+            except Exception as e:
+                messages.error(request, f"فشل تنفيذ الاستيراد: {e}")
+
+            return render(request, "visits/admin_schools_with_supervisors_import.html", context)
+
+        options = _schools_supervisors_options_from_post(request)
+        uploaded_file = _uploaded_excel_file(request)
+
+        context["options"] = options
+
+        if not uploaded_file:
+            messages.error(request, "فضلاً اختر ملف Excel.")
+            return render(request, "visits/admin_schools_with_supervisors_import.html", context)
+
+        try:
+            result = parse_schools_with_supervisors_workbook(
+                uploaded_file,
+                create_missing_schools=options["create_missing_schools"],
+                update_schools=options["update_schools"],
+                create_missing_supervisors=options["create_missing_supervisors"],
+                update_supervisors=options["update_supervisors"],
+                create_missing_sectors=options["create_missing_sectors"],
+                allow_transfer=options["allow_transfer"],
+                deactivate_when_supervisor_blank=options["deactivate_when_supervisor_blank"],
+            )
+        except Exception as e:
+            result = {
+                "ok": False,
+                "rows": [],
+                "errors": [
+                    {
+                        "row_no": "-",
+                        "school_stat_code": "",
+                        "school_name": "",
+                        "supervisor": "",
+                        "message": f"تعذر فحص الملف: {e}",
+                    }
+                ],
+                "summary": {},
+            }
+
+        context["result"] = result
+
+        if result.get("ok"):
+            request.session[SCHOOLS_WITH_SUPERVISORS_IMPORT_SESSION_KEY] = {
+                "rows": result.get("rows", []),
+                "options": options,
+            }
+            request.session.pop(SESSION_REJ_HEADERS, None)
+            request.session.pop(SESSION_REJ_ROWS, None)
+            request.session.modified = True
+
+            messages.success(request, "تم فحص الملف بنجاح، ويمكنك الآن تنفيذ الاستيراد.")
+        else:
+            request.session.pop(SCHOOLS_WITH_SUPERVISORS_IMPORT_SESSION_KEY, None)
+            _store_rejected_errors_for_download(request, result.get("errors", []))
+
+            messages.error(request, "يوجد أخطاء في الملف. صحح الأخطاء ثم أعد الرفع.")
+
+        return render(request, "visits/admin_schools_with_supervisors_import.html", context)
+
+    return render(request, "visits/admin_schools_with_supervisors_import.html", context)
+
+
+@staff_member_required
+def admin_schools_with_supervisors_import_template_view(request: HttpRequest) -> HttpResponse:
+    """
+    تحميل قالب Excel الخاص باستيراد المدارس وإسنادها للمشرفين.
+    """
+    wb = build_schools_with_supervisors_template()
+
+    bio = BytesIO()
+    wb.save(bio)
+    bio.seek(0)
+
+    resp = HttpResponse(
+        bio.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    resp["Content-Disposition"] = 'attachment; filename="schools_with_supervisors_template.xlsx"'
+    return resp
+
+
+
+
+# ============================================================================
+# View: Export Schools With Assigned Supervisors
+# ============================================================================
+def _export_gender_label(value: Any) -> str:
+    v = _norm(value).lower()
+    if v in {"boys", "male", "m", "بنين"}:
+        return "بنين"
+    if v in {"girls", "female", "f", "بنات"}:
+        return "بنات"
+    return _norm(value) or ""
+
+
+def _export_bool_label(value: Any, true_label: str = "نشط", false_label: str = "غير نشط") -> str:
+    return true_label if bool(value) else false_label
+
+
+def _school_sector_name(school: School) -> str:
+    sector = getattr(school, "sector", None)
+    return getattr(sector, "name", "") or ""
+
+
+def _supervisor_value(supervisor: Supervisor | None, field_name: str) -> str:
+    if not supervisor:
+        return ""
+    return _norm(getattr(supervisor, field_name, "") or "")
+
+
+def _build_schools_with_supervisors_export_workbook(*, scope: str = "all") -> Workbook:
+    """
+    تصدير المدارس بالمشرفين بنفس منطق قالب الاستيراد.
+
+    scope:
+    - all: جميع المدارس
+    - assigned: المدارس المسندة فقط
+    - unassigned: المدارس غير المسندة فقط
+    """
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "المدارس والمشرفون"
+    ws.sheet_view.rightToLeft = True
+
+    headers = [
+        "الرقم الإحصائي",
+        "اسم المدرسة",
+        "جنس المدرسة",
+        "القطاع",
+        "حالة المدرسة",
+        "سجل المشرف",
+        "اسم المشرف المسند",
+        "جوال المشرف",
+        "بريد المشرف",
+        "جنس المشرف",
+        "حالة الإسناد",
+        "ملاحظات",
+    ]
+    ws.append(headers)
+
+    active_assignments = list(
+        Assignment.objects.filter(is_active=True)
+        .select_related("school", "supervisor")
+        .order_by("school_id", "id")
+    )
+
+    assignment_by_school: dict[int, Assignment] = {}
+    assignment_count_by_school: dict[int, int] = {}
+
+    for assignment in active_assignments:
+        school_id = assignment.school_id
+        assignment_count_by_school[school_id] = assignment_count_by_school.get(school_id, 0) + 1
+
+        # أول إسناد نشط هو الذي سيظهر في ملف التصدير،
+        # مع وضع ملاحظة إذا وجدت إسنادات نشطة متعددة لنفس المدرسة.
+        if school_id not in assignment_by_school:
+            assignment_by_school[school_id] = assignment
+
+    assigned_school_ids = set(assignment_by_school.keys())
+
+    schools_qs = School.objects.all().order_by("name")
+
+    if scope == "assigned":
+        schools_qs = schools_qs.filter(id__in=assigned_school_ids)
+    elif scope == "unassigned":
+        schools_qs = schools_qs.exclude(id__in=assigned_school_ids)
+
+    for school in schools_qs:
+        assignment = assignment_by_school.get(school.id)
+        supervisor = assignment.supervisor if assignment else None
+
+        notes: list[str] = []
+
+        if assignment_count_by_school.get(school.id, 0) > 1:
+            notes.append("تنبيه: توجد أكثر من عملية إسناد نشطة لهذه المدرسة.")
+
+        if supervisor and hasattr(supervisor, "is_active") and not getattr(supervisor, "is_active", True):
+            notes.append("تنبيه: المشرف المسند غير نشط.")
+
+        if not assignment:
+            assignment_status = "غير مسندة"
+        else:
+            assignment_status = "نشط" if getattr(assignment, "is_active", False) else "غير نشط"
+
+        ws.append(
+            [
+                _norm(getattr(school, "stat_code", "") or ""),
+                _norm(getattr(school, "name", "") or ""),
+                _export_gender_label(getattr(school, "gender", "") or ""),
+                _school_sector_name(school),
+                _export_bool_label(getattr(school, "is_active", True), "نشطة", "غير نشطة"),
+                _supervisor_value(supervisor, "national_id"),
+                _supervisor_value(supervisor, "full_name"),
+                _supervisor_value(supervisor, "mobile"),
+                _supervisor_value(supervisor, "email"),
+                _export_gender_label(getattr(supervisor, "gender", "") if supervisor else ""),
+                assignment_status,
+                " ".join(notes),
+            ]
+        )
+
+    widths = {
+        "A": 18,
+        "B": 42,
+        "C": 14,
+        "D": 24,
+        "E": 16,
+        "F": 18,
+        "G": 32,
+        "H": 18,
+        "I": 30,
+        "J": 14,
+        "K": 16,
+        "L": 55,
+    }
+
+    for col, width in widths.items():
+        ws.column_dimensions[col].width = width
+
+    ws.freeze_panes = "A2"
+
+    return wb
+
+
+@staff_member_required
+def admin_schools_with_supervisors_export_view(request: HttpRequest) -> HttpResponse:
+    """
+    تصدير الوضع الحالي للمدارس والمشرفين إلى Excel.
+
+    يمكن استخدام الرابط مع:
+    ?scope=all        جميع المدارس
+    ?scope=assigned   المدارس المسندة فقط
+    ?scope=unassigned المدارس غير المسندة فقط
+    """
+    scope = (request.GET.get("scope") or "all").strip().lower()
+
+    if scope not in {"all", "assigned", "unassigned"}:
+        scope = "all"
+
+    wb = _build_schools_with_supervisors_export_workbook(scope=scope)
+
+    filename = f"schools_with_supervisors_{scope}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+
+    bio = BytesIO()
+    wb.save(bio)
+    bio.seek(0)
+
+    resp = HttpResponse(
+        bio.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return resp
 
 
 # ============================================================================

@@ -5,17 +5,17 @@
 {% block page_messages %}{% endblock %}
 
 {% block header_title %}إدارة المدارس{% endblock %}
-{% block header_subtitle %}عرض المدارس حسب الجنس والقطاع مع الإضافة والتعديل والتعطيل{% endblock %}
+{% block header_subtitle %}إدارة بيانات المدارس ومتابعة حالة الإسناد بتنسيق هادئ ومتوازن{% endblock %}
 
 {% block extra_css %}
 <style>
   .school-page{
     --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
 
-    --fw-hero:800;
-    --fw-title:700;
-    --fw-strong:600;
-    --fw-normal:500;
+    --fw-hero:700;
+    --fw-title:600;
+    --fw-strong:500;
+    --fw-normal:400;
 
     --card:#ffffff;
     --card-soft:#fbfcfb;
@@ -46,11 +46,11 @@
     --pink-br:rgba(219,39,119,.16);
 
     --danger:#9f3129;
-    --danger-bg:var(--vp-danger-bg);
-    --danger-br:var(--vp-danger-border);
+    --danger-bg:rgba(225,29,72,.055);
+    --danger-br:rgba(225,29,72,.13);
 
-    --shadow:0 10px 24px rgba(22,36,29,.045);
-    --shadow2:0 6px 16px rgba(22,36,29,.032);
+    --shadow:0 8px 20px rgba(22,36,29,.038);
+    --shadow2:0 4px 12px rgba(22,36,29,.028);
   }
 
   .school-page *{
@@ -66,7 +66,8 @@
 
   .school-page .summary-card,
   .school-page .form-card,
-  .school-page .table-card{
+  .school-page .table-card,
+  .school-page .quick-card{
     background:var(--card);
     border:1px solid var(--line);
     border-radius:20px;
@@ -74,7 +75,7 @@
   }
 
   .school-page .summary-card{
-    padding:14px 16px;
+    padding:12px 15px;
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -85,9 +86,10 @@
 
   .school-page .summary-note{
     color:var(--mut);
-    font-size:12px;
-    line-height:1.9;
+    font-size:11.2px;
+    line-height:1.85;
     font-weight:var(--fw-normal);
+    max-width:760px;
   }
 
   .school-page .summary-right{
@@ -101,20 +103,40 @@
     display:inline-flex;
     align-items:center;
     gap:8px;
-    min-height:32px;
-    padding:6px 11px;
+    min-height:30px;
+    padding:5px 10px;
     border-radius:999px;
     background:var(--soft);
     border:1px solid var(--line);
     color:var(--mut);
-    font-size:11.2px;
+    font-size:10.8px;
     font-weight:var(--fw-strong);
     white-space:nowrap;
+    text-decoration:none;
+    transition:.16s ease;
+  }
+
+  .school-page a.chip:hover{
+    background:#fcfdfc;
+    transform:translateY(-1px);
+    text-decoration:none;
   }
 
   .school-page .chip b{
     color:var(--txt);
     font-weight:var(--fw-title);
+  }
+
+  .school-page .chip.import{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+  }
+
+  .school-page .chip.export{
+    background:linear-gradient(180deg, #fffdf7, #fffaf0);
+    border-color:var(--warn-br);
+    color:var(--warn);
   }
 
   .school-page .dot{
@@ -131,11 +153,91 @@
     box-shadow:0 0 0 4px rgba(47,98,80,.10);
   }
 
+  .school-page .quick-card{
+    padding:12px 13px;
+    display:grid;
+    gap:10px;
+    box-shadow:var(--shadow2);
+  }
+
+  .school-page .quick-grid{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:9px;
+  }
+
+  .school-page .quick-item{
+    border:1px solid var(--line);
+    border-radius:17px;
+    background:linear-gradient(180deg, #fff, #fbfcfb);
+    padding:11px 12px;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    min-height:84px;
+    text-decoration:none;
+    transition:.16s ease;
+  }
+
+  .school-page .quick-item:hover{
+    transform:translateY(-1px);
+    background:#fcfdfc;
+    text-decoration:none;
+  }
+
+  .school-page .quick-title{
+    color:var(--txt);
+    font-size:11.7px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+  }
+
+  .school-page .quick-text{
+    color:var(--mut);
+    font-size:10.6px;
+    font-weight:var(--fw-normal);
+    line-height:1.8;
+    margin-top:3px;
+  }
+
+  .school-page .quick-icon{
+    width:36px;
+    height:36px;
+    border-radius:14px;
+    display:grid;
+    place-items:center;
+    border:1px solid var(--line);
+    background:var(--soft);
+    color:var(--vp-primary);
+    font-size:13px;
+    flex:0 0 auto;
+  }
+
+  .school-page .quick-item.import .quick-icon{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+  }
+
+  .school-page .quick-item.export .quick-icon{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn);
+  }
+
+  .school-page .quick-item.unassigned .quick-icon{
+    background:rgba(225,29,72,.055);
+    border-color:rgba(225,29,72,.13);
+    color:var(--danger);
+  }
+
   .school-page .form-card{
-    padding:13px;
+    padding:12px 13px;
     display:grid;
     gap:10px;
     background:var(--card);
+    box-shadow:var(--shadow2);
   }
 
   .school-page .card-head{
@@ -150,28 +252,28 @@
   .school-page .form-title{
     margin:0;
     color:var(--txt);
-    font-size:12.8px;
+    font-size:12.4px;
     font-weight:var(--fw-title);
     line-height:1.7;
   }
 
   .school-page .card-note{
     color:var(--mut);
-    font-size:11px;
+    font-size:10.8px;
     line-height:1.8;
     font-weight:var(--fw-normal);
   }
 
   .school-page .form-grid{
     display:grid;
-    grid-template-columns:1fr 1.3fr 1fr 1fr auto;
+    grid-template-columns:1fr 1.35fr .9fr 1fr auto;
     gap:9px;
     align-items:end;
   }
 
   .school-page .filters-grid{
     display:grid;
-    grid-template-columns:1.1fr 1fr 1fr .9fr auto;
+    grid-template-columns:1.2fr .85fr .95fr .9fr .95fr auto;
     gap:9px;
     align-items:end;
   }
@@ -180,21 +282,21 @@
     display:block;
     margin-bottom:5px;
     color:var(--mut);
-    font-size:10.9px;
+    font-size:10.6px;
     font-weight:var(--fw-normal);
   }
 
   .school-page .input,
   .school-page .select{
     width:100%;
-    height:38px;
-    border-radius:12px;
+    height:36px;
+    border-radius:11px;
     border:1px solid var(--line);
     background:#f9fbfa;
     padding:0 12px;
     outline:none;
     color:var(--txt);
-    font-size:11.8px;
+    font-size:11.4px;
     font-weight:var(--fw-strong);
     transition:.16s ease;
   }
@@ -212,8 +314,8 @@
   }
 
   .school-page .btn{
-    height:38px;
-    padding:0 14px;
+    height:35px;
+    padding:0 13px;
     border-radius:999px;
     border:1px solid var(--line-strong);
     background:#fff;
@@ -225,15 +327,16 @@
     text-decoration:none;
     cursor:pointer;
     white-space:nowrap;
-    font-size:11.5px;
+    font-size:10.9px;
     font-weight:var(--fw-strong);
-    box-shadow:0 4px 10px rgba(22,36,29,.03);
+    box-shadow:0 4px 10px rgba(22,36,29,.025);
     transition:.16s ease;
   }
 
   .school-page .btn:hover{
     transform:translateY(-1px);
     background:#fcfdfc;
+    text-decoration:none;
   }
 
   .school-page .btn.primary{
@@ -247,13 +350,19 @@
     border-color:var(--vp-primary-2);
   }
 
+  .school-page .btn.export{
+    background:linear-gradient(180deg, #fffdf7, #fffaf0);
+    border-color:var(--warn-br);
+    color:var(--warn);
+  }
+
   .school-page .table-card{
     overflow:hidden;
     background:#fff;
   }
 
   .school-page .table-head{
-    padding:12px 14px;
+    padding:10px 13px;
     border-bottom:1px solid var(--line);
     background:linear-gradient(180deg, #fcfdfc, #f8fbf9);
     display:flex;
@@ -265,7 +374,7 @@
 
   .school-page .hint{
     color:var(--mut);
-    font-size:11.1px;
+    font-size:10.8px;
     font-weight:var(--fw-normal);
     line-height:1.9;
   }
@@ -276,11 +385,13 @@
   }
 
   .school-page .table-wrap{
-    overflow:auto;
+    overflow-x:hidden;
+    overflow-y:visible;
   }
 
   .school-page table{
     width:100%;
+    min-width:0;
     border-collapse:separate;
     border-spacing:0;
     table-layout:fixed;
@@ -292,26 +403,30 @@
     z-index:2;
     background:#f7faf8;
     border-bottom:1px solid #d9e2dd;
-    padding:11px 10px;
+    padding:8px 7px;
     text-align:right;
     color:#687a70;
-    font-size:11px;
+    font-size:10.7px;
     font-weight:var(--fw-title);
     white-space:nowrap;
   }
 
-  .school-page thead th:nth-child(1){ width:17%; }
-  .school-page thead th:nth-child(2){ width:29%; }
-  .school-page thead th:nth-child(3){ width:14%; }
-  .school-page thead th:nth-child(4){ width:18%; }
-  .school-page thead th:nth-child(5){ width:10%; }
-  .school-page thead th:nth-child(6){ width:12%; }
+  .school-page thead th:nth-child(1){ width:10%; }  /* الرقم الإحصائي */
+  .school-page thead th:nth-child(2){ width:37%; }  /* المدرسة + القطاع */
+  .school-page thead th:nth-child(3){ width:7%; }   /* الجنس */
+  .school-page thead th:nth-child(4){ width:28%; }  /* المشرف المسند */
+  .school-page thead th:nth-child(5){ width:8%; }   /* الحالة */
+  .school-page thead th:nth-child(6){ width:10%; }  /* الإجراءات */
+
+  .school-page tbody tr{
+    height:48px;
+  }
 
   .school-page tbody td{
-    padding:12px 10px;
+    padding:7px 7px;
     border-bottom:1px solid var(--line2);
     color:var(--txt);
-    font-size:12px;
+    font-size:11.2px;
     vertical-align:middle;
     background:#fff;
   }
@@ -324,18 +439,19 @@
     background:#f8fbf9;
   }
 
-  .school-page .school-name{
-    font-size:12.7px;
-    font-weight:var(--fw-title);
+  .school-page .school-name,
+  .school-page .supervisor-name{
+    font-size:11.7px;
+    font-weight:var(--fw-strong);
     color:var(--txt);
-    line-height:1.7;
+    line-height:1.65;
   }
 
   .school-page .sub{
-    margin-top:5px;
+    margin-top:3px;
     color:var(--mut2);
-    font-size:10.9px;
-    line-height:1.8;
+    font-size:10.2px;
+    line-height:1.75;
     font-weight:var(--fw-normal);
   }
 
@@ -343,14 +459,15 @@
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    min-height:28px;
-    min-width:68px;
-    padding:5px 10px;
+    min-height:24px;
+    min-width:52px;
+    padding:3px 8px;
     border-radius:999px;
-    font-size:10.9px;
+    font-size:10.4px;
     font-weight:var(--fw-strong);
     white-space:nowrap;
     border:1px solid transparent;
+    box-shadow:none;
   }
 
   .school-page .badge.boys{
@@ -365,28 +482,42 @@
     color:var(--pink);
   }
 
-  .school-page .badge.active{
+  .school-page .badge.active,
+  .school-page .badge.assigned{
     background:var(--ok-bg);
     border-color:var(--ok-br);
     color:var(--ok);
   }
 
-  .school-page .badge.inactive{
+  .school-page .badge.inactive,
+  .school-page .badge.unassigned{
     background:var(--warn-bg);
     border-color:var(--warn-br);
     color:var(--warn);
   }
 
+  .school-page .badge.warn{
+    background:rgba(225,29,72,.055);
+    border-color:rgba(225,29,72,.13);
+    color:var(--danger);
+  }
+
   .school-page .actions{
     display:flex;
-    gap:6px;
-    flex-wrap:wrap;
-    justify-content:flex-start;
+    gap:4px;
+    flex-wrap:nowrap;
+    justify-content:center;
+    align-items:center;
+  }
+
+  .school-page .actions form{
+    margin:0;
   }
 
   .school-page .a-btn{
-    height:29px;
-    padding:0 10px;
+    height:25px;
+    min-width:46px;
+    padding:0 7px;
     border-radius:999px;
     border:1px solid var(--line);
     background:#fff;
@@ -397,7 +528,7 @@
     gap:5px;
     text-decoration:none;
     cursor:pointer;
-    font-size:10.8px;
+    font-size:10px;
     font-weight:var(--fw-strong);
     white-space:nowrap;
     box-shadow:none;
@@ -406,6 +537,7 @@
 
   .school-page .a-btn:hover{
     transform:translateY(-1px);
+    text-decoration:none;
   }
 
   .school-page .a-btn.edit{
@@ -415,21 +547,159 @@
   }
 
   .school-page .a-btn.toggle{
-    background:var(--danger-bg);
-    border-color:var(--danger-br);
+    background:rgba(225,29,72,.055);
+    border-color:rgba(225,29,72,.13);
     color:var(--danger);
   }
 
   .school-page .empty{
     padding:20px;
     color:var(--mut);
-    font-size:11.5px;
+    font-size:11.3px;
     font-weight:var(--fw-normal);
     text-align:center;
   }
 
   .school-page .muted{
     color:var(--mut2);
+  }
+
+
+  .school-page td:nth-child(1),
+  .school-page th:nth-child(1),
+  .school-page td:nth-child(3),
+  .school-page th:nth-child(3),
+  .school-page td:nth-child(5),
+  .school-page th:nth-child(5),
+  .school-page td:nth-child(6),
+  .school-page th:nth-child(6){
+    text-align:center;
+  }
+
+  .school-page td:nth-child(2),
+  .school-page td:nth-child(4){
+    overflow:hidden;
+  }
+
+  .school-page .school-name,
+  .school-page .supervisor-name{
+    display:block;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .school-page .sub{
+    display:block;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+
+  .school-page td:nth-child(2) .sub{
+    color:#8a978f;
+  }
+
+
+  .school-page .table-filter{
+    min-height:30px;
+    padding:5px 11px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--mut);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    font-size:10.7px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+    transition:.16s ease;
+  }
+
+  .school-page .table-filter:hover{
+    transform:translateY(-1px);
+    background:#fcfdfc;
+    text-decoration:none;
+  }
+
+  .school-page .table-filter.active{
+    background:var(--vp-primary);
+    border-color:var(--vp-primary);
+    color:#fff;
+  }
+
+  .school-page .table-filter.warn{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn);
+  }
+
+  .school-page .table-filter.warn.active{
+    background:#8b5c1f;
+    border-color:#8b5c1f;
+    color:#fff;
+  }
+
+
+  .school-page .table-tools{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .school-page .table-filter-group{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    flex-wrap:wrap;
+    padding:3px;
+    border:1px solid var(--line);
+    border-radius:999px;
+    background:#f8fbf9;
+  }
+
+  .school-page .table-actions-group{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex-wrap:wrap;
+    padding-inline-start:8px;
+    border-inline-start:1px solid var(--line);
+  }
+
+  .school-page .quick-card.slim{
+    padding:10px 12px;
+  }
+
+  .school-page .quick-card.slim .quick-grid{
+    grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:8px;
+  }
+
+  .school-page .quick-card.slim .quick-item{
+    min-height:68px;
+    padding:9px 10px;
+    border-radius:15px;
+  }
+
+  .school-page .quick-card.slim .quick-title{
+    font-size:11.3px;
+  }
+
+  .school-page .quick-card.slim .quick-text{
+    font-size:10.2px;
+    line-height:1.65;
+  }
+
+  .school-page .quick-card.slim .quick-icon{
+    width:32px;
+    height:32px;
+    border-radius:12px;
+    font-size:12px;
   }
 
   .school-page .pager{
@@ -459,12 +729,31 @@
 
   .school-page .pager-info{
     color:var(--mut);
-    font-size:11.2px;
+    font-size:11px;
     font-weight:var(--fw-strong);
     padding:0 4px;
   }
 
+  @media (max-width: 1150px){
+    .school-page .quick-grid{
+      grid-template-columns:1fr;
+    }
+
+    .school-page .filters-grid{
+      grid-template-columns:1fr 1fr 1fr;
+    }
+  }
+
   @media (max-width: 980px){
+
+    .school-page .table-wrap{
+      overflow-x:auto;
+    }
+
+    .school-page table{
+      min-width:820px;
+    }
+
     .school-page .form-grid,
     .school-page .filters-grid{
       grid-template-columns:1fr 1fr;
@@ -480,6 +769,29 @@
   }
 
   @media (max-width: 560px){
+
+    .school-page .table-filter-group,
+    .school-page .table-actions-group{
+      width:100%;
+      border-inline-start:0;
+      padding-inline-start:0;
+    }
+
+    .school-page .table-actions-group .btn,
+    .school-page .table-filter{
+      flex:1 1 auto;
+    }
+
+
+    .school-page .table-tools{
+      width:100%;
+    }
+
+    .school-page .table-filter{
+      flex:1 1 auto;
+    }
+
+    .school-page .quick-grid,
     .school-page .form-grid,
     .school-page .filters-grid{
       grid-template-columns:1fr;
@@ -487,6 +799,10 @@
 
     .school-page .summary-card{
       padding:12px;
+    }
+
+    .school-page .actions{
+      flex-wrap:wrap;
     }
   }
 </style>
@@ -498,12 +814,47 @@
 
     <div class="summary-card">
       <div class="summary-note">
-        إدارة بيانات المدارس داخل النظام، مع دعم الإضافة والتعديل والتعطيل واستعراض البيانات بحسب القطاع والجنس.
+        إدارة بيانات المدارس داخل النظام، مع إظهار المشرف المسند لكل مدرسة عند توفره، وربط الصفحة باختصارات الاستيراد والتصدير دون ازدحام داخل الصفوف.
       </div>
 
       <div class="summary-right">
         <span class="chip"><span class="dot ok"></span> إجمالي النتائج: <b>{{ page_obj.paginator.count }}</b></span>
         <span class="chip"><span class="dot"></span> الصفحة: <b>{{ page_obj.number }}</b> / <b>{{ page_obj.paginator.num_pages }}</b></span>
+        <a class="chip import" href="{% url 'visits:admin_schools_with_supervisors_import' %}">استيراد الإسناد</a>
+        <a class="chip export" href="{% url 'visits:admin_schools_with_supervisors_export' %}?scope=all">تصدير الإسناد</a>
+      </div>
+    </div>
+
+    <div class="quick-card slim">
+      <div class="card-head">
+        <h3 class="form-title">عمليات المدارس والإسناد</h3>
+        <div class="card-note">اختصارات مختصرة للاستيراد والتصدير والمراجعة.</div>
+      </div>
+
+      <div class="quick-grid">
+        <a class="quick-item import" href="{% url 'visits:admin_schools_with_supervisors_import' %}">
+          <div>
+            <div class="quick-title">استيراد إسناد المدارس</div>
+            <div class="quick-text">رفع ملف Excel مع الفحص قبل التنفيذ.</div>
+          </div>
+          <div class="quick-icon">⬆</div>
+        </a>
+
+        <a class="quick-item export" href="{% url 'visits:admin_schools_with_supervisors_export' %}?scope=all">
+          <div>
+            <div class="quick-title">تصدير نسخة احتياطية</div>
+            <div class="quick-text">تحميل الوضع الحالي للمراجعة.</div>
+          </div>
+          <div class="quick-icon">⬇</div>
+        </a>
+
+        <a class="quick-item unassigned" href="{% url 'visits:admin_schools_with_supervisors_export' %}?scope=unassigned">
+          <div>
+            <div class="quick-title">تصدير غير المسندة</div>
+            <div class="quick-text">استخراج المدارس غير المسندة.</div>
+          </div>
+          <div class="quick-icon">!</div>
+        </a>
       </div>
     </div>
 
@@ -513,7 +864,7 @@
 
       <div class="card-head">
         <h3 class="form-title">إضافة / تعديل مدرسة</h3>
-        <div class="card-note">أدخل بيانات المدرسة الأساسية، ويمكن تعديلها لاحقًا مباشرة من الجدول.</div>
+        <div class="card-note">أدخل بيانات المدرسة الأساسية فقط. أما الإسناد الجماعي للمشرفين فيتم من صفحة استيراد الإسناد.</div>
       </div>
 
       <div class="form-grid">
@@ -555,7 +906,7 @@
     <form class="form-card" method="get">
       <div class="card-head">
         <h3 class="form-title">البحث والتصفية</h3>
-        <div class="card-note">يمكن تصفية النتائج بحسب اسم المدرسة أو الرقم الإحصائي أو الجنس أو القطاع أو حالة النشاط.</div>
+        <div class="card-note">يمكن تصفية النتائج بحسب بيانات المدرسة أو حالة الإسناد أو حالة النشاط.</div>
       </div>
 
       <div class="filters-grid">
@@ -584,10 +935,19 @@
         </div>
 
         <div class="field">
-          <label>العرض</label>
+          <label>حالة المدرسة</label>
           <select class="select" name="active">
             <option value="1" {% if only_active %}selected{% endif %}>النشطة فقط</option>
             <option value="0" {% if not only_active %}selected{% endif %}>الكل</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>حالة الإسناد</label>
+          <select class="select" name="assignment">
+            <option value="all" {% if assignment_status == "all" %}selected{% endif %}>الكل</option>
+            <option value="assigned" {% if assignment_status == "assigned" %}selected{% endif %}>المسندة</option>
+            <option value="unassigned" {% if assignment_status == "unassigned" %}selected{% endif %}>غير المسندة</option>
           </select>
         </div>
 
@@ -600,8 +960,34 @@
 
     <div class="table-card">
       <div class="table-head">
-        <div class="hint">قائمة مرجعية بجميع المدارس داخل النظام، مع متابعة الجنس والقطاع وحالة التفعيل.</div>
-        <div class="hint">المعروض الآن: <b>{{ rows|length }}</b> من أصل <b>{{ page_obj.paginator.count }}</b></div>
+        <div class="hint">
+          قائمة مرجعية بجميع المدارس داخل النظام، مع عرض القطاع ضمن بيانات المدرسة ومتابعة المشرف المسند.
+        </div>
+
+        <div class="table-tools">
+          <div class="hint">المعروض الآن: <b>{{ rows|length }}</b> من أصل <b>{{ page_obj.paginator.count }}</b></div>
+
+          <div class="table-filter-group" aria-label="فلاتر حالة الإسناد">
+            <a class="table-filter {% if assignment_status == 'all' or not assignment_status %}active{% endif %}"
+               href="?q={{ q|urlencode }}&gender={{ gender|urlencode }}&sector={{ sector_id }}&active={% if only_active %}1{% else %}0{% endif %}&assignment=all">
+              الكل
+            </a>
+
+            <a class="table-filter {% if assignment_status == 'assigned' %}active{% endif %}"
+               href="?q={{ q|urlencode }}&gender={{ gender|urlencode }}&sector={{ sector_id }}&active={% if only_active %}1{% else %}0{% endif %}&assignment=assigned">
+              المسندة
+            </a>
+
+            <a class="table-filter warn {% if assignment_status == 'unassigned' %}active{% endif %}"
+               href="?q={{ q|urlencode }}&gender={{ gender|urlencode }}&sector={{ sector_id }}&active={% if only_active %}1{% else %}0{% endif %}&assignment=unassigned">
+              غير المسندة
+            </a>
+          </div>
+
+          <div class="table-actions-group" aria-label="إجراءات التصدير">
+            <a class="btn export" href="{% url 'visits:admin_schools_with_supervisors_export' %}?scope=all">تصدير الكل</a>
+          </div>
+        </div>
       </div>
 
       <div class="table-wrap">
@@ -611,7 +997,7 @@
               <th>الرقم الإحصائي</th>
               <th>المدرسة</th>
               <th>الجنس</th>
-              <th>القطاع</th>
+              <th>المشرف المسند</th>
               <th>الحالة</th>
               <th>إجراءات</th>
             </tr>
@@ -623,9 +1009,17 @@
 
                 <td>
                   <div class="school-name">{{ school.name }}</div>
-                  {% if school.principal %}
-                    <div class="sub">المدير: {{ school.principal.full_name }}</div>
-                  {% endif %}
+                  <div class="sub">
+                    {% if school.principal %}
+                      المدير: {{ school.principal.full_name }} —
+                    {% endif %}
+                    القطاع:
+                    {% if school.sector %}
+                      {{ school.sector.name }}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </div>
                 </td>
 
                 <td>
@@ -639,10 +1033,14 @@
                 </td>
 
                 <td>
-                  {% if school.sector %}
-                    {{ school.sector.name }}
+                  {% if school.assigned_supervisor %}
+                    <div class="supervisor-name">{{ school.assigned_supervisor.full_name }}</div>
+                    <div class="sub">{{ school.assigned_supervisor.national_id }}</div>
+                    {% if school.active_assignment_count > 1 %}
+                      <div class="sub"><span class="badge warn">أكثر من إسناد نشط</span></div>
+                    {% endif %}
                   {% else %}
-                    <span class="muted">—</span>
+                    <span class="badge unassigned">غير مسندة</span>
                   {% endif %}
                 </td>
 
@@ -659,19 +1057,20 @@
                     <button
                       class="a-btn edit"
                       type="button"
+                      title="تعديل بيانات المدرسة"
                       data-school-id="{{ school.id }}"
                       data-school-stat="{{ school.stat_code }}"
                       data-school-name="{{ school.name }}"
                       data-school-gender="{{ school.gender }}"
                       data-school-sector="{% if school.sector_id %}{{ school.sector_id }}{% endif %}"
                     >
-                      ✏️ تعديل
+                      تعديل
                     </button>
 
-                    <form method="post" action="{% url 'visits:admin_school_toggle_active' school.id %}" style="margin:0">
+                    <form method="post" action="{% url 'visits:admin_school_toggle_active' school.id %}">
                       {% csrf_token %}
                       <button class="a-btn toggle" type="submit">
-                        {% if school.is_active %}⛔ تعطيل{% else %}✅ تفعيل{% endif %}
+                        {% if school.is_active %}تعطيل{% else %}تفعيل{% endif %}
                       </button>
                     </form>
                   </div>
@@ -689,10 +1088,10 @@
       {% if page_obj and page_obj.paginator.num_pages > 1 %}
         <div class="pager">
           {% if page_obj.has_previous %}
-            <a class="btn" href="?page=1&q={{ q|urlencode }}&gender={{ gender|urlencode }}&sector={{ sector_id }}&active={% if only_active %}1{% else %}0{% endif %}">
+            <a class="btn" href="?page=1&q={{ q|urlencode }}&gender={{ gender|urlencode }}&sector={{ sector_id }}&active={% if only_active %}1{% else %}0{% endif %}&assignment={{ assignment_status|default:'all'|urlencode }}">
               الأولى
             </a>
-            <a class="btn" href="?page={{ page_obj.previous_page_number }}&q={{ q|urlencode }}&gender={{ gender|urlencode }}&sector={{ sector_id }}&active={% if only_active %}1{% else %}0{% endif %}">
+            <a class="btn" href="?page={{ page_obj.previous_page_number }}&q={{ q|urlencode }}&gender={{ gender|urlencode }}&sector={{ sector_id }}&active={% if only_active %}1{% else %}0{% endif %}&assignment={{ assignment_status|default:'all'|urlencode }}">
               السابق
             </a>
           {% endif %}
@@ -701,17 +1100,17 @@
             {% if num == page_obj.number %}
               <span class="btn current">{{ num }}</span>
             {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
-              <a class="btn" href="?page={{ num }}&q={{ q|urlencode }}&gender={{ gender|urlencode }}&sector={{ sector_id }}&active={% if only_active %}1{% else %}0{% endif %}">
+              <a class="btn" href="?page={{ num }}&q={{ q|urlencode }}&gender={{ gender|urlencode }}&sector={{ sector_id }}&active={% if only_active %}1{% else %}0{% endif %}&assignment={{ assignment_status|default:'all'|urlencode }}">
                 {{ num }}
               </a>
             {% endif %}
           {% endfor %}
 
           {% if page_obj.has_next %}
-            <a class="btn" href="?page={{ page_obj.next_page_number }}&q={{ q|urlencode }}&gender={{ gender|urlencode }}&sector={{ sector_id }}&active={% if only_active %}1{% else %}0{% endif %}">
+            <a class="btn" href="?page={{ page_obj.next_page_number }}&q={{ q|urlencode }}&gender={{ gender|urlencode }}&sector={{ sector_id }}&active={% if only_active %}1{% else %}0{% endif %}&assignment={{ assignment_status|default:'all'|urlencode }}">
               التالي
             </a>
-            <a class="btn" href="?page={{ page_obj.paginator.num_pages }}&q={{ q|urlencode }}&gender={{ gender|urlencode }}&sector={{ sector_id }}&active={% if only_active %}1{% else %}0{% endif %}">
+            <a class="btn" href="?page={{ page_obj.paginator.num_pages }}&q={{ q|urlencode }}&gender={{ gender|urlencode }}&sector={{ sector_id }}&active={% if only_active %}1{% else %}0{% endif %}&assignment={{ assignment_status|default:'all'|urlencode }}">
               الأخيرة
             </a>
           {% endif %}

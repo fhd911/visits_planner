@@ -3,6 +3,8 @@ from __future__ import annotations
 import random
 from datetime import timedelta
 
+from django.conf import settings
+
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -579,11 +581,13 @@ class Plan(models.Model):
     STATUS_DRAFT = "draft"
     STATUS_APPROVED = "approved"
     STATUS_UNLOCK_REQUESTED = "unlock"
+    STATUS_UNLOCKED = "unlocked"
 
     STATUS_CHOICES = [
         (STATUS_DRAFT, "مسودة"),
         (STATUS_APPROVED, "معتمدة"),
         (STATUS_UNLOCK_REQUESTED, "طلب فك اعتماد"),
+        (STATUS_UNLOCKED, "مفكوكة للتعديل"),
     ]
 
     supervisor = models.ForeignKey(
@@ -609,6 +613,22 @@ class Plan(models.Model):
     approved_at = models.DateTimeField("وقت الاعتماد", null=True, blank=True)
     admin_note = models.TextField("ملاحظة الإدارة", blank=True, null=True)
 
+    unlocked_at = models.DateTimeField("وقت فك الاعتماد", null=True, blank=True)
+    unlocked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="unlocked_visit_plans",
+        verbose_name="فُك الاعتماد بواسطة",
+    )
+    unlocked_reason = models.TextField(
+        "سبب فك الاعتماد",
+        blank=True,
+        null=True,
+        help_text="يحفظ سبب المشرف وملاحظة الإدارة عند قبول فك الاعتماد.",
+    )
+
     def __str__(self) -> str:
         return f"{self.supervisor} — أسبوع {self.week.week_no}"
 
@@ -624,6 +644,7 @@ class Plan(models.Model):
     def clean(self):
         super().clean()
         self.admin_note = _clean_text(self.admin_note) or None
+        self.unlocked_reason = _clean_text(self.unlocked_reason) or None
 
         errors = {}
 
@@ -632,6 +653,13 @@ class Plan(models.Model):
 
         if self.status == self.STATUS_APPROVED and not self.approved_at:
             self.approved_at = timezone.now()
+
+        if self.status == self.STATUS_UNLOCKED and not self.unlocked_at:
+            self.unlocked_at = timezone.now()
+
+        if self.status != self.STATUS_UNLOCKED and self.status != self.STATUS_UNLOCK_REQUESTED:
+            # لا نمسح unlocked_reason/unlocked_at حتى يبقى الأثر التاريخي محفوظًا.
+            pass
 
         if errors:
             raise ValidationError(errors)
@@ -831,6 +859,17 @@ class UnlockRequest(models.Model):
         choices=STATUS_CHOICES,
         default=STATUS_PENDING,
     )
+    reason = models.TextField("سبب طلب فك الاعتماد", blank=True, null=True)
+    admin_note = models.TextField("ملاحظة الإدارة على طلب الفك", blank=True, null=True)
+    previous_status = models.CharField("حالة الخطة قبل الطلب", max_length=30, blank=True, null=True)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="resolved_unlock_requests",
+        verbose_name="تمت المعالجة بواسطة",
+    )
     created_at = models.DateTimeField("تاريخ الطلب", auto_now_add=True)
     resolved_at = models.DateTimeField("تاريخ المعالجة", null=True, blank=True)
 
@@ -839,11 +878,22 @@ class UnlockRequest(models.Model):
 
     def clean(self):
         super().clean()
+        self.reason = _clean_text(self.reason) or None
+        self.admin_note = _clean_text(self.admin_note) or None
+        self.previous_status = _clean_text(self.previous_status) or None
+
         errors = {}
 
-        if self.plan_id:
-            if self.plan.status not in (Plan.STATUS_APPROVED, Plan.STATUS_UNLOCK_REQUESTED):
-                errors["plan"] = "لا يمكن إنشاء طلب فك اعتماد إلا لخطة معتمدة أو عليها طلب فك اعتماد."
+        if self.plan_id and self.status == self.STATUS_PENDING:
+            allowed_statuses = (
+                Plan.STATUS_APPROVED,
+                Plan.STATUS_UNLOCK_REQUESTED,
+            )
+            if self.plan.status not in allowed_statuses:
+                errors["plan"] = "لا يمكن إنشاء طلب فك اعتماد جديد إلا لخطة معتمدة أو عليها طلب فك اعتماد."
+
+        if self.status == self.STATUS_PENDING and not self.reason:
+            errors["reason"] = "سبب طلب فك الاعتماد مطلوب."
 
         if self.status == self.STATUS_PENDING and self.resolved_at is not None:
             errors["resolved_at"] = "لا ينبغي تحديد تاريخ المعالجة لطلب ما زال معلقًا."
@@ -858,19 +908,25 @@ class UnlockRequest(models.Model):
         if not self.resolved_at:
             self.resolved_at = timezone.now()
 
-    def approve(self):
+    def approve(self, *, user=None, admin_note: str = ""):
         if self.status != self.STATUS_PENDING:
             return
         self.status = self.STATUS_APPROVED
+        self.admin_note = _clean_text(admin_note) or self.admin_note
+        if user is not None and getattr(user, "is_authenticated", False):
+            self.resolved_by = user
         self.mark_resolved()
-        self.save(update_fields=["status", "resolved_at"])
+        self.save(update_fields=["status", "admin_note", "resolved_by", "resolved_at"])
 
-    def reject(self):
+    def reject(self, *, user=None, admin_note: str = ""):
         if self.status != self.STATUS_PENDING:
             return
         self.status = self.STATUS_REJECTED
+        self.admin_note = _clean_text(admin_note) or self.admin_note
+        if user is not None and getattr(user, "is_authenticated", False):
+            self.resolved_by = user
         self.mark_resolved()
-        self.save(update_fields=["status", "resolved_at"])
+        self.save(update_fields=["status", "admin_note", "resolved_by", "resolved_at"])
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -997,6 +1053,320 @@ class WeeklyLetterLink(models.Model):
 
         if errors:
             raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+# =========================
+# سجل المتابعة الرقابية
+# =========================
+class ControlFollowUp(models.Model):
+    class Meta:
+        verbose_name = "متابعة رقابية"
+        verbose_name_plural = "سجل المتابعة الرقابية"
+        ordering = ["-updated_at", "-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["unique_key"]),
+            models.Index(fields=["issue_type"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["status", "issue_type"]),
+            models.Index(fields=["supervisor", "status"]),
+            models.Index(fields=["week", "issue_type"]),
+            models.Index(fields=["last_notification_at"]),
+            models.Index(fields=["created_at"]),
+        ]
+
+    ISSUE_INCOMPLETE_PLAN = "incomplete_plan"
+    ISSUE_NOT_SAVED_PLAN = "not_saved_plan"
+    ISSUE_UNLOCK_REQUEST = "unlock_request"
+    ISSUE_UNCOVERED_SCHOOLS = "uncovered_schools"
+
+    ISSUE_CHOICES = [
+        (ISSUE_INCOMPLETE_PLAN, "خطة غير مكتملة"),
+        (ISSUE_NOT_SAVED_PLAN, "لم يحفظ خطة الأسبوع"),
+        (ISSUE_UNLOCK_REQUEST, "طلب فك اعتماد"),
+        (ISSUE_UNCOVERED_SCHOOLS, "مدارس غير مغطاة"),
+    ]
+
+    STATUS_OPEN = "open"
+    STATUS_NOTIFIED = "notified"
+    STATUS_PENDING_ADMIN = "pending_admin"
+    STATUS_PROCESSED = "processed"
+    STATUS_CLOSED = "closed"
+
+    STATUS_CHOICES = [
+        (STATUS_OPEN, "مفتوحة"),
+        (STATUS_NOTIFIED, "تم التنبيه"),
+        (STATUS_PENDING_ADMIN, "بانتظار مراجعة الإدارة"),
+        (STATUS_PROCESSED, "تمت المعالجة"),
+        (STATUS_CLOSED, "مغلقة إداريًا"),
+    ]
+
+    unique_key = models.CharField(
+        "المفتاح الفريد للحالة",
+        max_length=220,
+        unique=True,
+        db_index=True,
+        help_text="يمنع تكرار نفس الحالة الرقابية للمشرف والأسبوع والخطة.",
+    )
+    issue_type = models.CharField(
+        "نوع الحالة",
+        max_length=40,
+        choices=ISSUE_CHOICES,
+        db_index=True,
+    )
+    status = models.CharField(
+        "حالة المتابعة",
+        max_length=30,
+        choices=STATUS_CHOICES,
+        default=STATUS_OPEN,
+        db_index=True,
+    )
+
+    supervisor = models.ForeignKey(
+        Supervisor,
+        on_delete=models.CASCADE,
+        related_name="control_followups",
+        verbose_name="المشرف",
+    )
+    plan = models.ForeignKey(
+        Plan,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="control_followups",
+        verbose_name="الخطة المرتبطة",
+    )
+    week = models.ForeignKey(
+        PlanWeek,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="control_followups",
+        verbose_name="الأسبوع",
+    )
+
+    title = models.CharField("عنوان الحالة", max_length=220)
+    description = models.TextField("وصف الحالة", blank=True, null=True)
+    admin_note = models.TextField("ملاحظة/تنبيه الإدارة", blank=True, null=True)
+
+    supervisor_response = models.TextField("إفادة المشرف", blank=True, null=True)
+    supervisor_response_at = models.DateTimeField("تاريخ إفادة المشرف", null=True, blank=True)
+
+    admin_review_note = models.TextField("ملاحظة مراجعة الإدارة", blank=True, null=True)
+    notification_count = models.PositiveIntegerField("عدد التنبيهات", default=0)
+    last_notification_at = models.DateTimeField("آخر تنبيه", null=True, blank=True)
+
+    resolved_at = models.DateTimeField("تاريخ المعالجة", null=True, blank=True)
+    closed_at = models.DateTimeField("تاريخ الإغلاق", null=True, blank=True)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_control_followups",
+        verbose_name="أنشئت بواسطة",
+    )
+
+    created_at = models.DateTimeField("تاريخ الرصد", auto_now_add=True)
+    updated_at = models.DateTimeField("آخر تحديث", auto_now=True)
+
+    def __str__(self) -> str:
+        return f"{self.get_issue_type_display()} — {self.supervisor}"
+
+    @property
+    def is_active(self) -> bool:
+        return self.status in {
+            self.STATUS_OPEN,
+            self.STATUS_NOTIFIED,
+            self.STATUS_PENDING_ADMIN,
+        }
+
+    def clean(self):
+        super().clean()
+        self.unique_key = _clean_text(self.unique_key)
+        self.title = _clean_text(self.title)
+        self.description = _clean_text(self.description) or None
+        self.admin_note = _clean_text(self.admin_note) or None
+        self.supervisor_response = _clean_text(self.supervisor_response) or None
+        self.admin_review_note = _clean_text(self.admin_review_note) or None
+
+        errors = {}
+
+        if not self.unique_key:
+            errors["unique_key"] = "المفتاح الفريد للحالة مطلوب."
+
+        if not self.title:
+            errors["title"] = "عنوان الحالة مطلوب."
+
+        if self.plan_id and self.supervisor_id and self.plan.supervisor_id != self.supervisor_id:
+            errors["plan"] = "الخطة المحددة لا تتبع هذا المشرف."
+
+        if self.plan_id and self.week_id and self.plan.week_id != self.week_id:
+            errors["week"] = "الأسبوع المحدد لا يطابق أسبوع الخطة."
+
+        if self.status == self.STATUS_PENDING_ADMIN and not self.supervisor_response:
+            errors["supervisor_response"] = "لا يمكن جعل الحالة بانتظار مراجعة الإدارة دون إفادة المشرف."
+
+        if self.status == self.STATUS_PROCESSED and not self.resolved_at:
+            self.resolved_at = timezone.now()
+
+        if self.status == self.STATUS_CLOSED and not self.closed_at:
+            self.closed_at = timezone.now()
+
+        if self.status not in (self.STATUS_PROCESSED, self.STATUS_CLOSED):
+            self.resolved_at = None
+            if self.status != self.STATUS_CLOSED:
+                self.closed_at = None
+
+        if errors:
+            raise ValidationError(errors)
+
+    def mark_notified(self, note: str = ""):
+        self.status = self.STATUS_NOTIFIED
+        self.notification_count = (self.notification_count or 0) + 1
+        self.last_notification_at = timezone.now()
+        if note:
+            self.admin_note = _clean_text(note) or None
+        self.save(
+            update_fields=[
+                "status",
+                "notification_count",
+                "last_notification_at",
+                "admin_note",
+                "updated_at",
+            ]
+        )
+
+    def submit_supervisor_response(self, response: str):
+        self.supervisor_response = _clean_text(response)
+        self.supervisor_response_at = timezone.now()
+        self.status = self.STATUS_PENDING_ADMIN
+        self.save(
+            update_fields=[
+                "supervisor_response",
+                "supervisor_response_at",
+                "status",
+                "updated_at",
+            ]
+        )
+
+    def accept_processing(self, note: str = ""):
+        self.status = self.STATUS_PROCESSED
+        self.resolved_at = timezone.now()
+        if note:
+            self.admin_review_note = _clean_text(note) or None
+        self.save(update_fields=["status", "resolved_at", "admin_review_note", "updated_at"])
+
+    def return_to_supervisor(self, note: str = ""):
+        self.status = self.STATUS_NOTIFIED
+        if note:
+            self.admin_review_note = _clean_text(note) or None
+        self.notification_count = (self.notification_count or 0) + 1
+        self.last_notification_at = timezone.now()
+        self.save(
+            update_fields=[
+                "status",
+                "admin_review_note",
+                "notification_count",
+                "last_notification_at",
+                "updated_at",
+            ]
+        )
+
+    def close_administratively(self, note: str = ""):
+        self.status = self.STATUS_CLOSED
+        self.closed_at = timezone.now()
+        if note:
+            self.admin_review_note = _clean_text(note) or None
+        self.save(update_fields=["status", "closed_at", "admin_review_note", "updated_at"])
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+
+
+# =========================
+# إجراءات المتابعة الرقابية
+# =========================
+class ControlFollowUpAction(models.Model):
+    class Meta:
+        verbose_name = "إجراء متابعة رقابية"
+        verbose_name_plural = "إجراءات المتابعة الرقابية"
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["action_type"]),
+            models.Index(fields=["created_at"]),
+        ]
+
+    ACTION_DETECTED = "detected"
+    ACTION_UPDATED_DETECTION = "updated_detection"
+    ACTION_NOTIFIED = "notified"
+    ACTION_SUPERVISOR_RESPONSE = "supervisor_response"
+    ACTION_ACCEPTED = "accepted"
+    ACTION_RETURNED = "returned"
+    ACTION_CLOSED = "closed"
+    ACTION_UNLOCK_REQUESTED = "unlock_requested"
+    ACTION_UNLOCK_APPROVED = "unlock_approved"
+    ACTION_UNLOCK_REJECTED = "unlock_rejected"
+    ACTION_PLAN_REAPPROVED = "plan_reapproved"
+
+    ACTION_CHOICES = [
+        (ACTION_DETECTED, "رصد الحالة"),
+        (ACTION_UPDATED_DETECTION, "تحديث الرصد"),
+        (ACTION_NOTIFIED, "إرسال تنبيه"),
+        (ACTION_SUPERVISOR_RESPONSE, "إفادة المشرف"),
+        (ACTION_ACCEPTED, "قبول المعالجة"),
+        (ACTION_RETURNED, "إعادة للمشرف"),
+        (ACTION_CLOSED, "إغلاق إداري"),
+        (ACTION_UNLOCK_REQUESTED, "طلب فك اعتماد"),
+        (ACTION_UNLOCK_APPROVED, "قبول فك الاعتماد"),
+        (ACTION_UNLOCK_REJECTED, "رفض فك الاعتماد"),
+        (ACTION_PLAN_REAPPROVED, "إعادة اعتماد بعد الفك"),
+    ]
+
+    followup = models.ForeignKey(
+        ControlFollowUp,
+        on_delete=models.CASCADE,
+        related_name="actions",
+        verbose_name="حالة المتابعة",
+    )
+    action_type = models.CharField("نوع الإجراء", max_length=40, choices=ACTION_CHOICES)
+    from_status = models.CharField("الحالة السابقة", max_length=30, blank=True, null=True)
+    to_status = models.CharField("الحالة الجديدة", max_length=30, blank=True, null=True)
+    actor_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="control_followup_actions",
+        verbose_name="المستخدم المنفذ",
+    )
+    actor_supervisor = models.ForeignKey(
+        Supervisor,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="control_followup_actions",
+        verbose_name="المشرف المنفذ",
+    )
+    note = models.TextField("ملاحظة الإجراء", blank=True, null=True)
+    metadata = models.JSONField("بيانات إضافية", default=dict, blank=True)
+    created_at = models.DateTimeField("تاريخ الإجراء", auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"{self.get_action_type_display()} — {self.followup}"
+
+    def clean(self):
+        super().clean()
+        self.note = _clean_text(self.note) or None
+        self.from_status = _clean_text(self.from_status) or None
+        self.to_status = _clean_text(self.to_status) or None
+        if self.metadata is None:
+            self.metadata = {}
 
     def save(self, *args, **kwargs):
         self.full_clean()

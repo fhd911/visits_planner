@@ -45,10 +45,10 @@
     --v2-gray-bd:#dce4df;
     --v2-gray-tx:#55645c;
 
-    --fw-title:700;
-    --fw-strong:700;
-    --fw-mid:600;
-    --fw-normal:500;
+    --fw-title:600;
+    --fw-strong:500;
+    --fw-mid:500;
+    --fw-normal:400;
     --fw-light:400;
   }
 
@@ -1054,6 +1054,647 @@
       font-size:21px;
     }
   }
+
+  /* تحسينات النسخة المختصرة لصفحة خطة الأسبوع */
+  .plan-page .page-wrap{
+    gap:9px;
+  }
+
+  .plan-page .panel{
+    border-radius:20px;
+  }
+
+  .plan-page .plan-topbar{
+    padding:14px 16px 13px;
+    grid-template-columns:minmax(420px,1.35fr) minmax(190px,.55fr) auto;
+    gap:12px;
+  }
+
+  .plan-page .plan-title{
+    font-size:21px;
+    line-height:1.25;
+  }
+
+  .plan-page .plan-badge,
+  .plan-page .status-inline{
+    height:30px;
+    padding:0 11px;
+    font-size:11.4px;
+  }
+
+  .plan-page .plan-subtitle{
+    font-size:11.8px;
+    line-height:1.75;
+  }
+
+  .plan-page .field{
+    width:190px;
+    min-width:190px;
+  }
+
+  .plan-page .field label{
+    font-size:10.8px;
+    margin-bottom:0;
+  }
+
+  .plan-page .select{
+    height:34px;
+    border-radius:11px;
+    font-size:11.8px;
+  }
+
+  .plan-page .btn{
+    height:34px;
+    border-radius:11px;
+    padding:0 11px;
+    font-size:11.5px;
+    gap:6px;
+  }
+
+  .plan-page .btn-icon{
+    width:34px;
+    min-width:34px;
+  }
+
+  .plan-page .btn-text{
+    min-width:124px;
+    padding-inline:12px;
+  }
+
+  .plan-page .btn-logout{
+    min-width:76px;
+    padding-inline:12px;
+  }
+
+  .plan-page .plan-topbar-left{
+    gap:7px;
+  }
+
+  /* شريط البريد المختصر */
+  .plan-page .email-strip{
+    margin:10px 16px 0;
+    padding:8px 10px;
+    border-radius:15px;
+    box-shadow:var(--v2-shadow-soft);
+  }
+
+  .plan-page .email-strip-info{
+    flex:1;
+    min-width:260px;
+    flex-direction:row;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .plan-page .email-strip-title{
+    font-size:11.8px;
+    font-weight:var(--fw-strong);
+    color:var(--v2-text);
+    white-space:nowrap;
+  }
+
+  .plan-page .email-strip-subtitle{
+    font-size:10.8px;
+    line-height:1.5;
+  }
+
+  .plan-page .email-pill{
+    min-height:28px;
+    padding:0 9px;
+    font-size:10.8px;
+    gap:6px;
+  }
+
+  .plan-page .email-strip-actions{
+    gap:6px;
+  }
+
+  .plan-page .email-strip-actions .btn{
+    height:30px;
+    font-size:10.8px;
+    border-radius:999px;
+  }
+
+  /* جدول الخطة بثلاثة أعمدة */
+  .plan-page .plan-table-area{
+    padding:10px 14px 8px;
+  }
+
+  .plan-page .table-box{
+    border-radius:16px;
+  }
+
+  .plan-page .table-scroll{
+    max-height:none;
+    overflow:auto;
+  }
+
+  .plan-page table{
+    table-layout:fixed;
+  }
+
+  .plan-page th.col-day,
+  .plan-page td.col-day{
+    width:22%;
+  }
+
+  .plan-page th.col-school,
+  .plan-page td.col-school{
+    width:58%;
+  }
+
+  .plan-page th.col-visit,
+  .plan-page td.col-visit{
+    width:20%;
+  }
+
+  .plan-page thead th{
+    padding:9px 8px;
+    font-size:11.5px;
+  }
+
+  .plan-page tbody td{
+    padding:8px;
+  }
+
+  .plan-page .dayname{
+    display:block;
+    font-size:13px;
+    line-height:1.55;
+  }
+
+  .plan-page .date-stack{
+    margin-top:3px;
+    display:grid;
+    gap:2px;
+    justify-items:center;
+  }
+
+  .plan-page .date-line{
+    color:var(--v2-muted);
+    font-size:10.4px;
+    font-weight:var(--fw-normal);
+    line-height:1.45;
+    white-space:nowrap;
+  }
+
+  .plan-page .pill{
+    min-height:27px;
+    padding:0 9px;
+    font-size:10.8px;
+  }
+
+  .plan-page .in-select{
+    height:34px;
+    border-radius:11px;
+    font-size:11.8px;
+  }
+
+  .plan-page .vchip{
+    height:31px;
+    min-width:96px;
+    padding:0 10px;
+    font-size:11.2px;
+    gap:6px;
+  }
+
+  .plan-page .novisit{
+    margin-top:6px;
+    padding:7px 8px;
+    border-radius:11px;
+  }
+
+  .plan-page .novisit-row{
+    gap:6px;
+  }
+
+  .plan-page .novisit label{
+    font-size:10.8px;
+  }
+
+  .plan-page .novisit select,
+  .plan-page .novisit input{
+    height:30px;
+    border-radius:9px;
+    font-size:11px;
+  }
+
+  .plan-page .novisit .hint2{
+    margin-top:4px;
+    font-size:10.2px;
+    line-height:1.55;
+  }
+
+  .plan-page .inline-msg{
+    margin-top:8px;
+    padding:9px 10px;
+    font-size:11.2px;
+  }
+
+  .plan-page .actions{
+    padding:10px 14px 12px;
+  }
+
+  .plan-page .hint{
+    font-size:11.2px;
+    line-height:1.7;
+  }
+
+  .plan-page .btn-row{
+    gap:7px;
+  }
+
+  @media (max-width: 860px){
+    .plan-page th.col-day,
+    .plan-page td.col-day{
+      width:28%;
+    }
+
+    .plan-page th.col-school,
+    .plan-page td.col-school{
+      width:52%;
+    }
+
+    .plan-page th.col-visit,
+    .plan-page td.col-visit{
+      width:20%;
+    }
+  }
+
+  @media (max-width: 620px){
+    .plan-page .table-scroll{
+      overflow-x:auto;
+    }
+
+    .plan-page table{
+      min-width:720px;
+    }
+  }
+
+
+  /* تنبيه النواقص المختصر */
+  .plan-page .inline-msg{
+    border-radius:14px;
+    border:1px solid var(--v2-warn-bd);
+    background:linear-gradient(180deg, #fffdf8, var(--v2-warn-bg));
+    color:var(--v2-warn-tx);
+  }
+
+  .plan-page .inline-msg-title{
+    font-size:11.8px;
+    font-weight:var(--fw-strong);
+    line-height:1.7;
+    color:var(--v2-warn-tx);
+  }
+
+  .plan-page .inline-msg-days{
+    margin-top:2px;
+    font-size:11.1px;
+    font-weight:var(--fw-normal);
+    line-height:1.7;
+    color:var(--v2-text);
+  }
+
+  .plan-page .inline-msg-help{
+    margin-top:2px;
+    font-size:10.6px;
+    font-weight:var(--fw-normal);
+    line-height:1.6;
+    color:var(--v2-muted);
+  }
+
+  .plan-page #approveBtn:disabled{
+    opacity:.42;
+    background:#eef2ef;
+    border-color:#d9e2dd;
+    color:#849188;
+    cursor:not-allowed;
+    box-shadow:none;
+  }
+
+  .plan-page #approveBtn:disabled:hover{
+    transform:none;
+    background:#eef2ef;
+    border-color:#d9e2dd;
+  }
+
+
+  /* تلميح نوع اليوم وشرائح الأيام الناقصة */
+  .plan-page .th-stack{
+    display:grid;
+    justify-items:center;
+    gap:2px;
+    line-height:1.35;
+  }
+
+  .plan-page .th-main{
+    font-size:11.5px;
+    font-weight:var(--fw-strong);
+    color:var(--v2-text);
+  }
+
+  .plan-page .th-hint{
+    font-size:9.8px;
+    font-weight:var(--fw-normal);
+    color:var(--v2-muted);
+  }
+
+  .plan-page .missing-days-wrap{
+    margin-top:5px;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:5px;
+    flex-wrap:wrap;
+  }
+
+  .plan-page .missing-day-chip{
+    min-height:23px;
+    padding:2px 8px;
+    border-radius:999px;
+    border:1px solid var(--v2-warn-bd);
+    background:#fffdf8;
+    color:var(--v2-warn-tx);
+    font-size:10.5px;
+    font-weight:var(--fw-mid);
+    white-space:nowrap;
+  }
+
+  .plan-page .inline-msg-days{
+    color:var(--v2-muted);
+  }
+
+
+  /* شريط تنبيه النواقص المختصر */
+  .plan-page .inline-msg{
+    margin-top:8px;
+    padding:8px 10px;
+    border-radius:13px;
+    border:1px solid var(--v2-warn-bd);
+    background:linear-gradient(180deg, #fffdf8, #fffaf1);
+    color:var(--v2-warn-tx);
+  }
+
+  .plan-page .inline-alert-row{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .plan-page .inline-msg-title{
+    font-size:11.4px;
+    font-weight:var(--fw-strong);
+    line-height:1.55;
+    color:var(--v2-warn-tx);
+    white-space:nowrap;
+  }
+
+  .plan-page .missing-days-wrap{
+    margin-top:0;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:5px;
+    flex-wrap:wrap;
+  }
+
+  .plan-page .missing-day-chip{
+    min-height:21px;
+    padding:1px 7px;
+    border-radius:999px;
+    border:1px solid var(--v2-warn-bd);
+    background:#fff;
+    color:var(--v2-warn-tx);
+    font-size:10.2px;
+    font-weight:var(--fw-mid);
+    white-space:nowrap;
+  }
+
+  .plan-page .inline-msg-help{
+    margin-top:3px;
+    font-size:10.4px;
+    font-weight:var(--fw-normal);
+    line-height:1.55;
+    color:var(--v2-muted);
+  }
+
+  .plan-page .inline-msg-days{
+    display:none;
+  }
+
+
+  /* توزيع متوازن لشريط تنبيه النواقص */
+  .plan-page .inline-msg{
+    padding:8px 10px;
+  }
+
+  .plan-page .inline-alert-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .plan-page .inline-alert-main{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex:0 0 auto;
+    white-space:nowrap;
+  }
+
+  .plan-page .inline-alert-icon{
+    width:22px;
+    height:22px;
+    border-radius:999px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background:#fff;
+    border:1px solid var(--v2-warn-bd);
+    color:var(--v2-warn-tx);
+    font-size:11px;
+    font-weight:var(--fw-strong);
+    flex:0 0 auto;
+  }
+
+  .plan-page .missing-days-wrap{
+    flex:1 1 auto;
+    justify-content:flex-end;
+  }
+
+  .plan-page .inline-msg-help{
+    text-align:right;
+    padding-inline-start:28px;
+  }
+
+  @media (max-width: 760px){
+    .plan-page .inline-alert-row{
+      justify-content:flex-start;
+    }
+
+    .plan-page .missing-days-wrap{
+      justify-content:flex-start;
+      flex-basis:100%;
+      padding-inline-start:28px;
+    }
+
+    .plan-page .inline-msg-help{
+      padding-inline-start:28px;
+    }
+  }
+
+
+  /* ترتيب نهائي لشريط تنبيه النواقص */
+  .plan-page .inline-alert-row{
+    justify-content:flex-start;
+    gap:8px;
+  }
+
+  .plan-page .inline-alert-main{
+    order:1;
+  }
+
+  .plan-page .missing-days-wrap{
+    order:2;
+    flex:0 1 auto;
+    justify-content:flex-start;
+  }
+
+  .plan-page .inline-msg-help{
+    padding-inline-start:28px;
+  }
+
+  @media (max-width: 760px){
+    .plan-page .missing-days-wrap{
+      flex-basis:auto;
+      padding-inline-start:0;
+    }
+  }
+
+
+  /* تنبيه النواقص النهائي كسطر واحد */
+  .plan-page .inline-msg{
+    margin-top:8px;
+    padding:6px 9px;
+    border-radius:12px;
+    min-height:34px;
+    display:flex;
+    align-items:center;
+    border:1px solid var(--v2-warn-bd);
+    background:linear-gradient(180deg, #fffdf8, #fffaf1);
+  }
+
+  .plan-page .inline-alert-row{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:7px;
+    flex-wrap:wrap;
+  }
+
+  .plan-page .inline-alert-main{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex:0 0 auto;
+    white-space:nowrap;
+  }
+
+  .plan-page .inline-alert-icon{
+    width:20px;
+    height:20px;
+    border-radius:999px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background:#fff;
+    border:1px solid var(--v2-warn-bd);
+    color:var(--v2-warn-tx);
+    font-size:10px;
+    font-weight:var(--fw-strong);
+    flex:0 0 auto;
+  }
+
+  .plan-page .inline-msg-title{
+    font-size:11.2px;
+    font-weight:var(--fw-strong);
+    line-height:1.45;
+    color:var(--v2-warn-tx);
+    white-space:nowrap;
+  }
+
+  .plan-page .missing-days-wrap{
+    margin-top:0;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:4px;
+    flex:0 1 auto;
+    flex-wrap:wrap;
+  }
+
+  .plan-page .missing-day-chip{
+    min-height:20px;
+    padding:1px 7px;
+    border-radius:999px;
+    border:1px solid var(--v2-warn-bd);
+    background:#fff;
+    color:var(--v2-warn-tx);
+    font-size:10px;
+    font-weight:var(--fw-mid);
+    white-space:nowrap;
+  }
+
+  .plan-page .inline-msg-help{
+    display:none !important;
+  }
+
+  @media (max-width: 760px){
+    .plan-page .inline-msg{
+      align-items:flex-start;
+      padding:7px 9px;
+    }
+
+    .plan-page .inline-alert-row{
+      gap:6px;
+    }
+
+    .plan-page .missing-days-wrap{
+      flex-basis:100%;
+      padding-inline-start:26px;
+    }
+  }
+
+
+  /* إبراز زر الحفظ عند وجود نواقص */
+  .plan-page .btn-save.save-emphasis{
+    background:var(--vp-primary);
+    border-color:var(--vp-primary);
+    color:#fff;
+  }
+
+  .plan-page .btn-save.save-emphasis:hover{
+    background:var(--vp-primary-2);
+    border-color:var(--vp-primary-2);
+  }
+
+  .plan-page .btn-approve.ready{
+    background:var(--vp-primary);
+    border-color:var(--vp-primary);
+    color:#fff;
+  }
+
+  .plan-page .btn-approve.ready:hover{
+    background:var(--vp-primary-2);
+    border-color:var(--vp-primary-2);
+  }
+
 </style>
 {% endblock %}
 
@@ -1172,7 +1813,7 @@
 
       <div class="email-strip">
         <div class="email-strip-info">
-          <div class="email-strip-title">البريد الإلكتروني والتنبيهات</div>
+          <div class="email-strip-title">البريد والتنبيهات</div>
 
           {% if supervisor_email %}
             <div class="email-pill">
@@ -1239,11 +1880,14 @@
               <table>
                 <thead>
                   <tr>
-                    <th class="col-day">اليوم</th>
-                    <th class="col-gdate">التاريخ (ميلادي)</th>
-                    <th class="col-hdate">التاريخ (هجري)</th>
+                    <th class="col-day">اليوم والتاريخ</th>
                     <th class="col-school">المدرسة / سبب اليوم</th>
-                    <th class="col-visit">نوع اليوم</th>
+                    <th class="col-visit">
+                      <span class="th-stack">
+                        <span class="th-main">نوع اليوم</span>
+                        <span class="th-hint">اضغط للتبديل</span>
+                      </span>
+                    </th>
                   </tr>
                 </thead>
 
@@ -1256,14 +1900,10 @@
 
                       <td class="col-day">
                         <span class="dayname">{{ name }}</span>
-                      </td>
-
-                      <td class="col-gdate">
-                        <span class="pill">{{ d|date:"d-m-Y" }}</span>
-                      </td>
-
-                      <td class="col-hdate">
-                        <span class="pill">{{ d|to_hijri }}</span>
+                        <div class="date-stack">
+                          <span class="date-line">ميلادي: {{ d|date:"d-m-Y" }}</span>
+                          <span class="date-line">هجري: {{ d|to_hijri }}</span>
+                        </div>
                       </td>
 
                       <td class="col-school">
@@ -1342,7 +1982,7 @@
 
         <div class="actions">
           <div class="hint">
-            يمكنك الحفظ أكثر من مرة قبل الاعتماد، ولا يتفعّل الاعتماد إلا بعد اكتمال جميع الأيام مع مراعاة اختيار سبب عدم الزيارة عند الحاجة.
+            يمكنك حفظ المسودة الآن، ويتفعّل الاعتماد بعد إكمال جميع الأيام.
           </div>
 
           <div class="btn-row">
@@ -1357,7 +1997,7 @@
               <button class="btn btn-outline" disabled>بانتظار الإدارة</button>
 
             {% else %}
-              <button class="btn btn-save" name="action" value="save" type="submit" id="saveBtn">حفظ</button>
+              <button class="btn btn-save" name="action" value="save" type="submit" id="saveBtn" title="حفظ المسودة">حفظ</button>
               <button class="btn btn-approve" name="action" value="approve" type="submit" id="approveBtn"
                       title="لا يمكن الاعتماد إلا بعد اكتمال جميع الأيام">
                 اعتماد
@@ -1701,6 +2341,7 @@
 
     const inlineMsg = document.getElementById("inlineMsg");
     const approveBtn = document.getElementById("approveBtn");
+    const saveBtn = document.getElementById("saveBtn");
 
     function isRowComplete(wd){
       const hidden = document.querySelector('[data-visit-input="'+wd+'"]');
@@ -1719,20 +2360,41 @@
       const missing = [];
       document.querySelectorAll("tr[data-row]").forEach((tr, idx)=>{
         const wd = tr.getAttribute("data-row");
-        const dayCell = tr.querySelector(".col-day");
-        const dayName = dayCell ? dayCell.textContent.trim() : ("اليوم " + (idx+1));
+        const dayNameEl = tr.querySelector(".dayname");
+        const dayName = dayNameEl ? dayNameEl.textContent.trim() : ("اليوم " + (idx+1));
 
         if(!isRowComplete(wd)){
-          const hidden = document.querySelector('[data-visit-input="'+wd+'"]');
-          const v = hidden ? hidden.value : V_IN;
-          if(v === V_NONE){
-            missing.push(dayName + " (اختر سبب عدم الزيارة)");
-          }else{
-            missing.push(dayName + " (اختر المدرسة)");
-          }
+          missing.push(dayName);
         }
       });
       return missing;
+    }
+
+    function escapeHtml(value){
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function buildMissingMessage(missing){
+      const count = missing.length;
+      const dayWord = count === 1 ? "يوم" : "أيام";
+      const chips = missing
+        .map(day => `<span class="missing-day-chip">${escapeHtml(day)}</span>`)
+        .join("");
+
+      return `
+        <div class="inline-alert-row">
+          <div class="inline-alert-main">
+            <span class="inline-alert-icon">!</span>
+            <div class="inline-msg-title">يلزم إكمال ${count} ${dayWord} قبل الاعتماد.</div>
+          </div>
+          <div class="missing-days-wrap">${chips}</div>
+        </div>
+      `;
     }
 
     function validatePlan(){
@@ -1741,18 +2403,30 @@
       const missing = getMissingDays();
       if(missing.length){
         inlineMsg.classList.add("show");
-        inlineMsg.textContent = "تنبيه: يلزم إكمال جميع الأيام قبل الاعتماد. العناصر الناقصة: " + missing.join("، ");
+        inlineMsg.innerHTML = buildMissingMessage(missing);
 
         if(approveBtn){
           approveBtn.disabled = true;
-          approveBtn.title = "أكمل الأيام أولاً ثم يمكنك الاعتماد";
+          approveBtn.classList.remove("ready");
+          approveBtn.title = "أكمل جميع الأيام أولًا، ثم يمكنك الاعتماد.";
+        }
+
+        if(saveBtn){
+          saveBtn.classList.add("save-emphasis");
+          saveBtn.title = "يمكنك حفظ المسودة الآن قبل اكتمال الخطة.";
         }
       }else{
         inlineMsg.classList.remove("show");
-        inlineMsg.textContent = "";
+        inlineMsg.innerHTML = "";
         if(approveBtn){
           approveBtn.disabled = false;
+          approveBtn.classList.add("ready");
           approveBtn.title = "اعتماد الخطة";
+        }
+
+        if(saveBtn){
+          saveBtn.classList.remove("save-emphasis");
+          saveBtn.title = "حفظ المسودة";
         }
       }
     }
@@ -1778,7 +2452,7 @@
             e.preventDefault();
             validatePlan();
             inlineMsg.scrollIntoView({behavior:"smooth", block:"center"});
-            openMsgModal("أكمل الأيام الناقصة قبل الاعتماد.", "warning", 2200);
+            openMsgModal("يلزم إكمال جميع الأيام قبل الاعتماد.", "warning", 2200);
           }
         }
       });

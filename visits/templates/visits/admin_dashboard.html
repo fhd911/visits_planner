@@ -16,9 +16,9 @@
     --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
 
     --fw-hero:700;
-    --fw-title:700;
-    --fw-strong:600;
-    --fw-normal:500;
+    --fw-title:600;
+    --fw-strong:500;
+    --fw-normal:400;
     --fw-muted:400;
 
     --card:#ffffff;
@@ -75,7 +75,7 @@
 
   .admin-page .wrap{
     display:grid;
-    gap:12px;
+    gap:10px;
     margin-top:2px;
   }
 
@@ -92,7 +92,7 @@
 
   .admin-page .summary-card{
     border-radius:20px;
-    padding:14px 16px;
+    padding:11px 14px;
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -103,8 +103,8 @@
 
   .admin-page .summary-note{
     color:var(--mut);
-    font-size:12px;
-    line-height:1.9;
+    font-size:11.3px;
+    line-height:1.8;
     font-weight:var(--fw-normal);
     max-width:880px;
   }
@@ -120,8 +120,8 @@
     display:inline-flex;
     align-items:center;
     gap:8px;
-    min-height:32px;
-    padding:6px 11px;
+    min-height:30px;
+    padding:5px 10px;
     border-radius:999px;
     background:var(--soft);
     border:1px solid var(--line);
@@ -174,7 +174,7 @@
 
   .admin-page .action-card{
     border-radius:18px;
-    padding:13px;
+    padding:10px 12px;
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -184,28 +184,28 @@
 
   .admin-page .action-copy{
     color:var(--mut);
-    font-size:11.3px;
-    line-height:1.9;
+    font-size:10.8px;
+    line-height:1.8;
     font-weight:var(--fw-normal);
     max-width:760px;
   }
 
   .admin-page .action-buttons{
     display:flex;
-    gap:8px;
+    gap:6px;
     align-items:center;
     flex-wrap:wrap;
   }
 
   .admin-page .btn{
-    height:38px;
-    padding:0 14px;
+    height:33px;
+    padding:0 12px;
     border-radius:999px;
     border:1px solid var(--line-strong);
     background:#fff;
     color:var(--txt);
     font-weight:var(--fw-strong);
-    font-size:11.5px;
+    font-size:10.6px;
     cursor:pointer;
     text-decoration:none;
     display:inline-flex;
@@ -278,12 +278,12 @@
   .admin-page .kpi{
     border-radius:16px;
     box-shadow:var(--shadow2);
-    padding:11px 12px;
+    padding:8px 9px;
     display:flex;
     align-items:center;
     justify-content:space-between;
     gap:8px;
-    min-height:60px;
+    min-height:56px;
   }
 
   .admin-page .kpi .meta{
@@ -298,15 +298,15 @@
   }
 
   .admin-page .kpi .value{
-    font-size:17px;
+    font-size:16px;
     font-weight:var(--fw-title);
     color:var(--txt);
     line-height:1.2;
   }
 
   .admin-page .kpi .icon{
-    width:34px;
-    height:34px;
+    width:31px;
+    height:31px;
     border-radius:12px;
     display:grid;
     place-items:center;
@@ -314,6 +314,268 @@
     background:var(--soft);
     font-size:14px;
     flex:0 0 auto;
+  }
+
+
+  .admin-page .assignment-panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:18px;
+    box-shadow:var(--shadow2);
+    overflow:hidden;
+  }
+
+  .admin-page .assignment-head{
+    padding:9px 12px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, #fcfdfc, #f8fbf9);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .admin-page .assignment-title{
+    margin:0;
+    font-size:12.4px;
+    font-weight:var(--fw-title);
+    color:var(--txt);
+    line-height:1.7;
+  }
+
+  .admin-page .assignment-note{
+    color:var(--mut);
+    font-size:10.8px;
+    line-height:1.8;
+    font-weight:var(--fw-normal);
+  }
+
+  .admin-page .assignment-actions{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    flex-wrap:wrap;
+  }
+
+  .admin-page .assignment-grid{
+    padding:9px 11px 10px;
+    display:grid;
+    grid-template-columns:repeat(5, minmax(0,1fr));
+    gap:8px;
+  }
+
+  .admin-page .assignment-card{
+    min-height:64px;
+    padding:8px 10px;
+    border-radius:16px;
+    border:1px solid var(--line);
+    background:linear-gradient(180deg, #fff, #fbfcfb);
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    text-decoration:none;
+    color:inherit;
+    transition:.16s ease;
+  }
+
+  .admin-page a.assignment-card:hover{
+    transform:translateY(-1px);
+    background:#fcfdfc;
+    text-decoration:none;
+  }
+
+  .admin-page .assignment-meta{
+    display:grid;
+    gap:3px;
+    min-width:0;
+  }
+
+  .admin-page .assignment-label{
+    color:var(--mut);
+    font-size:10.7px;
+    font-weight:var(--fw-normal);
+    line-height:1.65;
+  }
+
+  .admin-page .assignment-value{
+    color:var(--txt);
+    font-size:16px;
+    font-weight:var(--fw-title);
+    line-height:1.2;
+  }
+
+  .admin-page .assignment-sub{
+    color:var(--mut2);
+    font-size:10.2px;
+    font-weight:var(--fw-normal);
+    line-height:1.6;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    max-width:100%;
+  }
+
+  .admin-page .assignment-icon{
+    width:31px;
+    height:31px;
+    border-radius:13px;
+    display:grid;
+    place-items:center;
+    flex:0 0 auto;
+    border:1px solid var(--line);
+    background:var(--soft);
+    color:var(--primary);
+    font-size:13px;
+  }
+
+  .admin-page .assignment-card.danger .assignment-icon{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:var(--danger);
+  }
+
+  .admin-page .assignment-card.warn .assignment-icon{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn);
+  }
+
+  .admin-page .assignment-card.ok .assignment-icon{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+  }
+
+  .admin-page .assignment-card.info .assignment-icon{
+    background:var(--cyan-bg);
+    border-color:var(--cyan-br);
+    color:var(--cyan);
+  }
+
+  .admin-page .latest-log{
+    min-width:0;
+  }
+
+  .admin-page .latest-log .assignment-value{
+    font-size:12.2px;
+    line-height:1.7;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+
+  .admin-page .assignment-collapsible{
+    overflow:hidden;
+  }
+
+  .admin-page .assignment-summary{
+    list-style:none;
+    cursor:pointer;
+    padding:9px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    background:linear-gradient(180deg, #fcfdfc, #f8fbf9);
+    border-bottom:1px solid transparent;
+  }
+
+  .admin-page .assignment-summary::-webkit-details-marker{
+    display:none;
+  }
+
+  .admin-page .assignment-summary-main{
+    display:grid;
+    gap:2px;
+    min-width:220px;
+  }
+
+  .admin-page .assignment-summary-title{
+    color:var(--txt);
+    font-size:12.2px;
+    font-weight:var(--fw-title);
+    line-height:1.55;
+  }
+
+  .admin-page .assignment-summary-note{
+    color:var(--mut);
+    font-size:10.4px;
+    line-height:1.6;
+    font-weight:var(--fw-normal);
+  }
+
+  .admin-page .assignment-summary-chips{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+
+  .admin-page .assignment-mini-chip{
+    min-height:27px;
+    padding:4px 9px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--mut);
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:10.4px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+  }
+
+  .admin-page .assignment-mini-chip b{
+    color:var(--txt);
+    font-weight:var(--fw-title);
+  }
+
+  .admin-page .assignment-mini-chip.warn{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn);
+  }
+
+  .admin-page .assignment-mini-chip.danger{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:var(--danger);
+  }
+
+  .admin-page .assignment-mini-chip.ok{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+  }
+
+  .admin-page .assignment-toggle-label{
+    min-height:27px;
+    padding:4px 10px;
+    border-radius:999px;
+    border:1px solid var(--primary-soft-br);
+    background:var(--primary-soft);
+    color:var(--primary);
+    font-size:10.4px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+  }
+
+  .admin-page .assignment-collapsible[open] .assignment-summary{
+    border-bottom-color:var(--line);
+  }
+
+  .admin-page .assignment-collapsible[open] .assignment-toggle-label::after{
+    content:"";
+  }
+
+  .admin-page .assignment-detail-body{
+    display:grid;
+    gap:0;
   }
 
   .admin-page .analytics{
@@ -357,7 +619,7 @@
 
   .admin-page .chart-box{
     padding:12px 13px 14px;
-    height:285px;
+    height:240px;
   }
 
   .admin-page .summary-grid{
@@ -371,7 +633,7 @@
     align-items:center;
     justify-content:space-between;
     gap:10px;
-    padding:11px 12px;
+    padding:8px 9px;
     border-radius:14px;
     background:#fbfcfb;
     border:1px solid var(--line2);
@@ -450,7 +712,7 @@
 
   .admin-page .field label{
     display:block;
-    font-size:10.9px;
+    font-size:10px;
     font-weight:var(--fw-normal);
     color:var(--mut);
     margin-bottom:5px;
@@ -480,8 +742,8 @@
 
   .admin-page .input,
   .admin-page .select{
-    height:38px;
-    font-size:11.8px;
+    height:33px;
+    font-size:11.1px;
   }
 
   .admin-page .textarea{
@@ -510,7 +772,7 @@
   }
 
   .admin-page .table-head{
-    padding:12px 14px;
+    padding:9px 12px;
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -567,7 +829,7 @@
     z-index:2;
     background:#f7faf8;
     border-bottom:1px solid #d9e2dd;
-    padding:11px 12px;
+    padding:8px 9px;
     font-size:11px;
     font-weight:var(--fw-title);
     color:#687a70;
@@ -575,15 +837,13 @@
     white-space:nowrap;
   }
 
-  .admin-page thead th:nth-child(1){ width:34%; }
-  .admin-page thead th:nth-child(2){ width:12%; }
-  .admin-page thead th:nth-child(3){ width:10%; }
-  .admin-page thead th:nth-child(4){ width:12%; }
-  .admin-page thead th:nth-child(5){ width:32%; }
+  .admin-page thead th:nth-child(1){ width:60%; }
+  .admin-page thead th:nth-child(2){ width:18%; }
+  .admin-page thead th:nth-child(3){ width:22%; }
 
   .admin-page tbody td{
     border-bottom:1px solid #edf2ee;
-    padding:12px 12px;
+    padding:9px 9px;
     font-size:12px;
     font-weight:var(--fw-normal);
     color:var(--txt);
@@ -616,7 +876,7 @@
 
   .admin-page .sup-sub{
     margin-top:4px;
-    font-size:10.9px;
+    font-size:10px;
     font-weight:var(--fw-normal);
     color:var(--mut2);
     line-height:1.7;
@@ -639,7 +899,7 @@
 
   .admin-page .note-box{
     margin-top:7px;
-    font-size:10.9px;
+    font-size:10px;
     font-weight:var(--fw-normal);
     color:var(--warn);
     background:var(--warn-bg);
@@ -680,6 +940,12 @@
     background:var(--warn-bg);
     border-color:var(--warn-br);
     color:var(--warn);
+  }
+
+  .admin-page .pill.unlocked{
+    background:var(--blue-bg);
+    border-color:var(--blue-br);
+    color:var(--blue);
   }
 
   .admin-page .count{
@@ -747,13 +1013,13 @@
   }
 
   .admin-page .a-btn{
-    height:30px;
-    padding:0 10px;
+    height:26px;
+    padding:0 8px;
     border-radius:999px;
     border:1px solid var(--line);
     background:#fff;
     font-weight:var(--fw-strong);
-    font-size:10.9px;
+    font-size:10px;
     cursor:pointer;
     text-decoration:none;
     display:inline-flex;
@@ -913,7 +1179,7 @@
   }
 
   .admin-page .modal-head{
-    padding:12px 14px;
+    padding:9px 12px;
     border-bottom:1px solid var(--line);
     display:flex;
     align-items:center;
@@ -936,7 +1202,7 @@
     border:1px solid var(--line);
     background:#fff;
     cursor:pointer;
-    font-size:17px;
+    font-size:16px;
     color:var(--txt);
   }
 
@@ -967,7 +1233,12 @@
       grid-template-columns:repeat(3, 1fr);
     }
 
-    .admin-page .analytics{
+  
+      .admin-page .assignment-grid{
+      grid-template-columns:repeat(2, minmax(0,1fr));
+    }
+
+.admin-page .analytics{
       grid-template-columns:1fr;
     }
 
@@ -987,9 +1258,7 @@
 
     .admin-page thead th:nth-child(1),
     .admin-page thead th:nth-child(2),
-    .admin-page thead th:nth-child(3),
-    .admin-page thead th:nth-child(4),
-    .admin-page thead th:nth-child(5){
+    .admin-page thead th:nth-child(3){
       width:auto;
     }
 
@@ -998,9 +1267,21 @@
     }
   }
 
+
+  @media (max-width: 620px){
+    .admin-page .assignment-grid{
+      grid-template-columns:1fr;
+    }
+
+    .admin-page .assignment-actions .btn,
+    .admin-page .action-buttons .btn{
+      flex:1 1 auto;
+    }
+  }
+
   @media (max-width: 700px){
     .admin-page .chart-box{
-      height:245px;
+      height:225px;
     }
   }
 
@@ -1024,6 +1305,138 @@
       padding:12px;
     }
   }
+
+
+
+  /* ضغط خلية المشرف داخل جدول لوحة الإدارة */
+  .admin-page .sup-link{
+    font-size:12.2px;
+    line-height:1.45;
+  }
+
+  .admin-page .sup-sub{
+    margin-top:2px;
+    font-size:10.4px;
+    line-height:1.55;
+    color:var(--mut2);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .admin-page .sup-meta-line{
+    margin-top:3px;
+    color:var(--mut2);
+    font-size:10.4px;
+    font-weight:var(--fw-normal);
+    line-height:1.55;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .admin-page .sup-meta-line b{
+    color:var(--primary);
+    font-weight:var(--fw-strong);
+  }
+
+  .admin-page .note-box{
+    margin-top:3px;
+    font-size:10.2px;
+    line-height:1.45;
+    color:var(--warn);
+    background:transparent;
+    border:0;
+    border-radius:0;
+    padding:0;
+    max-width:100%;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .admin-page .note-box b{
+    font-weight:var(--fw-strong);
+    color:var(--warn);
+  }
+
+  .admin-page .table-card tbody td{
+    padding-top:7px;
+    padding-bottom:7px;
+  }
+
+  .admin-page .plan-state-stack{
+    gap:4px;
+  }
+
+  .admin-page .saved-mini{
+    font-size:10px;
+    line-height:1.4;
+  }
+
+
+  .admin-page .assign-chip{
+    min-height:20px;
+    padding:2px 6px;
+    font-size:10px;
+    margin-top:3px;
+    box-shadow:none;
+  }
+
+
+  /* ضبط عرض جدول لوحة الإدارة: المشرف أوسع والإجراءات أضيق */
+  .admin-page .table-card table{
+    table-layout:fixed;
+  }
+
+  .admin-page .table-card thead th:nth-child(1),
+  .admin-page .table-card tbody td:nth-child(1){
+    width:60%;
+  }
+
+  .admin-page .table-card thead th:nth-child(2),
+  .admin-page .table-card tbody td:nth-child(2){
+    width:18%;
+    text-align:center;
+  }
+
+  .admin-page .table-card thead th:nth-child(3),
+  .admin-page .table-card tbody td:nth-child(3){
+    width:22%;
+    text-align:center;
+  }
+
+  .admin-page .plan-state-cell{
+    text-align:center;
+  }
+
+  .admin-page .actions-cell{
+    text-align:center;
+  }
+
+  .admin-page .actions-cell .actions{
+    width:min(100%, 270px);
+    margin-inline:auto;
+    justify-content:center;
+    gap:5px;
+  }
+
+  .admin-page .actions-cell .a-btn{
+    min-width:54px;
+  }
+
+  .admin-page .table-card tbody td{
+    padding-inline:9px;
+  }
+
+  .admin-page .table-card tbody td:nth-child(2){
+    padding-inline:6px;
+  }
+
+  .admin-page .table-card tbody td:nth-child(3){
+    padding-inline:6px;
+  }
+
 </style>
 {% endblock %}
 
@@ -1061,14 +1474,18 @@
 
     <div class="action-card">
       <div class="action-copy">
-        استخدم الأزرار التالية للوصول السريع إلى التصدير والاستيراد والمتابعة والتنبيهات والصيانة.
+        اختصارات تشغيلية مختصرة للوصول السريع إلى المتابعة والتصدير والإسناد والصيانة.
       </div>
 
       <div class="action-buttons">
         <button class="btn soft" id="bulkNotifyBtn" type="button">🔔 تنبيه عام</button>
         <a class="btn warn" href="{% url 'visits:admin_visit_followup_dashboard' %}">📊 متابعة الزيارات</a>
         <a class="btn primary" href="{% url 'visits:admin_export_week' %}?week={{ week }}{% if show_all %}&all=1{% endif %}">⬇ Excel للأسبوع</a>
+        <a class="btn primary" href="{% url 'visits:admin_export_all_plans_excel' %}?q={{ q|urlencode }}&status={{ status|urlencode }}{% if show_all %}&all=1{% endif %}">⬇ Excel شامل لكل الأسابيع</a>
         <a class="btn soft" href="{% url 'visits:admin_import' %}">⬆ استيراد البيانات</a>
+
+        <a class="btn soft" href="{% url 'visits:admin_schools_with_supervisors_import' %}">🏫 إسناد المدارس</a>
+        <a class="btn warn" href="{% url 'visits:admin_assignment_review' %}">🧭 مراجعة الإسناد</a>
 
         {% if site_setting and site_setting.is_maintenance_mode %}
           <a class="btn danger" href="{% url 'visits:admin_maintenance_settings' %}">🛠 إعدادات الصيانة</a>
@@ -1079,6 +1496,95 @@
         <a class="btn" href="{% url 'visits:logout' %}">خروج</a>
       </div>
     </div>
+
+
+    <details class="assignment-panel assignment-collapsible">
+      <summary class="assignment-summary">
+        <div class="assignment-summary-main">
+          <div class="assignment-summary-title">مؤشرات الإسناد</div>
+          <div class="assignment-summary-note">شريط مختصر للحالات التي تحتاج متابعة، ويمكن عرض التفاصيل عند الحاجة.</div>
+        </div>
+
+        <div class="assignment-summary-chips">
+          <span class="assignment-mini-chip warn">غير مسندة: <b>{{ dashboard_unassigned_schools_count|default:"—" }}</b></span>
+          <span class="assignment-mini-chip danger">مكرر: <b>{{ dashboard_duplicate_assignments_count|default:"—" }}</b></span>
+          <span class="assignment-mini-chip danger">مشرف غير نشط: <b>{{ dashboard_inactive_supervisor_assignments_count|default:"—" }}</b></span>
+          <span class="assignment-mini-chip warn">مدرسة معطلة: <b>{{ dashboard_inactive_school_assignments_count|default:"—" }}</b></span>
+          {% if dashboard_latest_assignment_log %}
+            <span class="assignment-mini-chip ok">آخر معالجة: <b>{{ dashboard_latest_assignment_log.created_at|date:"Y-m-d H:i" }}</b></span>
+          {% else %}
+            <span class="assignment-mini-chip ok">آخر معالجة: <b>لا يوجد</b></span>
+          {% endif %}
+          <span class="assignment-toggle-label">عرض التفاصيل</span>
+        </div>
+      </summary>
+
+      <div class="assignment-detail-body">
+        <div class="assignment-head">
+          <div>
+            <h3 class="assignment-title">تفاصيل مؤشرات الإسناد</h3>
+            <div class="assignment-note">ملخص مختصر للحالات التي تحتاج متابعة أو معالجة.</div>
+          </div>
+
+          <div class="assignment-actions">
+            <a class="btn soft" href="{% url 'visits:admin_assignment_review' %}">مراجعة الإسناد</a>
+            <a class="btn warn" href="{% url 'visits:admin_assignment_review_logs' %}">سجل المعالجة</a>
+          </div>
+        </div>
+
+        <div class="assignment-grid">
+          <a class="assignment-card warn" href="{% url 'visits:admin_assignment_review' %}?issue=unassigned_schools">
+            <div class="assignment-meta">
+              <div class="assignment-label">مدارس غير مسندة</div>
+              <div class="assignment-value">{{ dashboard_unassigned_schools_count|default:"—" }}</div>
+              <div class="assignment-sub">مدارس نشطة تحتاج إسنادًا.</div>
+            </div>
+            <div class="assignment-icon">!</div>
+          </a>
+
+          <a class="assignment-card danger" href="{% url 'visits:admin_assignment_review' %}?issue=duplicate_assignments">
+            <div class="assignment-meta">
+              <div class="assignment-label">إسناد مكرر</div>
+              <div class="assignment-value">{{ dashboard_duplicate_assignments_count|default:"—" }}</div>
+              <div class="assignment-sub">مدارس لها أكثر من إسناد نشط.</div>
+            </div>
+            <div class="assignment-icon">×</div>
+          </a>
+
+          <a class="assignment-card danger" href="{% url 'visits:admin_assignment_review' %}?issue=inactive_supervisor_assignments">
+            <div class="assignment-meta">
+              <div class="assignment-label">مشرف غير نشط لديه مدارس</div>
+              <div class="assignment-value">{{ dashboard_inactive_supervisor_assignments_count|default:"—" }}</div>
+              <div class="assignment-sub">إسنادات نشطة تحتاج معالجة.</div>
+            </div>
+            <div class="assignment-icon">⚠</div>
+          </a>
+
+          <a class="assignment-card warn" href="{% url 'visits:admin_assignment_review' %}?issue=inactive_school_assignments">
+            <div class="assignment-meta">
+              <div class="assignment-label">مدرسة معطلة لها إسناد</div>
+              <div class="assignment-value">{{ dashboard_inactive_school_assignments_count|default:"—" }}</div>
+              <div class="assignment-sub">إسنادات نشطة على مدارس معطلة.</div>
+            </div>
+            <div class="assignment-icon">⏸</div>
+          </a>
+
+          <a class="assignment-card ok latest-log" href="{% url 'visits:admin_assignment_review_logs' %}">
+            <div class="assignment-meta">
+              <div class="assignment-label">آخر عملية معالجة</div>
+              {% if dashboard_latest_assignment_log %}
+                <div class="assignment-value">{{ dashboard_latest_assignment_log.title }}</div>
+                <div class="assignment-sub">{{ dashboard_latest_assignment_log.created_at|date:"Y-m-d H:i" }}</div>
+              {% else %}
+                <div class="assignment-value">لا يوجد</div>
+                <div class="assignment-sub">لم تسجل عمليات معالجة بعد.</div>
+              {% endif %}
+            </div>
+            <div class="assignment-icon">✓</div>
+          </a>
+        </div>
+      </div>
+    </details>
 
     <div class="kpis">
       <div class="kpi">
@@ -1232,6 +1738,7 @@
             <option value="approved" {% if status == "approved" %}selected{% endif %}>المعتمدة</option>
             <option value="draft" {% if status == "draft" %}selected{% endif %}>المسودات</option>
             <option value="unlock" {% if status == "unlock" %}selected{% endif %}>طلبات فك اعتماد</option>
+            <option value="unlocked" {% if status == "unlocked" %}selected{% endif %}>مفكوكة للتعديل</option>
             <option value="not_full" {% if status == "not_full" %}selected{% endif %}>غير مكتملة</option>
           </select>
         </div>
@@ -1270,9 +1777,7 @@
           <thead>
             <tr>
               <th>المشرف</th>
-              <th>الحالة</th>
-              <th>الامتلاء</th>
-              <th>آخر حفظ</th>
+              <th>حالة الخطة</th>
               <th>إجراءات</th>
             </tr>
           </thead>
@@ -1288,65 +1793,54 @@
                   </a>
 
                   <div class="sup-sub">
-                    هوية: {{ r.sup.national_id }} — الأسبوع: {{ p.week.week_no }}
-                  </div>
-
-                  <div class="assign-chip">
-                    🏫 المدارس المسندة: {{ r.assignment_count|default:"0" }}
+                    هوية: {{ r.sup.national_id }} — الأسبوع: {{ p.week.week_no }} — المدارس: {{ r.assignment_count|default:"0" }}
                   </div>
 
                   {% if p.admin_note %}
                     <div class="note-box" id="note-box-{{ p.id }}">
-                      <b>ملاحظة الإدارة:</b>
+                      <b>ملاحظة:</b>
                       <span id="note-text-{{ p.id }}">{{ p.admin_note }}</span>
                     </div>
                   {% else %}
                     <div class="note-box" id="note-box-{{ p.id }}" style="display:none">
-                      <b>ملاحظة الإدارة:</b>
+                      <b>ملاحظة:</b>
                       <span id="note-text-{{ p.id }}"></span>
                     </div>
                   {% endif %}
                 </td>
 
-                <td class="status-cell">
-                  {% if p.status == p.STATUS_APPROVED %}
-                    <span class="pill approved" id="pill-{{ p.id }}">معتمدة</span>
-                  {% elif p.status == p.STATUS_UNLOCK_REQUESTED %}
-                    <span class="pill unlock" id="pill-{{ p.id }}">طلب فك اعتماد</span>
-                  {% else %}
-                    <span class="pill draft" id="pill-{{ p.id }}">مسودة</span>
-                  {% endif %}
-                </td>
+                <td class="plan-state-cell">
+                  <div class="plan-state-stack">
+                    <div class="state-line">
+                      {% if p.status == p.STATUS_APPROVED %}
+                        <span class="pill approved" id="pill-{{ p.id }}">معتمدة</span>
+                      {% elif p.status == p.STATUS_UNLOCK_REQUESTED %}
+                        <span class="pill unlock" id="pill-{{ p.id }}">طلب فك اعتماد</span>
+                      {% elif p.status == p.STATUS_UNLOCKED %}
+                        <span class="pill unlocked" id="pill-{{ p.id }}">مفكوكة للتعديل</span>
+                      {% else %}
+                        <span class="pill draft" id="pill-{{ p.id }}">مسودة</span>
+                      {% endif %}
 
-                <td class="fill-cell">
-                  {% if r.filled == 5 %}
-                    <span class="count ok" id="filled-{{ p.id }}">5/5</span>
-                  {% else %}
-                    <span class="count bad" id="filled-{{ p.id }}">{{ r.filled }}/5</span>
-                  {% endif %}
-                </td>
+                      {% if r.filled == 5 %}
+                        <span class="count ok" id="filled-{{ p.id }}">5/5</span>
+                      {% else %}
+                        <span class="count bad" id="filled-{{ p.id }}">{{ r.filled }}/5</span>
+                      {% endif %}
+                    </div>
 
-                <td class="saved-cell">
-                  {% if p.saved_at %}
-                    <span class="date">{{ p.saved_at|date:"Y-m-d" }}</span>
-                    <span class="time">{{ p.saved_at|time:"H:i" }}</span>
-                  {% else %}
-                    —
-                  {% endif %}
+                    <div class="saved-mini">
+                      {% if p.saved_at %}
+                        آخر حفظ: <b>{{ p.saved_at|date:"Y-m-d" }}</b> — {{ p.saved_at|time:"H:i" }}
+                      {% else %}
+                        لم تحفظ بعد
+                      {% endif %}
+                    </div>
+                  </div>
                 </td>
 
                 <td class="actions-cell">
                   <div class="actions">
-                    <button
-                      class="a-btn notify"
-                      data-action="notify"
-                      data-url="{% url 'visits:admin_send_notification' p.id %}"
-                      data-plan-id="{{ p.id }}"
-                      type="button"
-                    >🔔 تنبيه</button>
-
-                    <a class="a-btn export" href="{% url 'visits:admin_plan_export_excel' p.id %}">⬇ Excel</a>
-
                     <button
                       class="a-btn approve"
                       data-action="approve"
@@ -1356,6 +1850,16 @@
                       {% if p.status == p.STATUS_APPROVED %}disabled{% endif %}
                       {% if r.filled != 5 %}disabled{% endif %}
                     >✅ اعتماد</button>
+
+                    <button
+                      class="a-btn notify"
+                      data-action="notify"
+                      data-url="{% url 'visits:admin_send_notification' p.id %}"
+                      data-plan-id="{{ p.id }}"
+                      type="button"
+                    >🔔 تنبيه</button>
+
+                    <a class="a-btn export" href="{% url 'visits:admin_plan_export_excel' p.id %}">⬇ Excel</a>
 
                     <button
                       class="a-btn draft"
@@ -1389,7 +1893,7 @@
               {% endwith %}
             {% empty %}
               <tr>
-                <td colspan="5" style="padding:16px;color:var(--mut);font-weight:var(--fw-normal);font-size:11.4px">
+                <td colspan="3" style="padding:16px;color:var(--mut);font-weight:var(--fw-normal);font-size:11.4px">
                   لا توجد نتائج مطابقة.
                 </td>
               </tr>
@@ -1736,7 +2240,7 @@
 
     if(pill){
       pill.textContent = data.status_label || "—";
-      pill.classList.remove("approved", "draft", "unlock");
+      pill.classList.remove("approved", "draft", "unlock", "unlocked");
       pill.classList.add(data.status_css || "draft");
     }
 
@@ -1769,6 +2273,7 @@
     const isApproved = (statusCode === "approved") || (statusCss === "approved");
     const isDraft = (statusCode === "draft") || (statusCss === "draft");
     const isUnlock = (statusCode === "unlock") || (statusCss === "unlock");
+    const isUnlocked = (statusCode === "unlocked") || (statusCss === "unlocked");
 
     if(approveBtn){
       approveBtn.disabled = isApproved ? true : !(filledNow === 5);
@@ -1863,6 +2368,17 @@
       if(!modalResult.ok) return;
       payload.note = modalResult.note || "";
       payload.title = "تنبيه إداري";
+    }
+
+    if(action === "unlock-approve"){
+      const modalResult = await openModal({
+        title: "قبول فك اعتماد الخطة",
+        text: "يمكنك كتابة ملاحظة إدارية للمشرف، وستتحول الخطة إلى حالة: مفكوكة للتعديل.",
+        submitText: "قبول وفتح للتعديل"
+      });
+
+      if(!modalResult.ok) return;
+      payload.note = modalResult.note || "";
     }
 
     if(action === "unlock-reject"){

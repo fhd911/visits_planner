@@ -2,6 +2,7 @@
 {% load static %}
 
 {% block title %}إدارة الإسناد{% endblock %}
+{% block page_messages %}{% endblock %}
 
 {% block header_title %}إدارة الإسناد{% endblock %}
 {% block header_subtitle %}متابعة إسناد المدارس للمشرفين من صفحة مستقلة واضحة ومنظمة{% endblock %}
@@ -11,13 +12,12 @@
   .assign-page{
     --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
 
-    --fw-hero:800;
-    --fw-title:700;
-    --fw-strong:600;
-    --fw-normal:500;
+    --fw-hero:700;
+    --fw-title:600;
+    --fw-strong:500;
+    --fw-normal:400;
 
     --card:#ffffff;
-    --card-soft:#fbfcfb;
     --soft:#f7f9f8;
 
     --txt:var(--vp-text);
@@ -44,25 +44,35 @@
     --pink-bg:rgba(219,39,119,.08);
     --pink-br:rgba(219,39,119,.16);
 
-    --amber:#9a6700;
-    --amber-bg:rgba(245,158,11,.10);
-    --amber-br:rgba(245,158,11,.18);
+    --amber:#8b5c1f;
+    --amber-bg:var(--vp-warn-bg);
+    --amber-br:var(--vp-warn-border);
 
-    --shadow:0 10px 24px rgba(22,36,29,.045);
-    --shadow2:0 6px 16px rgba(22,36,29,.032);
+    --danger:#9f3129;
+    --danger-bg:rgba(225,29,72,.055);
+    --danger-br:rgba(225,29,72,.13);
+
+    --shadow:0 8px 20px rgba(22,36,29,.038);
+    --shadow2:0 4px 12px rgba(22,36,29,.028);
+
+    font-family:var(--ff);
+    direction:rtl;
+    color:var(--txt);
   }
 
   .assign-page *{
     box-sizing:border-box;
+    font-family:var(--ff) !important;
   }
 
   .assign-page .wrap{
     display:grid;
-    gap:12px;
+    gap:10px;
     margin-top:2px;
   }
 
   .assign-page .summary-card,
+  .assign-page .shortcut-card,
   .assign-page .filters-card,
   .assign-page .table-card,
   .assign-page .kpi{
@@ -72,22 +82,22 @@
   }
 
   .assign-page .summary-card{
-    border-radius:22px;
-    padding:15px 16px;
+    border-radius:20px;
+    padding:11px 14px;
     display:flex;
     align-items:center;
     justify-content:space-between;
     gap:10px;
     flex-wrap:wrap;
-    background:linear-gradient(180deg, rgba(255,255,255,.985), rgba(251,252,251,.985));
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,252,251,.98));
   }
 
   .assign-page .summary-note{
     color:var(--mut);
-    font-size:12px;
-    line-height:1.95;
+    font-size:11.3px;
+    line-height:1.8;
     font-weight:var(--fw-normal);
-    max-width:780px;
+    max-width:850px;
   }
 
   .assign-page .summary-right{
@@ -101,20 +111,40 @@
     display:inline-flex;
     align-items:center;
     gap:8px;
-    min-height:32px;
-    padding:6px 11px;
+    min-height:30px;
+    padding:5px 10px;
     border-radius:999px;
     background:var(--soft);
     border:1px solid var(--line);
     color:var(--mut);
-    font-size:11.2px;
+    font-size:10.7px;
     font-weight:var(--fw-strong);
     white-space:nowrap;
+    text-decoration:none;
+    transition:.16s ease;
+  }
+
+  .assign-page a.chip:hover{
+    background:#fcfdfc;
+    transform:translateY(-1px);
+    text-decoration:none;
   }
 
   .assign-page .chip b{
     color:var(--txt);
     font-weight:var(--fw-title);
+  }
+
+  .assign-page .chip.review{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+  }
+
+  .assign-page .chip.export{
+    background:linear-gradient(180deg, #fffdf7, #fffaf0);
+    border-color:var(--amber-br);
+    color:var(--amber);
   }
 
   .assign-page .dot{
@@ -126,62 +156,150 @@
     flex:0 0 auto;
   }
 
-  .assign-page .kpis{
-    display:grid;
-    grid-template-columns:repeat(4, minmax(0,1fr));
-    gap:10px;
-  }
-
-  .assign-page .kpi{
-    border-radius:20px;
-    padding:14px 15px;
+  .assign-page .shortcut-card{
+    border-radius:18px;
+    padding:8px 11px;
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap:12px;
-    min-height:82px;
+    gap:10px;
+    flex-wrap:wrap;
+    box-shadow:var(--shadow2);
+  }
+
+  .assign-page .shortcut-title{
+    margin:0;
+    color:var(--txt);
+    font-size:11.8px;
+    font-weight:var(--fw-title);
+    line-height:1.6;
+  }
+
+  .assign-page .shortcut-note{
+    color:var(--mut);
+    font-size:10.3px;
+    font-weight:var(--fw-normal);
+    line-height:1.65;
+    margin-top:2px;
+  }
+
+  .assign-page .shortcut-actions{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+
+  .assign-page .shortcut{
+    min-height:28px;
+    padding:4px 9px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--txt);
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    font-size:10.5px;
+    font-weight:var(--fw-strong);
+    text-decoration:none;
+    white-space:nowrap;
+    transition:.16s ease;
+  }
+
+  .assign-page .shortcut:hover{
+    transform:translateY(-1px);
+    text-decoration:none;
+    background:#fcfdfc;
+  }
+
+  .assign-page .shortcut .ico{
+    width:22px;
+    height:22px;
+    border-radius:10px;
+    display:grid;
+    place-items:center;
+    border:1px solid var(--line);
+    background:var(--soft);
+    color:var(--vp-primary);
+    font-size:10px;
+    flex:0 0 auto;
+  }
+
+  .assign-page .shortcut.review .ico{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+  }
+
+  .assign-page .shortcut.import .ico{
+    background:var(--cyan-bg);
+    border-color:var(--cyan-br);
+    color:var(--cyan);
+  }
+
+  .assign-page .shortcut.export .ico{
+    background:var(--amber-bg);
+    border-color:var(--amber-br);
+    color:var(--amber);
+  }
+
+  .assign-page .kpis{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:8px;
+  }
+
+  .assign-page .kpi{
+    border-radius:17px;
+    padding:11px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    min-height:64px;
     box-shadow:var(--shadow2);
   }
 
   .assign-page .kpi-meta{
     display:grid;
-    gap:3px;
+    gap:2px;
   }
 
   .assign-page .kpi-label{
     color:var(--mut);
-    font-size:11px;
+    font-size:10.7px;
     font-weight:var(--fw-normal);
     line-height:1.7;
   }
 
   .assign-page .kpi-value{
     color:var(--txt);
-    font-size:23px;
+    font-size:18px;
     line-height:1.2;
-    font-weight:var(--fw-hero);
+    font-weight:var(--fw-title);
   }
 
   .assign-page .kpi-icon{
-    width:42px;
-    height:42px;
-    border-radius:15px;
+    width:34px;
+    height:34px;
+    border-radius:12px;
     display:grid;
     place-items:center;
     border:1px solid var(--line);
     background:linear-gradient(180deg, #f8fbf9, #ffffff);
     color:var(--vp-primary);
-    font-size:12px;
-    font-weight:700;
-    letter-spacing:.4px;
+    font-size:11px;
+    font-weight:var(--fw-title);
     flex:0 0 auto;
   }
 
   .assign-page .filters-card{
     border-radius:18px;
-    padding:13px;
+    padding:10px 12px;
     display:grid;
-    gap:10px;
+    gap:8px;
     box-shadow:var(--shadow2);
   }
 
@@ -196,22 +314,22 @@
   .assign-page .card-title{
     margin:0;
     color:var(--txt);
-    font-size:12.8px;
+    font-size:12.2px;
     font-weight:var(--fw-title);
     line-height:1.7;
   }
 
   .assign-page .card-note{
     color:var(--mut);
-    font-size:11px;
-    line-height:1.8;
+    font-size:10.7px;
+    line-height:1.75;
     font-weight:var(--fw-normal);
   }
 
   .assign-page .filters-grid{
     display:grid;
-    grid-template-columns:1.4fr 1fr 1fr .95fr auto;
-    gap:9px;
+    grid-template-columns:1.28fr .74fr .9fr .74fr .9fr auto;
+    gap:8px;
     align-items:end;
   }
 
@@ -219,21 +337,21 @@
     display:block;
     margin-bottom:5px;
     color:var(--mut);
-    font-size:10.9px;
+    font-size:10.5px;
     font-weight:var(--fw-normal);
   }
 
   .assign-page .input,
   .assign-page .select{
     width:100%;
-    height:38px;
-    border-radius:12px;
+    height:33px;
+    border-radius:10px;
     border:1px solid var(--line);
     background:#f9fbfa;
     padding:0 12px;
     outline:none;
     color:var(--txt);
-    font-size:11.8px;
+    font-size:11.1px;
     font-weight:var(--fw-strong);
     transition:.16s ease;
   }
@@ -258,8 +376,8 @@
   }
 
   .assign-page .btn{
-    height:38px;
-    padding:0 14px;
+    height:33px;
+    padding:0 13px;
     border-radius:999px;
     border:1px solid var(--line-strong);
     background:#fff;
@@ -271,15 +389,16 @@
     text-decoration:none;
     cursor:pointer;
     white-space:nowrap;
-    font-size:11.5px;
+    font-size:10.6px;
     font-weight:var(--fw-strong);
-    box-shadow:0 4px 10px rgba(22,36,29,.03);
+    box-shadow:0 4px 10px rgba(22,36,29,.025);
     transition:.16s ease;
   }
 
   .assign-page .btn:hover{
     transform:translateY(-1px);
     background:#fcfdfc;
+    text-decoration:none;
   }
 
   .assign-page .btn.primary{
@@ -288,29 +407,20 @@
     color:#fff;
   }
 
-  .assign-page .btn.primary:hover{
-    background:var(--vp-primary-2);
-    border-color:var(--vp-primary-2);
-  }
-
   .assign-page .btn.export{
     background:linear-gradient(180deg, #fffdf7, #fffaf0);
     border-color:var(--amber-br);
-    color:#7a5400;
-  }
-
-  .assign-page .btn.export:hover{
-    background:#fff8eb;
+    color:var(--amber);
   }
 
   .assign-page .table-card{
-    border-radius:22px;
+    border-radius:20px;
     overflow:hidden;
     background:#fff;
   }
 
   .assign-page .table-head{
-    padding:13px 15px;
+    padding:9px 12px;
     border-bottom:1px solid var(--line);
     background:linear-gradient(180deg, #fcfdfc, #f8fbf9);
     display:flex;
@@ -324,15 +434,15 @@
   .assign-page .table-head-right{
     display:flex;
     align-items:center;
-    gap:8px;
+    gap:7px;
     flex-wrap:wrap;
   }
 
   .assign-page .hint{
     color:var(--mut);
-    font-size:11.1px;
+    font-size:10.8px;
     font-weight:var(--fw-normal);
-    line-height:1.9;
+    line-height:1.8;
     display:inline-flex;
     align-items:center;
     gap:7px;
@@ -353,12 +463,12 @@
     border:1px solid var(--ok-br);
     color:var(--ok);
     font-size:10px;
-    font-weight:700;
+    font-weight:var(--fw-title);
     flex:0 0 auto;
   }
 
   .assign-page .table-wrap{
-    overflow:auto;
+    overflow-x:hidden;
   }
 
   .assign-page table{
@@ -374,26 +484,29 @@
     z-index:2;
     background:#f8faf9;
     border-bottom:1px solid #d9e2dd;
-    padding:11px 10px;
+    padding:8px 7px;
     text-align:right;
     color:#687a70;
-    font-size:11.2px;
+    font-size:10.7px;
     font-weight:var(--fw-title);
     white-space:nowrap;
   }
 
-  .assign-page thead th:nth-child(1){ width:30%; }
-  .assign-page thead th:nth-child(2){ width:17%; }
-  .assign-page thead th:nth-child(3){ width:14%; }
-  .assign-page thead th:nth-child(4){ width:13%; }
-  .assign-page thead th:nth-child(5){ width:12%; }
-  .assign-page thead th:nth-child(6){ width:14%; }
+  .assign-page thead th:nth-child(1){ width:40%; }
+  .assign-page thead th:nth-child(2){ width:8%; }
+  .assign-page thead th:nth-child(3){ width:16%; }
+  .assign-page thead th:nth-child(4){ width:19%; }
+  .assign-page thead th:nth-child(5){ width:17%; }
+
+  .assign-page tbody tr{
+    height:48px;
+  }
 
   .assign-page tbody td{
-    padding:13px 10px;
+    padding:8px 7px;
     border-bottom:1px solid var(--line2);
     color:var(--txt);
-    font-size:12px;
+    font-size:11.2px;
     vertical-align:middle;
     background:#fff;
   }
@@ -410,34 +523,77 @@
     border-bottom:none;
   }
 
+  .assign-page td:nth-child(2),
+  .assign-page th:nth-child(2),
+  .assign-page td:nth-child(3),
+  .assign-page th:nth-child(3),
+  .assign-page td:nth-child(4),
+  .assign-page th:nth-child(4),
+  .assign-page td:nth-child(5),
+  .assign-page th:nth-child(5){
+    text-align:center;
+  }
+
   .assign-page .sup-name{
     color:var(--txt);
-    font-size:12.7px;
-    font-weight:var(--fw-title);
-    line-height:1.7;
+    font-size:11.8px;
+    font-weight:var(--fw-strong);
+    line-height:1.65;
     margin:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
   }
 
   .assign-page .sub{
-    margin-top:4px;
+    margin-top:3px;
     color:var(--mut2);
-    font-size:10.9px;
-    line-height:1.8;
+    font-size:10.2px;
+    line-height:1.75;
     font-weight:var(--fw-normal);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
   }
 
-  .assign-page .badge{
+  .assign-page .badge,
+
+  .assign-page .badge.light{
+    background:#f7faf9;
+    border-color:#dce7e1;
+    color:#4f665b;
+  }
+
+  .assign-page .badge.balanced{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+  }
+
+  .assign-page .badge.high{
+    background:var(--amber-bg);
+    border-color:var(--amber-br);
+    color:var(--amber);
+  }
+
+  .assign-page .badge.very-high{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:var(--danger);
+  }
+
+  .assign-page .count{
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    min-height:29px;
-    min-width:68px;
-    padding:5px 10px;
+    min-height:24px;
+    min-width:52px;
+    padding:3px 8px;
     border-radius:999px;
     border:1px solid var(--line);
     background:var(--soft);
     color:var(--txt);
-    font-size:10.9px;
+    font-size:10.3px;
     font-weight:var(--fw-strong);
     white-space:nowrap;
   }
@@ -454,32 +610,76 @@
     color:var(--pink);
   }
 
-  .assign-page .count{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    min-height:29px;
-    min-width:68px;
-    padding:5px 10px;
-    border-radius:999px;
+
+  .assign-page .badge.light{
+    background:#f7faf9;
+    border-color:#dce7e1;
+    color:#4f665b;
+  }
+
+  .assign-page .badge.balanced{
     background:var(--ok-bg);
-    border:1px solid var(--ok-br);
+    border-color:var(--ok-br);
     color:var(--ok);
-    font-size:10.9px;
-    font-weight:var(--fw-strong);
+  }
+
+  .assign-page .badge.high{
+    background:var(--amber-bg);
+    border-color:var(--amber-br);
+    color:var(--amber);
+  }
+
+  .assign-page .badge.very-high{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:var(--danger);
+  }
+
+  .assign-page .count{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+  }
+
+  .assign-page .count.zero{
+    background:var(--amber-bg);
+    border-color:var(--amber-br);
+    color:var(--amber);
+  }
+
+  .assign-page .workload{
+    display:grid;
+    justify-items:center;
+    gap:3px;
+  }
+
+  .assign-page .workload-note{
+    color:var(--mut2);
+    font-size:10px;
+    line-height:1.4;
     white-space:nowrap;
+    font-weight:var(--fw-normal);
+  }
+
+  .assign-page .workload-note.warn{
+    color:var(--amber);
+  }
+
+  .assign-page .workload-note.danger{
+    color:var(--danger);
   }
 
   .assign-page .actions{
     display:flex;
-    gap:6px;
+    gap:5px;
     flex-wrap:wrap;
-    justify-content:flex-start;
+    justify-content:center;
   }
 
   .assign-page .a-btn{
-    height:30px;
-    padding:0 11px;
+    height:25px;
+    min-width:48px;
+    padding:0 8px;
     border-radius:999px;
     border:1px solid var(--line);
     background:#fff;
@@ -487,10 +687,10 @@
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    gap:5px;
+    gap:4px;
     text-decoration:none;
     cursor:pointer;
-    font-size:10.9px;
+    font-size:10px;
     font-weight:var(--fw-strong);
     white-space:nowrap;
     box-shadow:none;
@@ -499,12 +699,13 @@
 
   .assign-page .a-btn:hover{
     transform:translateY(-1px);
+    text-decoration:none;
   }
 
   .assign-page .a-btn.manage{
-    background:rgba(31,75,58,.08);
-    border-color:rgba(31,75,58,.14);
-    color:var(--vp-primary);
+    background:#f5faf8;
+    border-color:#d7e5df;
+    color:#2f6250;
   }
 
   .assign-page .a-btn.export{
@@ -518,12 +719,12 @@
   }
 
   .assign-page .empty{
-    padding:28px 16px !important;
+    padding:22px 16px !important;
     text-align:center;
     color:var(--mut);
-    font-size:11.7px;
+    font-size:11.4px;
     font-weight:var(--fw-normal);
-    line-height:1.95;
+    line-height:1.9;
     background:linear-gradient(180deg, #fff, #fbfcfb);
   }
 
@@ -531,37 +732,36 @@
     .assign-page .kpis{
       grid-template-columns:repeat(2, minmax(0,1fr));
     }
-  }
 
-  @media (max-width: 980px){
     .assign-page .filters-grid{
       grid-template-columns:1fr 1fr;
     }
 
-    .assign-page table{
-      table-layout:auto;
+    .assign-page .table-wrap{
+      overflow-x:auto;
     }
 
-    .assign-page thead th:nth-child(n){
-      width:auto;
+    .assign-page table{
+      min-width:860px;
     }
   }
 
-  @media (max-width: 640px){
-    .assign-page .kpis{
-      grid-template-columns:1fr;
-    }
-
-    .assign-page .filters-grid{
-      grid-template-columns:1fr;
-    }
-
+  @media (max-width: 700px){
+    .assign-page .shortcut-actions,
     .assign-page .filter-actions{
       width:100%;
     }
 
+    .assign-page .shortcut,
     .assign-page .btn{
       flex:1 1 auto;
+    }
+  }
+
+  @media (max-width: 640px){
+    .assign-page .kpis,
+    .assign-page .filters-grid{
+      grid-template-columns:1fr;
     }
 
     .assign-page .summary-card{
@@ -581,14 +781,40 @@
 
     <div class="summary-card">
       <div class="summary-note">
-        صفحة مرجعية مستقلة لعرض المشرفين وعدد المدارس المسندة لهم، مع الوصول السريع إلى صفحة إدارة الإسناد الخاصة بكل مشرف بصورة واضحة ومنظمة.
+        صفحة مرجعية لمتابعة إسناد المدارس للمشرفين، مع إظهار الحمل الإشرافي لكل مشرف، والانتقال السريع لإدارة مدارسه أو تصدير بياناته.
       </div>
 
       <div class="summary-right">
         <span class="chip"><span class="dot"></span> المشرفون: <b>{{ kpi_supervisors }}</b></span>
         <span class="chip">الإسنادات النشطة: <b>{{ kpi_assignments }}</b></span>
         <span class="chip">المدارس النشطة: <b>{{ kpi_schools }}</b></span>
-        <span class="chip">غير المسندة: <b>{{ kpi_unassigned_schools }}</b></span>
+      </div>
+    </div>
+
+    <div class="shortcut-card">
+      <div>
+        <h3 class="shortcut-title">اختصارات الإسناد</h3>
+        <div class="shortcut-note">روابط تشغيلية سريعة لمراجعة الحالات، وتصفية الحمل، والاستيراد أو التصدير.</div>
+      </div>
+
+      <div class="shortcut-actions">
+        <a class="shortcut review" href="{% url 'visits:admin_assignment_review' %}">
+          <span class="ico">✓</span>
+          مراجعة الإسناد
+        </a>
+
+        <a class="shortcut import" href="{% url 'visits:admin_schools_with_supervisors_import' %}">
+          <span class="ico">↥</span>
+          استيراد الإسناد
+        </a>
+
+        <a
+          class="shortcut export"
+          href="{% url 'visits:admin_export_unassigned_schools_excel' %}?q={{ q|urlencode }}&gender={{ gender|urlencode }}&sector={{ sector_id }}&active={% if only_active %}1{% else %}0{% endif %}&workload={{ workload|urlencode }}"
+        >
+          <span class="ico">↓</span>
+          تصدير غير المسندة
+        </a>
       </div>
     </div>
 
@@ -665,6 +891,18 @@
           </select>
         </div>
 
+        <div class="field">
+          <label>حالة الحمل</label>
+          <select class="select" name="workload">
+            <option value="all" {% if workload == "all" %}selected{% endif %}>كل الأحمال</option>
+            <option value="zero" {% if workload == "zero" %}selected{% endif %}>بلا مدارس</option>
+            <option value="light" {% if workload == "light" %}selected{% endif %}>خفيف 1-10</option>
+            <option value="balanced" {% if workload == "balanced" %}selected{% endif %}>متوازن 11-25</option>
+            <option value="high" {% if workload == "high" %}selected{% endif %}>مرتفع 26-35</option>
+            <option value="very_high" {% if workload == "very_high" %}selected{% endif %}>مرتفع جدًا +36</option>
+          </select>
+        </div>
+
         <div class="filter-actions">
           <button class="btn primary" type="submit">تطبيق</button>
           <a class="btn" href="{% url 'visits:admin_assignments_overview' %}">إعادة ضبط</a>
@@ -677,7 +915,7 @@
         <div class="table-head-left">
           <div class="hint">
             <span class="mini">✓</span>
-            اختر أي مشرف للانتقال إلى صفحة إدارة الإسناد الخاصة به
+            استخدم فلتر حالة الحمل للوصول إلى المشرفين بلا مدارس أو ذوي الحمل المرتفع.
           </div>
         </div>
 
@@ -686,9 +924,9 @@
 
           <a
             class="btn export"
-            href="{% url 'visits:admin_export_unassigned_schools_excel' %}?q={{ q|urlencode }}&gender={{ gender|urlencode }}&sector={{ sector_id }}&active={% if only_active %}1{% else %}0{% endif %}"
+            href="{% url 'visits:admin_export_unassigned_schools_excel' %}?q={{ q|urlencode }}&gender={{ gender|urlencode }}&sector={{ sector_id }}&active={% if only_active %}1{% else %}0{% endif %}&workload={{ workload|urlencode }}"
           >
-            تصدير المدارس غير المسندة
+            تصدير غير المسندة
           </a>
         </div>
       </div>
@@ -698,10 +936,9 @@
           <thead>
             <tr>
               <th>المشرف</th>
-              <th>القطاع</th>
               <th>الجنس</th>
-              <th>الإسناد النشط</th>
-              <th>إجمالي الإسناد</th>
+              <th>الإسناد</th>
+              <th>مؤشر الحمل</th>
               <th>إجراءات</th>
             </tr>
           </thead>
@@ -711,16 +948,17 @@
                 <td>
                   <div class="sup-name">{{ sup.full_name }}</div>
                   <div class="sub">
-                    هوية: {{ sup.national_id }}{% if sup.mobile %} — جوال: {{ sup.mobile }}{% endif %}
+                    هوية: {{ sup.national_id }}
+                    {% if sup.mobile %} — جوال: {{ sup.mobile }}{% endif %}
                   </div>
-                </td>
-
-                <td>
-                  {% if sup.sector %}
-                    {{ sup.sector.name }}
-                  {% else %}
-                    <span class="muted">—</span>
-                  {% endif %}
+                  <div class="sub">
+                    القطاع:
+                    {% if sup.sector %}
+                      {{ sup.sector.name }}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </div>
                 </td>
 
                 <td>
@@ -729,16 +967,38 @@
                   {% elif sup.gender == "girls" %}
                     <span class="badge girls">بنات</span>
                   {% else %}
-                    <span class="muted">—</span>
+                    <span class="muted">غير محدد</span>
                   {% endif %}
                 </td>
 
                 <td>
-                  <span class="count">{{ sup.active_assignment_count }}</span>
+                  <div class="workload">
+                    <span class="count {% if sup.active_assignment_count == 0 %}zero{% endif %}">
+                      نشط: {{ sup.active_assignment_count }}
+                    </span>
+                    <span class="workload-note">الإجمالي: {{ sup.total_assignment_count }}</span>
+                  </div>
                 </td>
 
                 <td>
-                  <span class="badge">{{ sup.total_assignment_count }}</span>
+                  <div class="workload">
+                    {% if sup.active_assignment_count == 0 %}
+                      <span class="badge high">بلا مدارس</span>
+                      <span class="workload-note warn">يحتاج مراجعة</span>
+                    {% elif sup.active_assignment_count <= 10 %}
+                      <span class="badge light">خفيف</span>
+                      <span class="workload-note">{{ sup.active_assignment_count }} مدرسة</span>
+                    {% elif sup.active_assignment_count <= 25 %}
+                      <span class="badge balanced">متوازن</span>
+                      <span class="workload-note">{{ sup.active_assignment_count }} مدرسة</span>
+                    {% elif sup.active_assignment_count <= 35 %}
+                      <span class="badge high">مرتفع</span>
+                      <span class="workload-note warn">{{ sup.active_assignment_count }} مدرسة</span>
+                    {% else %}
+                      <span class="badge very-high">مرتفع جدًا</span>
+                      <span class="workload-note danger">{{ sup.active_assignment_count }} مدرسة</span>
+                    {% endif %}
+                  </div>
                 </td>
 
                 <td>
@@ -755,7 +1015,7 @@
               </tr>
             {% empty %}
               <tr>
-                <td colspan="6" class="empty">
+                <td colspan="5" class="empty">
                   لا توجد نتائج مطابقة للبحث أو التصفية الحالية.
                 </td>
               </tr>

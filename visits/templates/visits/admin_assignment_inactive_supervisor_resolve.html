@@ -1,0 +1,597 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}معالجة مشرف غير نشط{% endblock %}
+{% block page_messages %}{% endblock %}
+
+{% block header_title %}معالجة مشرف غير نشط لديه مدارس{% endblock %}
+{% block header_subtitle %}مراجعة المدارس المسندة للمشرف غير النشط واتخاذ الإجراء المناسب{% endblock %}
+
+{% block extra_css %}
+<style>
+  .inactive-sup-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+
+    --fw-hero:700;
+    --fw-title:600;
+    --fw-strong:500;
+    --fw-normal:400;
+
+    --card:#ffffff;
+    --soft:#f7f9f8;
+
+    --txt:var(--vp-text);
+    --mut:var(--vp-text-soft);
+    --mut2:var(--vp-text-faint);
+
+    --line:var(--vp-line);
+    --line2:var(--vp-line-2);
+    --line-strong:var(--vp-line-strong);
+
+    --ok:#1f6b3f;
+    --ok-bg:var(--vp-ok-bg);
+    --ok-br:var(--vp-ok-border);
+
+    --blue:#245fd6;
+    --blue-bg:rgba(37,99,235,.08);
+    --blue-br:rgba(37,99,235,.16);
+
+    --warn:#8b5c1f;
+    --warn-bg:var(--vp-warn-bg);
+    --warn-br:var(--vp-warn-border);
+
+    --danger:#9f3129;
+    --danger-bg:rgba(225,29,72,.055);
+    --danger-br:rgba(225,29,72,.13);
+
+    --shadow:0 8px 20px rgba(22,36,29,.038);
+    --shadow2:0 4px 12px rgba(22,36,29,.028);
+  }
+
+  .inactive-sup-page *{
+    box-sizing:border-box;
+    font-family:var(--ff) !important;
+  }
+
+  .inactive-sup-page .wrap{
+    display:grid;
+    gap:12px;
+    margin-top:2px;
+  }
+
+  .inactive-sup-page .summary-card,
+  .inactive-sup-page .warning-card,
+  .inactive-sup-page .kpi,
+  .inactive-sup-page .table-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:20px;
+    box-shadow:var(--shadow);
+  }
+
+  .inactive-sup-page .summary-card{
+    padding:13px 15px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,252,251,.98));
+  }
+
+  .inactive-sup-page .summary-title{
+    color:var(--txt);
+    font-size:14px;
+    font-weight:var(--fw-title);
+    line-height:1.8;
+  }
+
+  .inactive-sup-page .summary-note{
+    color:var(--mut);
+    font-size:11.4px;
+    line-height:1.85;
+    font-weight:var(--fw-normal);
+    max-width:780px;
+  }
+
+  .inactive-sup-page .summary-right{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    flex-wrap:wrap;
+  }
+
+  .inactive-sup-page .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    min-height:30px;
+    padding:5px 10px;
+    border-radius:999px;
+    background:var(--soft);
+    border:1px solid var(--line);
+    color:var(--mut);
+    font-size:10.8px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+    text-decoration:none;
+    transition:.16s ease;
+  }
+
+  .inactive-sup-page a.chip:hover{
+    background:#fcfdfc;
+    transform:translateY(-1px);
+    text-decoration:none;
+  }
+
+  .inactive-sup-page .chip.danger{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:var(--danger);
+  }
+
+  .inactive-sup-page .chip.export{
+    background:linear-gradient(180deg, #fffdf7, #fffaf0);
+    border-color:var(--warn-br);
+    color:var(--warn);
+  }
+
+  .inactive-sup-page .warning-card{
+    padding:12px 14px;
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    background:linear-gradient(180deg, #fffdf8, #fffaf0);
+    border-color:var(--warn-br);
+    box-shadow:var(--shadow2);
+  }
+
+  .inactive-sup-page .warning-icon{
+    width:34px;
+    height:34px;
+    border-radius:13px;
+    display:grid;
+    place-items:center;
+    background:var(--warn-bg);
+    border:1px solid var(--warn-br);
+    color:var(--warn);
+    font-size:14px;
+    flex:0 0 auto;
+  }
+
+  .inactive-sup-page .warning-title{
+    color:#7a5400;
+    font-size:12.2px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+  }
+
+  .inactive-sup-page .warning-text{
+    color:var(--mut);
+    font-size:10.9px;
+    line-height:1.85;
+    margin-top:2px;
+  }
+
+  .inactive-sup-page .kpis{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:8px;
+  }
+
+  .inactive-sup-page .kpi{
+    box-shadow:var(--shadow2);
+    padding:11px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    min-height:66px;
+    border-radius:17px;
+  }
+
+  .inactive-sup-page .kpi-label{
+    font-size:10.7px;
+    font-weight:var(--fw-normal);
+    color:var(--mut);
+    line-height:1.7;
+  }
+
+  .inactive-sup-page .kpi-value{
+    font-size:18px;
+    font-weight:var(--fw-title);
+    color:var(--txt);
+    line-height:1.2;
+  }
+
+  .inactive-sup-page .kpi-icon{
+    width:34px;
+    height:34px;
+    border-radius:12px;
+    display:grid;
+    place-items:center;
+    border:1px solid var(--line);
+    background:var(--soft);
+    color:var(--vp-primary);
+    font-size:11px;
+    font-weight:var(--fw-title);
+    flex:0 0 auto;
+  }
+
+  .inactive-sup-page .kpi.danger .kpi-icon{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:var(--danger);
+  }
+
+  .inactive-sup-page .kpi.warn .kpi-icon{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn);
+  }
+
+  .inactive-sup-page .table-card{
+    overflow:hidden;
+    background:#fff;
+  }
+
+  .inactive-sup-page .table-head{
+    padding:10px 13px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, #fcfdfc, #f8fbf9);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .inactive-sup-page .hint{
+    color:var(--mut);
+    font-size:10.8px;
+    font-weight:var(--fw-normal);
+    line-height:1.9;
+  }
+
+  .inactive-sup-page .hint b{
+    color:var(--txt);
+    font-weight:var(--fw-title);
+  }
+
+  .inactive-sup-page .table-wrap{
+    overflow-x:hidden;
+  }
+
+  .inactive-sup-page table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    table-layout:fixed;
+  }
+
+  .inactive-sup-page thead th{
+    background:#f7faf8;
+    border-bottom:1px solid #d9e2dd;
+    padding:9px 8px;
+    text-align:right;
+    color:#687a70;
+    font-size:10.7px;
+    font-weight:var(--fw-title);
+    white-space:nowrap;
+  }
+
+  .inactive-sup-page thead th:nth-child(1){ width:13%; }
+  .inactive-sup-page thead th:nth-child(2){ width:35%; }
+  .inactive-sup-page thead th:nth-child(3){ width:10%; }
+  .inactive-sup-page thead th:nth-child(4){ width:20%; }
+  .inactive-sup-page thead th:nth-child(5){ width:12%; }
+  .inactive-sup-page thead th:nth-child(6){ width:10%; }
+
+  .inactive-sup-page tbody td{
+    padding:9px 8px;
+    border-bottom:1px solid var(--line2);
+    color:var(--txt);
+    font-size:11.4px;
+    vertical-align:middle;
+    background:#fff;
+  }
+
+  .inactive-sup-page tbody tr:nth-child(even) td{
+    background:#fcfdfc;
+  }
+
+  .inactive-sup-page tbody tr:hover td{
+    background:#f8fbf9;
+  }
+
+  .inactive-sup-page .name{
+    font-size:12px;
+    font-weight:var(--fw-strong);
+    color:var(--txt);
+    line-height:1.7;
+  }
+
+  .inactive-sup-page .sub{
+    margin-top:3px;
+    color:var(--mut2);
+    font-size:10.4px;
+    line-height:1.75;
+    font-weight:var(--fw-normal);
+  }
+
+  .inactive-sup-page .badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:24px;
+    min-width:58px;
+    padding:3px 8px;
+    border-radius:999px;
+    font-size:10.3px;
+    font-weight:var(--fw-strong);
+    border:1px solid transparent;
+    white-space:nowrap;
+  }
+
+  .inactive-sup-page .badge.active{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+  }
+
+  .inactive-sup-page .badge.inactive{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:var(--danger);
+  }
+
+  .inactive-sup-page .actions-box{
+    padding:12px 13px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    background:#fbfcfb;
+    border-top:1px solid var(--line);
+  }
+
+  .inactive-sup-page .btn{
+    height:35px;
+    padding:0 13px;
+    border-radius:999px;
+    border:1px solid var(--line-strong);
+    background:#fff;
+    color:var(--txt);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    text-decoration:none;
+    cursor:pointer;
+    white-space:nowrap;
+    font-size:10.9px;
+    font-weight:var(--fw-strong);
+    box-shadow:0 4px 10px rgba(22,36,29,.025);
+    transition:.16s ease;
+  }
+
+  .inactive-sup-page .btn:hover{
+    transform:translateY(-1px);
+    background:#fcfdfc;
+    text-decoration:none;
+  }
+
+  .inactive-sup-page .btn.primary{
+    background:var(--vp-primary);
+    border-color:var(--vp-primary);
+    color:#fff;
+  }
+
+  .inactive-sup-page .btn.danger{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:var(--danger);
+  }
+
+  .inactive-sup-page .btn.export{
+    background:linear-gradient(180deg, #fffdf7, #fffaf0);
+    border-color:var(--warn-br);
+    color:var(--warn);
+  }
+
+  .inactive-sup-page .confirm-check{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color:var(--mut);
+    font-size:10.8px;
+    font-weight:var(--fw-strong);
+  }
+
+  .inactive-sup-page .confirm-check input{
+    width:16px;
+    height:16px;
+    accent-color:var(--vp-primary);
+  }
+
+  .inactive-sup-page .empty{
+    padding:20px;
+    text-align:center;
+    color:var(--mut);
+    font-size:11.4px;
+  }
+
+  @media(max-width:900px){
+    .inactive-sup-page .kpis{
+      grid-template-columns:1fr;
+    }
+
+    .inactive-sup-page .table-wrap{
+      overflow-x:auto;
+    }
+
+    .inactive-sup-page table{
+      min-width:860px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="inactive-sup-page">
+  <div class="wrap">
+
+    <div class="summary-card">
+      <div>
+        <div class="summary-title">{{ supervisor.full_name }}</div>
+        <div class="summary-note">
+          السجل المدني: {{ supervisor.national_id|default:"—" }}
+          —
+          الجوال: {{ supervisor.mobile|default:"—" }}
+          —
+          البريد: {{ supervisor.email|default:"—" }}
+        </div>
+      </div>
+
+      <div class="summary-right">
+        <span class="chip danger">مشرف غير نشط</span>
+        <a class="chip" href="{% url 'visits:admin_assignment_review' %}?issue=inactive_supervisor_assignments">
+          العودة للمراجعة
+        </a>
+        <a class="chip export" href="{% url 'visits:admin_assignment_inactive_supervisor_export' supervisor.id %}">
+          تصدير المدارس
+        </a>
+      </div>
+    </div>
+
+    <div class="warning-card">
+      <div class="warning-icon">!</div>
+      <div>
+        <div class="warning-title">تنبيه قبل تعطيل الإسنادات</div>
+        <div class="warning-text">
+          تعطيل الإسنادات يعني أن المدارس ستصبح غير مرتبطة بهذا المشرف في الإسناد النشط. لا يتم حذف البيانات، ويمكن إعادة الإسناد لاحقًا عبر الاستيراد أو إدارة الإسناد.
+        </div>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi danger">
+        <div>
+          <div class="kpi-label">إسنادات نشطة للمشرف</div>
+          <div class="kpi-value">{{ assignment_count }}</div>
+        </div>
+        <div class="kpi-icon">01</div>
+      </div>
+
+      <div class="kpi">
+        <div>
+          <div class="kpi-label">مدارس نشطة</div>
+          <div class="kpi-value">{{ active_school_count }}</div>
+        </div>
+        <div class="kpi-icon">02</div>
+      </div>
+
+      <div class="kpi warn">
+        <div>
+          <div class="kpi-label">مدارس معطلة ضمن الإسناد</div>
+          <div class="kpi-value">{{ inactive_school_count }}</div>
+        </div>
+        <div class="kpi-icon">03</div>
+      </div>
+    </div>
+
+    <form method="post" action="{% url 'visits:admin_assignment_inactive_supervisor_disable' supervisor.id %}" class="table-card">
+      {% csrf_token %}
+
+      <div class="table-head">
+        <div class="hint">المدارس المسندة حاليًا لهذا المشرف غير النشط.</div>
+        <div class="hint">الإجراء المقترح: تعطيل الإسنادات أو إعادة توزيعها عبر Excel.</div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>الرقم الإحصائي</th>
+              <th>المدرسة</th>
+              <th>الجنس</th>
+              <th>القطاع</th>
+              <th>حالة المدرسة</th>
+              <th>حالة الإسناد</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for assignment in assignments %}
+              <tr>
+                <td>{{ assignment.school.stat_code|default:"—" }}</td>
+
+                <td>
+                  <div class="name">{{ assignment.school.name }}</div>
+                </td>
+
+                <td>
+                  {% if assignment.school.gender == "boys" %}
+                    بنين
+                  {% elif assignment.school.gender == "girls" %}
+                    بنات
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if assignment.school.sector %}
+                    {{ assignment.school.sector.name }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if assignment.school.is_active %}
+                    <span class="badge active">نشطة</span>
+                  {% else %}
+                    <span class="badge inactive">معطلة</span>
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if assignment.is_active %}
+                    <span class="badge active">نشط</span>
+                  {% else %}
+                    <span class="badge inactive">غير نشط</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="empty">لا توجد إسنادات نشطة لهذا المشرف.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="actions-box">
+        <label class="confirm-check">
+          <input type="checkbox" name="confirm" value="1">
+          أؤكد تعطيل جميع الإسنادات النشطة لهذا المشرف غير النشط.
+        </label>
+
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <a class="btn" href="{% url 'visits:admin_assignment_review' %}?issue=inactive_supervisor_assignments">إلغاء</a>
+          <a class="btn export" href="{% url 'visits:admin_schools_with_supervisors_import' %}">إعادة التوزيع عبر Excel</a>
+          <a class="btn primary" href="{% url 'visits:admin_supervisor_assignments' supervisor.id %}">فتح صفحة إسناد المشرف</a>
+          {% if assignment_count > 0 %}
+            <button class="btn danger" type="submit">تعطيل جميع الإسنادات</button>
+          {% else %}
+            <button class="btn" type="button" disabled>لا توجد إسنادات نشطة</button>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+
+  </div>
+</section>
+{% endblock %}

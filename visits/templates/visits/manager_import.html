@@ -2,21 +2,20 @@
 {% extends "visits/base.html" %}
 {% load static %}
 
-{% block title %}استيراد ملفات Excel{% endblock %}
+{% block title %}مركز الاستيراد{% endblock %}
 {% block page_messages %}{% endblock %}
 
 {% block header_title %}مركز الاستيراد{% endblock %}
-{% block header_subtitle %}رفع ملفات المدارس والمشرفين والقادة والإسنادات وعرض نتائج المعالجة بشكل منظم{% endblock %}
+{% block header_subtitle %}إدارة رفع ملفات البيانات الأساسية والإسنادات، ومراجعة نتائج المعالجة من صفحة واحدة{% endblock %}
 
 {% block extra_css %}
 <style>
   .import-page{
     --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
 
-    --fw-title:700;
-    --fw-strong:600;
-    --fw-normal:500;
-    --fw-light:400;
+    --fw-title:600;
+    --fw-strong:500;
+    --fw-normal:400;
 
     --card:#ffffff;
     --card-soft:#fbfcfb;
@@ -30,52 +29,57 @@
     --line2:var(--vp-line-2);
     --line-strong:var(--vp-line-strong);
 
-    --ok:#1f6b3f;
+    --ok:var(--vp-ok-text);
     --ok-bg:var(--vp-ok-bg);
     --ok-br:var(--vp-ok-border);
 
-    --warn:#8b5c1f;
+    --warn:var(--vp-warn-text);
     --warn-bg:var(--vp-warn-bg);
     --warn-br:var(--vp-warn-border);
 
-    --err:#9f3129;
-    --err-bg:var(--vp-danger-bg);
-    --err-br:var(--vp-danger-border);
+    --danger:var(--vp-danger-text);
+    --danger-bg:var(--vp-danger-bg);
+    --danger-br:var(--vp-danger-border);
+
+    --primary:var(--vp-primary);
+    --primary-2:var(--vp-primary-2);
+    --primary-soft:var(--vp-primary-soft);
+    --primary-soft-br:var(--vp-primary-soft-border);
 
     --blue:#245fd6;
     --blue-bg:rgba(37,99,235,.08);
     --blue-br:rgba(37,99,235,.16);
 
-    --cyan:#0f766e;
-    --cyan-bg:rgba(8,145,178,.10);
-    --cyan-br:rgba(8,145,178,.18);
+    --shadow:var(--vp-shadow);
+    --shadow2:var(--vp-shadow-soft);
 
-    --shadow:0 10px 24px rgba(22,36,29,.045);
-    --shadow2:0 6px 16px rgba(22,36,29,.032);
+    display:grid;
+    gap:10px;
+    margin-top:2px;
+    font-family:var(--ff);
+    direction:rtl;
+    color:var(--txt);
   }
 
   .import-page *{
     box-sizing:border-box;
     font-family:var(--ff) !important;
+    letter-spacing:.02px;
   }
 
-  .import-page{
-    display:grid;
-    gap:12px;
-    margin-top:2px;
-  }
-
-  .summary-card,
-  .action-card,
-  .import-card{
+  .import-page .summary-card,
+  .import-page .action-card,
+  .import-page .import-card,
+  .import-page .guide-card,
+  .import-page .result-card{
     background:var(--card);
     border:1px solid var(--line);
-    border-radius:20px;
     box-shadow:var(--shadow);
   }
 
-  .summary-card{
-    padding:14px 16px;
+  .import-page .summary-card{
+    border-radius:20px;
+    padding:11px 14px;
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -84,41 +88,57 @@
     background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,252,251,.98));
   }
 
-  .summary-note{
+  .import-page .summary-note{
     color:var(--mut);
-    font-size:12px;
+    font-size:11.3px;
     line-height:1.9;
     font-weight:var(--fw-normal);
+    max-width:840px;
   }
 
-  .summary-right{
+  .import-page .summary-right,
+  .import-page .action-buttons,
+  .import-page .import-actions,
+  .import-page .result-actions{
     display:flex;
     align-items:center;
     gap:7px;
     flex-wrap:wrap;
   }
 
-  .chip{
+  .import-page .chip{
     display:inline-flex;
     align-items:center;
     gap:8px;
-    min-height:32px;
-    padding:6px 11px;
+    min-height:30px;
+    padding:5px 10px;
     border-radius:999px;
     background:var(--soft);
     border:1px solid var(--line);
     color:var(--mut);
-    font-size:11.2px;
+    font-size:11px;
     font-weight:var(--fw-strong);
     white-space:nowrap;
   }
 
-  .chip b{
+  .import-page .chip b{
     color:var(--txt);
     font-weight:var(--fw-title);
   }
 
-  .dot{
+  .import-page .chip.ok{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+  }
+
+  .import-page .chip.warn{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn);
+  }
+
+  .import-page .dot{
     width:8px;
     height:8px;
     border-radius:50%;
@@ -127,13 +147,14 @@
     flex:0 0 auto;
   }
 
-  .dot.ok{
+  .import-page .dot.ok{
     background:#2f6250;
     box-shadow:0 0 0 4px rgba(47,98,80,.10);
   }
 
-  .action-card{
-    padding:13px;
+  .import-page .action-card{
+    border-radius:18px;
+    padding:10px 12px;
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -141,23 +162,17 @@
     flex-wrap:wrap;
   }
 
-  .action-copy{
+  .import-page .action-copy{
     color:var(--mut);
-    font-size:11.3px;
+    font-size:10.9px;
     line-height:1.9;
     font-weight:var(--fw-normal);
+    max-width:760px;
   }
 
-  .action-buttons{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    flex-wrap:wrap;
-  }
-
-  .btn{
-    height:38px;
-    padding:0 14px;
+  .import-page .btn{
+    height:33px;
+    padding:0 12px;
     border-radius:999px;
     border:1px solid var(--line-strong);
     background:#fff;
@@ -165,387 +180,537 @@
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    gap:6px;
+    gap:7px;
     text-decoration:none;
     cursor:pointer;
     white-space:nowrap;
-    font-size:11.5px;
+    font-size:10.6px;
     font-weight:var(--fw-strong);
-    box-shadow:0 4px 10px rgba(22,36,29,.03);
-    transition:.16s ease;
+    transition:transform .12s ease, border-color .12s ease, background .12s ease, opacity .12s ease;
   }
 
-  .btn:hover{
+  .import-page .btn:hover{
     transform:translateY(-1px);
     background:#fcfdfc;
   }
 
-  .btn.primary{
-    background:var(--vp-primary);
-    border-color:var(--vp-primary);
+  .import-page .btn.primary{
+    background:var(--primary);
+    border-color:var(--primary);
     color:#fff;
   }
 
-  .btn.primary:hover{
-    background:var(--vp-primary-2);
-    border-color:var(--vp-primary-2);
+  .import-page .btn.primary:hover{
+    background:var(--primary-2);
+    border-color:var(--primary-2);
   }
 
-  .btn.soft{
-    background:var(--vp-primary-soft);
-    border-color:var(--vp-primary-soft-border);
-    color:var(--vp-primary);
+  .import-page .btn.soft{
+    background:var(--primary-soft);
+    border-color:var(--primary-soft-br);
+    color:var(--primary);
   }
 
-  .import-card{
+  .import-page .btn.warn{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn);
+  }
+
+  .import-page .import-layout{
+    display:grid;
+    grid-template-columns:minmax(0, 1fr) 300px;
+    gap:10px;
+    align-items:start;
+  }
+
+  .import-page .import-card,
+  .import-page .guide-card,
+  .import-page .result-card{
+    border-radius:20px;
     overflow:hidden;
-    background:#fff;
   }
 
-  .import-card-head{
-    padding:12px 14px;
+  .import-page .card-head{
+    padding:11px 13px;
     border-bottom:1px solid var(--line);
     background:linear-gradient(180deg, #fcfdfc, #f8fbf9);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    flex-wrap:wrap;
   }
 
-  .import-card-head b{
-    display:block;
-    font-size:12.9px;
+  .import-page .head-main{
+    display:grid;
+    gap:2px;
+    min-width:0;
+  }
+
+  .import-page .card-title{
+    margin:0;
+    font-size:12.8px;
     font-weight:var(--fw-title);
     color:var(--txt);
     line-height:1.7;
   }
 
-  .import-card-head .hint{
-    margin-top:4px;
+  .import-page .card-sub{
+    margin:0;
     color:var(--mut);
-    font-size:11.1px;
-    line-height:1.9;
+    font-size:10.8px;
+    line-height:1.8;
     font-weight:var(--fw-normal);
   }
 
-  .import-form{
-    padding:14px;
-  }
-
-  .import-grid{
+  .import-page .import-form{
+    padding:13px;
     display:grid;
-    grid-template-columns:1fr 1fr;
     gap:12px;
   }
 
-  .import-field{
+  .import-page .import-grid{
     display:grid;
-    gap:6px;
-    padding:12px;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:10px;
+  }
+
+  .import-page .import-field{
+    min-height:118px;
+    padding:11px;
     border-radius:18px;
     border:1px solid var(--line);
-    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,252,251,.98));
+    background:linear-gradient(180deg, rgba(255,255,255,.99), rgba(251,252,251,.99));
     box-shadow:var(--shadow2);
+    display:grid;
+    gap:7px;
+    align-content:start;
+    transition:border-color .12s ease, background .12s ease, transform .12s ease;
   }
 
-  .import-field.full{
+  .import-page .import-field:hover{
+    border-color:#cfdad4;
+    background:#fff;
+    transform:translateY(-1px);
+  }
+
+  .import-page .import-field.full{
     grid-column:1 / -1;
+    min-height:104px;
   }
 
-  .import-field label{
-    font-size:12.5px;
+  .import-page .field-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:8px;
+  }
+
+  .import-page .field-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    min-width:0;
+  }
+
+  .import-page .field-icon{
+    width:32px;
+    height:32px;
+    border-radius:13px;
+    display:grid;
+    place-items:center;
+    background:var(--primary-soft);
+    border:1px solid var(--primary-soft-br);
+    color:var(--primary);
+    font-size:14px;
+    flex:0 0 auto;
+  }
+
+  .import-page .field-label{
+    display:grid;
+    gap:1px;
+  }
+
+  .import-page .field-label label{
+    display:block;
+    font-size:12px;
     font-weight:var(--fw-title);
     color:var(--txt);
-    line-height:1.7;
+    line-height:1.65;
   }
 
-  .import-field input[type=file]{
+  .import-page .field-tag{
+    color:var(--mut2);
+    font-size:10.3px;
+    font-weight:var(--fw-normal);
+    line-height:1.55;
+  }
+
+  .import-page .smallmut{
+    color:var(--mut);
+    font-size:10.8px;
+    line-height:1.85;
+    font-weight:var(--fw-normal);
+  }
+
+  .import-page input[type=file]{
     width:100%;
-    padding:10px 12px;
+    padding:9px 10px;
+    min-height:40px;
     border-radius:14px;
     border:1px solid var(--line);
     background:#fff;
-    font-size:12.6px;
+    font-size:11.5px;
     outline:none;
     color:var(--txt);
     font-weight:var(--fw-normal);
   }
 
-  .import-field input[type=file]:focus{
+  .import-page input[type=file]:focus{
     border-color:#c7d6ce;
     box-shadow:0 0 0 4px rgba(47,98,80,.06);
   }
 
-  .smallmut{
-    color:var(--mut);
-    font-size:11.6px;
-    line-height:1.9;
-    font-weight:var(--fw-normal);
+  .import-page input[type=file]::file-selector-button{
+    margin-inline-start:8px;
+    border:1px solid var(--primary-soft-br);
+    background:var(--primary-soft);
+    color:var(--primary);
+    border-radius:999px;
+    padding:6px 10px;
+    font-family:var(--ff);
+    font-weight:var(--fw-strong);
+    cursor:pointer;
   }
 
-  .import-form-actions{
-    margin-top:12px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    flex-wrap:wrap;
-  }
-
-  .import-btns{
-    display:flex;
-    gap:8px;
-    flex-wrap:wrap;
-  }
-
-  .result-wrap{
-    padding:14px;
-    border-top:1px solid var(--line);
-    background:#fff;
-  }
-
-  .result-title{
+  .import-page .import-form-actions{
+    padding:10px 11px;
+    border-radius:17px;
+    border:1px solid var(--line);
+    background:#fbfcfb;
     display:flex;
     align-items:center;
     justify-content:space-between;
     gap:10px;
     flex-wrap:wrap;
-    margin-bottom:10px;
   }
 
-  .result-title b{
-    font-size:12.9px;
-    font-weight:var(--fw-title);
+  .import-page .guide-body{
+    padding:12px;
+    display:grid;
+    gap:9px;
+  }
+
+  .import-page .guide-item{
+    padding:10px;
+    border-radius:16px;
+    border:1px solid var(--line);
+    background:#fff;
+    display:grid;
+    gap:4px;
+  }
+
+  .import-page .guide-kicker{
+    color:var(--mut2);
+    font-size:10.4px;
+    line-height:1.6;
+    font-weight:var(--fw-normal);
+  }
+
+  .import-page .guide-title{
     color:var(--txt);
+    font-size:11.8px;
+    line-height:1.7;
+    font-weight:var(--fw-title);
   }
 
-  .table-wrap{
+  .import-page .guide-text{
+    color:var(--mut);
+    font-size:10.7px;
+    line-height:1.85;
+    font-weight:var(--fw-normal);
+  }
+
+  .import-page .result-card{
+    margin-top:10px;
+  }
+
+  .import-page .result-body{
+    padding:13px;
+    display:grid;
+    gap:10px;
+  }
+
+  .import-page .result-kpis{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:8px;
+  }
+
+  .import-page .result-kpi{
+    padding:9px 10px;
+    border-radius:16px;
+    border:1px solid var(--line);
+    background:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+  }
+
+  .import-page .result-kpi .label{
+    color:var(--mut);
+    font-size:10.5px;
+    font-weight:var(--fw-normal);
+    line-height:1.5;
+  }
+
+  .import-page .result-kpi .num{
+    color:var(--txt);
+    font-size:16px;
+    font-weight:var(--fw-title);
+    line-height:1.1;
+  }
+
+  .import-page .table-wrap{
     border:1px solid var(--line);
     border-radius:18px;
     overflow:hidden;
     background:#fff;
   }
 
-  .table-scroll{
+  .import-page .table-scroll{
     overflow:auto;
   }
 
-  .result-table{
+  .import-page .result-table{
     width:100%;
     border-collapse:separate;
     border-spacing:0;
     table-layout:fixed;
   }
 
-  .result-table thead th{
+  .import-page .result-table thead th{
     position:sticky;
     top:0;
     z-index:2;
     background:#f7faf8;
     border-bottom:1px solid #d9e2dd;
-    padding:11px 10px;
+    padding:9px 10px;
     text-align:center;
     color:#687a70;
-    font-size:11px;
+    font-size:10.8px;
     font-weight:var(--fw-title);
     white-space:nowrap;
   }
 
-  .result-table tbody td{
+  .import-page .result-table tbody td{
     border-bottom:1px solid var(--line2);
-    padding:12px 10px;
-    font-size:12px;
+    padding:10px;
+    font-size:11.5px;
     text-align:center;
     color:var(--txt);
     font-weight:var(--fw-normal);
     background:#fff;
   }
 
-  .result-table tbody tr:nth-child(even) td{
+  .import-page .result-table tbody tr:nth-child(even) td{
     background:#fcfdfc;
   }
 
-  .result-table tbody tr:last-child td{
+  .import-page .result-table tbody tr:last-child td{
     border-bottom:none;
   }
 
-  .badge{
+  .import-page .file-name-cell{
+    text-align:right !important;
+    font-weight:var(--fw-strong) !important;
+  }
+
+  .import-page .badge{
     display:inline-flex;
     align-items:center;
     justify-content:center;
     min-width:46px;
-    padding:6px 10px;
+    padding:5px 9px;
     border-radius:999px;
     font-weight:var(--fw-strong);
-    font-size:11.2px;
+    font-size:10.8px;
     border:1px solid var(--line);
     background:var(--soft);
     color:var(--txt);
   }
 
-  .badge.ok{
+  .import-page .badge.ok{
     background:var(--ok-bg);
     border-color:var(--ok-br);
     color:var(--ok);
   }
 
-  .badge.warn{
+  .import-page .badge.warn{
     background:var(--warn-bg);
     border-color:var(--warn-br);
     color:var(--warn);
   }
 
-  .badge.err{
-    background:var(--err-bg);
-    border-color:var(--err-br);
-    color:var(--err);
+  .import-page .badge.err{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:var(--danger);
   }
 
-  .import-note{
-    margin-top:12px;
+  .import-page .import-note{
     color:var(--mut);
-    font-size:11.7px;
+    font-size:10.9px;
     line-height:1.9;
     font-weight:var(--fw-normal);
+    padding:10px 11px;
+    border-radius:15px;
+    border:1px solid var(--warn-br);
+    background:var(--warn-bg);
   }
 
   .mm-backdrop{
     position:fixed;
     inset:0;
-    background:rgba(2,6,23,.45);
+    background:rgba(31,44,37,.36);
     display:none;
     align-items:center;
     justify-content:center;
     padding:18px;
     z-index:10001;
+    backdrop-filter:blur(3px);
   }
 
-  .mm-backdrop.show{
-    display:flex;
-  }
+  .mm-backdrop.show{ display:flex; }
 
   .mm-card{
-    width:min(560px, 100%);
+    width:min(540px, 100%);
     border-radius:20px;
-    background:rgba(255,255,255,.97);
-    border:1px solid rgba(226,232,240,.95);
-    box-shadow:0 22px 60px rgba(2,6,23,.22);
+    background:#fff;
+    border:1px solid var(--line);
+    box-shadow:0 30px 80px rgba(22,36,29,.16);
     overflow:hidden;
-    backdrop-filter:blur(10px);
-    transform:translateY(6px);
-    opacity:.98;
     animation:mmIn .14s ease-out;
   }
 
   @keyframes mmIn{
     from{ transform:translateY(14px); opacity:0; }
-    to{ transform:translateY(6px); opacity:.98; }
+    to{ transform:translateY(0); opacity:1; }
   }
 
   .mm-head{
-    padding:14px 16px;
+    padding:10px 13px;
     display:flex;
     align-items:center;
     justify-content:space-between;
     gap:10px;
-    border-bottom:1px solid rgba(226,232,240,.95);
-    background:linear-gradient(180deg, rgba(248,250,252,.95), rgba(255,255,255,.96));
+    border-bottom:1px solid var(--line);
+    background:#fafcfb;
   }
 
   .mm-title{
     margin:0;
-    font-size:14px;
+    font-size:13px;
     font-weight:var(--fw-title);
     color:var(--txt);
   }
 
   .mm-x{
-    width:38px;
-    height:38px;
-    border-radius:12px;
-    border:1px solid rgba(226,232,240,.95);
+    width:32px;
+    height:32px;
+    border-radius:11px;
+    border:1px solid var(--line);
     background:#fff;
     cursor:pointer;
+    color:var(--txt);
+    font-size:16px;
     font-weight:var(--fw-title);
-    font-family:"Cairo",Arial,sans-serif;
+    font-family:var(--ff);
   }
 
   .mm-body{
-    padding:14px 16px 4px;
+    padding:14px;
   }
 
   .mm-body p{
     margin:0 0 10px;
-    font-size:13px;
+    font-size:12px;
     line-height:1.9;
-    color:rgba(15,23,42,.82);
+    color:var(--mut);
     font-weight:var(--fw-normal);
     white-space:pre-wrap;
   }
 
   .mm-note{
-    margin:0 0 12px;
-    padding:10px 12px;
+    margin:0;
+    padding:10px 11px;
     border-radius:14px;
-    border:1px solid rgba(226,232,240,.95);
-    background:rgba(248,250,252,.92);
-    color:rgba(15,23,42,.82);
+    border:1px solid var(--line);
+    background:#f8fafc;
+    color:#374151;
     font-weight:var(--fw-normal);
-    font-size:12.5px;
+    font-size:11.5px;
     display:none;
     white-space:pre-wrap;
   }
 
   .mm-actions{
-    padding:12px 16px 14px;
+    padding:0 14px 14px;
     display:flex;
-    gap:10px;
+    gap:8px;
     flex-wrap:wrap;
     justify-content:flex-end;
-    border-top:1px solid rgba(226,232,240,.95);
-    background:rgba(255,255,255,.92);
   }
 
   .mm-btn{
-    height:40px;
-    padding:0 16px;
-    border-radius:14px;
-    border:1px solid transparent;
+    height:33px;
+    padding:0 14px;
+    border-radius:999px;
+    border:1px solid var(--line-strong);
     cursor:pointer;
     font-weight:var(--fw-strong);
-    font-size:13px;
-    font-family:"Cairo",Arial,sans-serif;
-    transition:.16s ease;
+    font-size:10.9px;
+    font-family:var(--ff);
+    transition:.12s ease;
     user-select:none;
     white-space:nowrap;
-  }
-
-  .mm-btn:active{
-    transform:translateY(1px);
-  }
-
-  .mm-ghost{
     background:#fff;
-    border-color:rgba(226,232,240,.95);
-    color:rgba(15,23,42,.86);
+    color:var(--txt);
   }
 
-  .mm-card.mm-ok{ border-color:rgba(22,163,74,.26); }
-  .mm-card.mm-warn{ border-color:rgba(245,158,11,.26); }
-  .mm-card.mm-err{ border-color:rgba(239,68,68,.28); }
-  .mm-card.mm-info{ border-color:rgba(2,132,199,.22); }
+  .mm-btn:active{ transform:translateY(1px); }
 
-  .mm-btn.mm-ok{ background:rgba(22,163,74,.10); border-color:rgba(22,163,74,.26); color:#14532d; }
-  .mm-btn.mm-warn{ background:rgba(245,158,11,.12); border-color:rgba(245,158,11,.26); color:#7c2d12; }
-  .mm-btn.mm-err{ background:rgba(239,68,68,.10); border-color:rgba(239,68,68,.28); color:#7f1d1d; }
-  .mm-btn.mm-info{ background:rgba(2,132,199,.10); border-color:rgba(2,132,199,.22); color:#0c4a6e; }
+  .mm-card.mm-ok{ border-color:var(--ok-br); }
+  .mm-card.mm-warn{ border-color:var(--warn-br); }
+  .mm-card.mm-err{ border-color:var(--danger-br); }
+  .mm-card.mm-info{ border-color:var(--primary-soft-br); }
 
-  @media (max-width: 860px){
-    .import-grid{
+  .mm-btn.mm-ok{ background:var(--ok-bg); border-color:var(--ok-br); color:var(--ok); }
+  .mm-btn.mm-warn{ background:var(--warn-bg); border-color:var(--warn-br); color:var(--warn); }
+  .mm-btn.mm-err{ background:var(--danger-bg); border-color:var(--danger-br); color:var(--danger); }
+  .mm-btn.mm-info{ background:var(--primary-soft); border-color:var(--primary-soft-br); color:var(--primary); }
+
+  @media (max-width: 1040px){
+    .import-page .import-layout{
+      grid-template-columns:1fr;
+    }
+  }
+
+  @media (max-width: 760px){
+    .import-page .import-grid,
+    .import-page .result-kpis{
       grid-template-columns:1fr;
     }
 
-    .import-field.full{
+    .import-page .import-field.full{
       grid-column:auto;
     }
 
-    .import-form-actions{
+    .import-page .import-form-actions,
+    .import-page .action-card,
+    .import-page .summary-card{
       align-items:flex-start;
       justify-content:flex-start;
     }
@@ -558,98 +723,207 @@
 
   <div class="summary-card">
     <div class="summary-note">
-      رفع ملفات المدارس والمشرفين والقادة والإسنادات مع عرض نتائج الإنشاء والتحديث والتجاهل بشكل منظم داخل نفس الصفحة.
+      مركز موحد لاستيراد ملفات البيانات الأساسية وتشغيل عمليات الإنشاء والتحديث والتجاهل وفق الملفات المرفوعة، مع إبقاء نتائج المعالجة ظاهرة مباشرة للمراجعة.
     </div>
 
     <div class="summary-right">
-      <span class="chip"><span class="dot ok"></span> صفحة الإدارة</span>
+      <span class="chip ok"><span class="dot ok"></span> مركز إداري</span>
       <span class="chip"><span class="dot"></span> اليوم: {% now "d-m-Y" %}</span>
     </div>
   </div>
 
   <div class="action-card">
     <div class="action-copy">
-      ارفع الملفات المطلوبة ثم ابدأ عملية الاستيراد. يمكن تنفيذ العملية بملف واحد أو بعدة ملفات في نفس المرة.
+      اختر الملفات المطلوبة ثم ابدأ عملية الاستيراد. يمكن رفع ملف واحد أو عدة ملفات في العملية نفسها، وأي ملف غير مرفوع سيتم تجاوزه تلقائيًا.
     </div>
 
     <div class="action-buttons">
-      <span class="chip">الاستيراد الإداري</span>
       <a class="btn soft" href="{% url 'visits:admin_dashboard' %}">↩ العودة للوحة الإدارة</a>
+      <a class="btn warn" href="{% url 'visits:admin_schools_with_supervisors_import' %}">🏫 استيراد المدارس بالمشرفين</a>
+      <a class="btn" href="{% url 'visits:admin_schools_with_supervisors_export' %}">⬇ تصدير المدارس بالمشرفين</a>
     </div>
   </div>
 
-  <div class="import-card">
-    <div class="import-card-head">
-      <b>ملفات الاستيراد</b>
-      <div class="hint">
-        سيتم تنفيذ الإنشاء أو التحديث تلقائيًا حسب البيانات الموجودة، مع عرض النتائج بالأسفل بعد انتهاء العملية.
+  <div class="import-layout">
+    <div class="import-card">
+      <div class="card-head">
+        <div class="head-main">
+          <h3 class="card-title">ملفات الاستيراد</h3>
+          <p class="card-sub">ارفع ملفات Excel المناسبة، ثم اضغط استيراد لبدء المعالجة.</p>
+        </div>
+        <span class="chip"><span class="dot"></span> Excel</span>
       </div>
+
+      {% if messages %}
+        <script id="djMessages" type="application/json">
+          [
+            {% for m in messages %}
+              {"text":"{{ m|escapejs }}","tags":"{{ m.tags|escapejs }}"}{% if not forloop.last %},{% endif %}
+            {% endfor %}
+          ]
+        </script>
+      {% endif %}
+
+      <form class="import-form" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="import-grid">
+          <div class="import-field">
+            <div class="field-head">
+              <div class="field-title">
+                <div class="field-icon">🏫</div>
+                <div class="field-label">
+                  <label>{{ form.schools_boys.label }}</label>
+                  <span class="field-tag">مدارس البنين</span>
+                </div>
+              </div>
+            </div>
+            {{ form.schools_boys }}
+            <div class="smallmut">يرفع ملف مدارس البنين بصيغة Excel، ويُستخدم للإنشاء أو التحديث حسب الرقم الإحصائي.</div>
+          </div>
+
+          <div class="import-field">
+            <div class="field-head">
+              <div class="field-title">
+                <div class="field-icon">🏫</div>
+                <div class="field-label">
+                  <label>{{ form.schools_girls.label }}</label>
+                  <span class="field-tag">مدارس البنات</span>
+                </div>
+              </div>
+            </div>
+            {{ form.schools_girls }}
+            <div class="smallmut">يرفع ملف مدارس البنات بصيغة Excel، ويتم ربطها بالبيانات المرجعية حسب الحقول المتاحة.</div>
+          </div>
+
+          <div class="import-field">
+            <div class="field-head">
+              <div class="field-title">
+                <div class="field-icon">👤</div>
+                <div class="field-label">
+                  <label>{{ form.principals.label }}</label>
+                  <span class="field-tag">القادة / المديرون</span>
+                </div>
+              </div>
+            </div>
+            {{ form.principals }}
+            <div class="smallmut">قائمة القادة أو المديرات المرتبطين بالمدارس، ويفضل مطابقة الرقم الإحصائي للمدرسة.</div>
+          </div>
+
+          <div class="import-field">
+            <div class="field-head">
+              <div class="field-title">
+                <div class="field-icon">🧑‍🏫</div>
+                <div class="field-label">
+                  <label>{{ form.supervisors.label }}</label>
+                  <span class="field-tag">المشرفون</span>
+                </div>
+              </div>
+            </div>
+            {{ form.supervisors }}
+            <div class="smallmut">قائمة المشرفين مع رقم الهوية والجوال والبريد إن وجد، ويتم التحديث عند وجود السجل مسبقًا.</div>
+          </div>
+
+          <div class="import-field full">
+            <div class="field-head">
+              <div class="field-title">
+                <div class="field-icon">🔗</div>
+                <div class="field-label">
+                  <label>{{ form.assignments.label }}</label>
+                  <span class="field-tag">إسناد المدارس للمشرفين</span>
+                </div>
+              </div>
+            </div>
+            {{ form.assignments }}
+            <div class="smallmut">ملف الإسنادات اختياري، ويستخدم لربط المدارس بالمشرفين بعد توفر بيانات المدارس والمشرفين.</div>
+          </div>
+        </div>
+
+        <div class="import-form-actions">
+          <div class="smallmut">
+            أي ملف غير مرفوع سيتم تجاوزه دون إيقاف العملية. راجع النتائج أسفل الصفحة بعد انتهاء الاستيراد.
+          </div>
+
+          <div class="import-actions">
+            {% if rejected_url %}
+              <a class="btn warn" href="{{ rejected_url }}">تحميل المتجاهل ({{ rejected_count }})</a>
+            {% endif %}
+            <button class="btn primary" type="submit">بدء الاستيراد</button>
+          </div>
+        </div>
+      </form>
     </div>
 
-    {% if messages %}
-      <script id="djMessages" type="application/json">
-        [
-          {% for m in messages %}
-            {"text":"{{ m|escapejs }}","tags":"{{ m.tags|escapejs }}"}{% if not forloop.last %},{% endif %}
-          {% endfor %}
-        ]
-      </script>
-    {% endif %}
-
-    <form class="import-form" method="post" enctype="multipart/form-data">
-      {% csrf_token %}
-
-      <div class="import-grid">
-        <div class="import-field">
-          <label>{{ form.schools_boys.label }}</label>
-          {{ form.schools_boys }}
-          <div class="smallmut">ملف مدارس البنين بصيغة Excel.</div>
-        </div>
-
-        <div class="import-field">
-          <label>{{ form.schools_girls.label }}</label>
-          {{ form.schools_girls }}
-          <div class="smallmut">ملف مدارس البنات بصيغة Excel.</div>
-        </div>
-
-        <div class="import-field">
-          <label>{{ form.principals.label }}</label>
-          {{ form.principals }}
-          <div class="smallmut">قائمة القادة أو المديرات المرتبطين بالمدارس.</div>
-        </div>
-
-        <div class="import-field">
-          <label>{{ form.supervisors.label }}</label>
-          {{ form.supervisors }}
-          <div class="smallmut">قائمة المشرفين مع بيانات الهوية والجوال.</div>
-        </div>
-
-        <div class="import-field full">
-          <label>{{ form.assignments.label }}</label>
-          {{ form.assignments }}
-          <div class="smallmut">ملف الإسنادات بين المشرفين والمدارس، وهو اختياري.</div>
+    <aside class="guide-card">
+      <div class="card-head">
+        <div class="head-main">
+          <h3 class="card-title">إرشادات سريعة</h3>
+          <p class="card-sub">نقاط مختصرة قبل رفع الملفات.</p>
         </div>
       </div>
 
-      <div class="import-form-actions">
-        <div class="smallmut">
-          ملاحظة: أي ملف غير مرفوع سيتم تجاوزه تلقائيًا دون أن يسبب فشل العملية.
+      <div class="guide-body">
+        <div class="guide-item">
+          <div class="guide-kicker">01</div>
+          <div class="guide-title">ابدأ بالبيانات الأساسية</div>
+          <div class="guide-text">يفضل رفع المدارس والمشرفين قبل ملف الإسناد حتى تتم عملية الربط بشكل صحيح.</div>
         </div>
 
-        <div class="import-btns">
+        <div class="guide-item">
+          <div class="guide-kicker">02</div>
+          <div class="guide-title">راجع ملف المتجاهل</div>
+          <div class="guide-text">أي صف لم يكتمل أو تعذر ربطه سيظهر ضمن ملف المتجاهل بعد المعالجة.</div>
+        </div>
+
+        <div class="guide-item">
+          <div class="guide-kicker">03</div>
+          <div class="guide-title">استخدم المسار المتخصص للإسناد</div>
+          <div class="guide-text">عند وجود ملف موحد للمدارس مع المشرفين، استخدم صفحة استيراد المدارس بالمشرفين.</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  {% if results %}
+    <div class="result-card">
+      <div class="card-head">
+        <div class="head-main">
+          <h3 class="card-title">نتائج الاستيراد</h3>
+          <p class="card-sub">ملخص الملفات التي تمت معالجتها في العملية الأخيرة.</p>
+        </div>
+
+        <div class="result-actions">
           {% if rejected_url %}
-            <a class="btn" href="{{ rejected_url }}">تحميل المتجاهل ({{ rejected_count }})</a>
+            <a class="btn warn" href="{{ rejected_url }}">تحميل ملف المتجاهل</a>
           {% endif %}
-          <button class="btn primary" type="submit">استيراد</button>
         </div>
       </div>
-    </form>
 
-    {% if results %}
-      <div class="result-wrap">
-        <div class="result-title">
-          <b>نتائج الاستيراد</b>
-          <span class="smallmut">ملخص سريع لما تم على الملفات المرفوعة</span>
+      <div class="result-body">
+        <div class="result-kpis">
+          <div class="result-kpi">
+            <div>
+              <div class="label">الملفات المعالجة</div>
+              <div class="num">{{ results|length }}</div>
+            </div>
+            <span class="badge">ملف</span>
+          </div>
+
+          <div class="result-kpi">
+            <div>
+              <div class="label">المتجاهل</div>
+              <div class="num">{{ rejected_count|default:"0" }}</div>
+            </div>
+            <span class="badge warn">تدقيق</span>
+          </div>
+
+          <div class="result-kpi">
+            <div>
+              <div class="label">حالة العملية</div>
+              <div class="num">مكتملة</div>
+            </div>
+            <span class="badge ok">جاهز</span>
+          </div>
         </div>
 
         <div class="table-wrap">
@@ -666,10 +940,10 @@
               <tbody>
                 {% for key, st in results.items %}
                   <tr>
-                    <td>{{ key }}</td>
+                    <td class="file-name-cell">{{ key }}</td>
                     <td><span class="badge ok">{{ st.created }}</span></td>
                     <td><span class="badge warn">{{ st.updated }}</span></td>
-                    <td><span class="badge">{{ st.skipped }}</span></td>
+                    <td><span class="badge {% if st.skipped %}err{% endif %}">{{ st.skipped }}</span></td>
                   </tr>
                 {% endfor %}
               </tbody>
@@ -679,12 +953,12 @@
 
         {% if rejected_url %}
           <div class="import-note">
-            توجد سجلات متجاهلة. يمكنك تنزيل ملف المتجاهل ومراجعة الصفوف التي لم يتم استيرادها ثم إعادة رفعها بعد التصحيح.
+            توجد سجلات متجاهلة. حمّل ملف المتجاهل، راجع سبب التجاهل، ثم أعد رفع الصفوف بعد التصحيح.
           </div>
         {% endif %}
       </div>
-    {% endif %}
-  </div>
+    </div>
+  {% endif %}
 
 </section>
 
@@ -701,7 +975,7 @@
     </div>
 
     <div class="mm-actions">
-      <button type="button" class="mm-btn mm-ghost" id="mmCloseBtn">حسنًا</button>
+      <button type="button" class="mm-btn" id="mmCloseBtn">حسنًا</button>
     </div>
   </div>
 </div>
@@ -748,7 +1022,7 @@
       }
 
       if(btn){
-        btn.classList.remove("mm-ok","mm-warn","mm-err","mm-info","mm-ghost");
+        btn.classList.remove("mm-ok","mm-warn","mm-err","mm-info");
         if(type === "success") btn.classList.add("mm-ok");
         else if(type === "warning") btn.classList.add("mm-warn");
         else if(type === "error") btn.classList.add("mm-err");

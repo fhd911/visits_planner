@@ -1,0 +1,1159 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}استيراد المدارس وإسنادها للمشرفين{% endblock %}
+
+{% block header_title %}استيراد المدارس وإسنادها للمشرفين{% endblock %}
+{% block header_subtitle %}استيراد الإسناد الجماعي من ملف Excel مع الفحص قبل التنفيذ والتصدير للمراجعة{% endblock %}
+
+{% block extra_css %}
+<style>
+  .import-assign-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+
+    --fw-hero:800;
+    --fw-title:700;
+    --fw-strong:600;
+    --fw-normal:500;
+
+    --card:#ffffff;
+    --card-soft:#fbfcfb;
+    --soft:#f7f9f8;
+
+    --txt:var(--vp-text);
+    --mut:var(--vp-text-soft);
+    --mut2:var(--vp-text-faint);
+
+    --line:var(--vp-line);
+    --line2:var(--vp-line-2);
+    --line-strong:var(--vp-line-strong);
+
+    --ok:#1f6b3f;
+    --ok-bg:var(--vp-ok-bg);
+    --ok-br:var(--vp-ok-border);
+
+    --blue:#245fd6;
+    --blue-bg:rgba(37,99,235,.08);
+    --blue-br:rgba(37,99,235,.16);
+
+    --cyan:#0f766e;
+    --cyan-bg:rgba(15,118,110,.08);
+    --cyan-br:rgba(15,118,110,.16);
+
+    --pink:#be185d;
+    --pink-bg:rgba(219,39,119,.08);
+    --pink-br:rgba(219,39,119,.16);
+
+    --amber:#9a6700;
+    --amber-bg:rgba(245,158,11,.10);
+    --amber-br:rgba(245,158,11,.18);
+
+    --red:#b42335;
+    --red-bg:rgba(225,29,72,.08);
+    --red-br:rgba(225,29,72,.16);
+
+    --shadow:0 10px 24px rgba(22,36,29,.045);
+    --shadow2:0 6px 16px rgba(22,36,29,.032);
+  }
+
+  .import-assign-page *{
+    box-sizing:border-box;
+  }
+
+  .import-assign-page .wrap{
+    display:grid;
+    gap:12px;
+    margin-top:2px;
+  }
+
+  .import-assign-page .summary-card,
+  .import-assign-page .filters-card,
+  .import-assign-page .table-card,
+  .import-assign-page .kpi,
+  .import-assign-page .guide-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    box-shadow:var(--shadow);
+  }
+
+  .import-assign-page .summary-card{
+    border-radius:22px;
+    padding:15px 16px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    background:linear-gradient(180deg, rgba(255,255,255,.985), rgba(251,252,251,.985));
+  }
+
+  .import-assign-page .summary-note{
+    color:var(--mut);
+    font-size:12px;
+    line-height:1.95;
+    font-weight:var(--fw-normal);
+    max-width:790px;
+  }
+
+  .import-assign-page .summary-right{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    flex-wrap:wrap;
+  }
+
+  .import-assign-page .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    min-height:32px;
+    padding:6px 11px;
+    border-radius:999px;
+    background:var(--soft);
+    border:1px solid var(--line);
+    color:var(--mut);
+    font-size:11.2px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+    text-decoration:none;
+  }
+
+  .import-assign-page .chip:hover{
+    background:#fcfdfc;
+    text-decoration:none;
+  }
+
+  .import-assign-page .chip b{
+    color:var(--txt);
+    font-weight:var(--fw-title);
+  }
+
+  .import-assign-page .dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#5e8d7a;
+    box-shadow:0 0 0 4px rgba(94,141,122,.10);
+    flex:0 0 auto;
+  }
+
+  .import-assign-page .main-grid{
+    display:grid;
+    grid-template-columns:minmax(0,1.22fr) minmax(300px,.78fr);
+    gap:12px;
+    align-items:start;
+  }
+
+  .import-assign-page .kpis{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:10px;
+  }
+
+  .import-assign-page .kpi{
+    border-radius:20px;
+    padding:14px 15px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    min-height:82px;
+    box-shadow:var(--shadow2);
+  }
+
+  .import-assign-page .kpi-meta{
+    display:grid;
+    gap:3px;
+  }
+
+  .import-assign-page .kpi-label{
+    color:var(--mut);
+    font-size:11px;
+    font-weight:var(--fw-normal);
+    line-height:1.7;
+  }
+
+  .import-assign-page .kpi-value{
+    color:var(--txt);
+    font-size:23px;
+    line-height:1.2;
+    font-weight:var(--fw-hero);
+  }
+
+  .import-assign-page .kpi-icon{
+    width:42px;
+    height:42px;
+    border-radius:15px;
+    display:grid;
+    place-items:center;
+    border:1px solid var(--line);
+    background:linear-gradient(180deg, #f8fbf9, #ffffff);
+    color:var(--vp-primary);
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.4px;
+    flex:0 0 auto;
+  }
+
+  .import-assign-page .kpi.blue .kpi-icon{
+    background:var(--blue-bg);
+    border-color:var(--blue-br);
+    color:var(--blue);
+  }
+
+  .import-assign-page .kpi.amber .kpi-icon{
+    background:var(--amber-bg);
+    border-color:var(--amber-br);
+    color:var(--amber);
+  }
+
+  .import-assign-page .kpi.red .kpi-icon{
+    background:var(--red-bg);
+    border-color:var(--red-br);
+    color:var(--red);
+  }
+
+  .import-assign-page .kpi.red .kpi-value{
+    color:var(--red);
+  }
+
+  .import-assign-page .kpi.amber .kpi-value{
+    color:var(--amber);
+  }
+
+  .import-assign-page .filters-card,
+  .import-assign-page .guide-card{
+    border-radius:18px;
+    padding:13px;
+    display:grid;
+    gap:10px;
+    box-shadow:var(--shadow2);
+  }
+
+  .import-assign-page .card-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .import-assign-page .card-title{
+    margin:0;
+    color:var(--txt);
+    font-size:12.8px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+  }
+
+  .import-assign-page .card-note{
+    color:var(--mut);
+    font-size:11px;
+    line-height:1.8;
+    font-weight:var(--fw-normal);
+  }
+
+  .import-assign-page .upload-grid{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:9px;
+    align-items:end;
+  }
+
+  .import-assign-page .field label{
+    display:block;
+    margin-bottom:5px;
+    color:var(--mut);
+    font-size:10.9px;
+    font-weight:var(--fw-normal);
+  }
+
+  .import-assign-page .input{
+    width:100%;
+    height:38px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:#f9fbfa;
+    padding:0 12px;
+    outline:none;
+    color:var(--txt);
+    font-size:11.8px;
+    font-weight:var(--fw-strong);
+    transition:.16s ease;
+  }
+
+  .import-assign-page .input:focus{
+    border-color:#c7d6ce;
+    box-shadow:0 0 0 4px rgba(47,98,80,.06);
+    background:#fff;
+  }
+
+  .import-assign-page .options-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:9px;
+  }
+
+  .import-assign-page .option{
+    min-height:46px;
+    border-radius:15px;
+    border:1px solid var(--line);
+    background:#fbfcfb;
+    padding:10px 11px;
+    display:flex;
+    gap:8px;
+    align-items:flex-start;
+    color:var(--txt);
+    font-size:11.4px;
+    font-weight:var(--fw-strong);
+    line-height:1.8;
+    cursor:pointer;
+  }
+
+  .import-assign-page .option input{
+    margin-top:5px;
+    accent-color:var(--vp-primary);
+  }
+
+  .import-assign-page .option.danger{
+    grid-column:1 / -1;
+    background:var(--red-bg);
+    border-color:var(--red-br);
+    color:#8f1f2d;
+  }
+
+  .import-assign-page .btn{
+    height:38px;
+    padding:0 14px;
+    border-radius:999px;
+    border:1px solid var(--line-strong);
+    background:#fff;
+    color:var(--txt);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    text-decoration:none;
+    cursor:pointer;
+    white-space:nowrap;
+    font-size:11.5px;
+    font-weight:var(--fw-strong);
+    box-shadow:0 4px 10px rgba(22,36,29,.03);
+    transition:.16s ease;
+  }
+
+  .import-assign-page .btn:hover{
+    transform:translateY(-1px);
+    background:#fcfdfc;
+    text-decoration:none;
+  }
+
+  .import-assign-page .btn.primary{
+    background:var(--vp-primary);
+    border-color:var(--vp-primary);
+    color:#fff;
+  }
+
+  .import-assign-page .btn.primary:hover{
+    background:var(--vp-primary-2);
+    border-color:var(--vp-primary-2);
+  }
+
+  .import-assign-page .btn.export{
+    background:linear-gradient(180deg, #fffdf7, #fffaf0);
+    border-color:var(--amber-br);
+    color:#7a5400;
+  }
+
+  .import-assign-page .btn.danger{
+    background:var(--red-bg);
+    border-color:var(--red-br);
+    color:var(--red);
+  }
+
+  .import-assign-page .btn.soft{
+    background:#fff;
+    border-color:var(--line);
+    color:var(--txt);
+  }
+
+  .import-assign-page .actions-inline{
+    display:flex;
+    gap:6px;
+    flex-wrap:wrap;
+    align-items:center;
+  }
+
+  .import-assign-page .guide-list{
+    display:grid;
+    gap:8px;
+  }
+
+  .import-assign-page .guide-item{
+    display:grid;
+    grid-template-columns:28px 1fr;
+    gap:8px;
+    align-items:start;
+    border:1px solid var(--line);
+    background:#fbfcfb;
+    border-radius:15px;
+    padding:10px;
+  }
+
+  .import-assign-page .guide-num{
+    width:28px;
+    height:28px;
+    border-radius:11px;
+    display:grid;
+    place-items:center;
+    background:var(--ok-bg);
+    border:1px solid var(--ok-br);
+    color:var(--ok);
+    font-size:10px;
+    font-weight:800;
+  }
+
+  .import-assign-page .guide-title{
+    color:var(--txt);
+    font-size:11.7px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+  }
+
+  .import-assign-page .guide-text{
+    color:var(--mut);
+    font-size:10.8px;
+    font-weight:var(--fw-normal);
+    line-height:1.85;
+    margin-top:2px;
+  }
+
+  .import-assign-page .commit-box{
+    border-radius:18px;
+    border:1px solid var(--ok-br);
+    background:linear-gradient(180deg, rgba(236,253,245,.9), rgba(255,255,255,.95));
+    padding:13px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+  }
+
+  .import-assign-page .commit-title{
+    color:var(--ok);
+    font-size:12.5px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+  }
+
+  .import-assign-page .commit-note{
+    color:var(--mut);
+    font-size:10.9px;
+    font-weight:var(--fw-normal);
+    line-height:1.8;
+  }
+
+  .import-assign-page .table-card{
+    border-radius:22px;
+    overflow:hidden;
+    background:#fff;
+  }
+
+  .import-assign-page .table-head{
+    padding:13px 15px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, #fcfdfc, #f8fbf9);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .import-assign-page .table-head-left,
+  .import-assign-page .table-head-right{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .import-assign-page .hint{
+    color:var(--mut);
+    font-size:11.1px;
+    font-weight:var(--fw-normal);
+    line-height:1.9;
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+  }
+
+  .import-assign-page .hint b{
+    color:var(--txt);
+    font-weight:var(--fw-title);
+  }
+
+  .import-assign-page .mini{
+    width:18px;
+    height:18px;
+    border-radius:7px;
+    display:grid;
+    place-items:center;
+    background:var(--ok-bg);
+    border:1px solid var(--ok-br);
+    color:var(--ok);
+    font-size:10px;
+    font-weight:700;
+    flex:0 0 auto;
+  }
+
+  .import-assign-page .mini.red{
+    background:var(--red-bg);
+    border-color:var(--red-br);
+    color:var(--red);
+  }
+
+  .import-assign-page .table-wrap{
+    overflow:auto;
+  }
+
+  .import-assign-page table{
+    width:100%;
+    min-width:980px;
+    border-collapse:separate;
+    border-spacing:0;
+    table-layout:fixed;
+  }
+
+  .import-assign-page thead th{
+    position:sticky;
+    top:0;
+    z-index:2;
+    background:#f8faf9;
+    border-bottom:1px solid #d9e2dd;
+    padding:11px 10px;
+    text-align:right;
+    color:#687a70;
+    font-size:11.2px;
+    font-weight:var(--fw-title);
+    white-space:nowrap;
+  }
+
+  .import-assign-page tbody td{
+    padding:13px 10px;
+    border-bottom:1px solid var(--line2);
+    color:var(--txt);
+    font-size:12px;
+    vertical-align:middle;
+    background:#fff;
+  }
+
+  .import-assign-page tbody tr:nth-child(even) td{
+    background:#fcfdfc;
+  }
+
+  .import-assign-page tbody tr:hover td{
+    background:#f8fbf9;
+  }
+
+  .import-assign-page tbody tr:last-child td{
+    border-bottom:none;
+  }
+
+  .import-assign-page .name{
+    color:var(--txt);
+    font-size:12.4px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+    margin:0;
+  }
+
+  .import-assign-page .sub{
+    margin-top:4px;
+    color:var(--mut2);
+    font-size:10.9px;
+    line-height:1.8;
+    font-weight:var(--fw-normal);
+  }
+
+  .import-assign-page .badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:29px;
+    min-width:68px;
+    padding:5px 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--soft);
+    color:var(--txt);
+    font-size:10.9px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+  }
+
+  .import-assign-page .badge.ok{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+  }
+
+  .import-assign-page .badge.blue{
+    background:var(--blue-bg);
+    border-color:var(--blue-br);
+    color:var(--blue);
+  }
+
+  .import-assign-page .badge.amber{
+    background:var(--amber-bg);
+    border-color:var(--amber-br);
+    color:var(--amber);
+  }
+
+  .import-assign-page .badge.red{
+    background:var(--red-bg);
+    border-color:var(--red-br);
+    color:var(--red);
+  }
+
+  .import-assign-page .badge.boys{
+    background:var(--blue-bg);
+    border-color:var(--blue-br);
+    color:var(--blue);
+  }
+
+  .import-assign-page .badge.girls{
+    background:var(--pink-bg);
+    border-color:var(--pink-br);
+    color:var(--pink);
+  }
+
+  .import-assign-page .muted{
+    color:var(--mut2);
+  }
+
+  .import-assign-page .empty{
+    padding:28px 16px !important;
+    text-align:center;
+    color:var(--mut);
+    font-size:11.7px;
+    font-weight:var(--fw-normal);
+    line-height:1.95;
+    background:linear-gradient(180deg, #fff, #fbfcfb);
+  }
+
+
+  .import-assign-page .safety-card{
+    border-radius:18px;
+    padding:13px 14px;
+    background:linear-gradient(180deg, #fffdf7, #fffaf0);
+    border:1px solid var(--amber-br);
+    box-shadow:var(--shadow2);
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+  }
+
+  .import-assign-page .safety-icon{
+    width:34px;
+    height:34px;
+    border-radius:13px;
+    display:grid;
+    place-items:center;
+    background:var(--amber-bg);
+    border:1px solid var(--amber-br);
+    color:var(--amber);
+    font-size:15px;
+    flex:0 0 auto;
+  }
+
+  .import-assign-page .safety-title{
+    color:#7a5400;
+    font-size:12.7px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+  }
+
+  .import-assign-page .safety-text{
+    color:var(--mut);
+    font-size:11.2px;
+    font-weight:var(--fw-normal);
+    line-height:1.9;
+    margin-top:2px;
+  }
+
+  .import-assign-page .mode-hint{
+    margin-top:8px;
+    padding:9px 10px;
+    border-radius:13px;
+    background:#fff;
+    border:1px dashed var(--amber-br);
+    color:#7a5400;
+    font-size:10.9px;
+    font-weight:var(--fw-normal);
+    line-height:1.9;
+  }
+
+  @media (max-width: 1100px){
+    .import-assign-page .main-grid{
+      grid-template-columns:1fr;
+    }
+
+    .import-assign-page .kpis{
+      grid-template-columns:repeat(2, minmax(0,1fr));
+    }
+  }
+
+  @media (max-width: 820px){
+    .import-assign-page .upload-grid,
+    .import-assign-page .options-grid{
+      grid-template-columns:1fr;
+    }
+
+    .import-assign-page table{
+      table-layout:auto;
+    }
+  }
+
+  @media (max-width: 640px){
+    .import-assign-page .kpis{
+      grid-template-columns:1fr;
+    }
+
+    .import-assign-page .summary-card{
+      padding:12px;
+    }
+
+    .import-assign-page .summary-right{
+      width:100%;
+    }
+
+    .import-assign-page .actions-inline,
+    .import-assign-page .btn{
+      width:100%;
+    }
+
+    .import-assign-page .btn{
+      flex:1 1 auto;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="import-assign-page">
+  <div class="wrap">
+
+    <div class="summary-card">
+      <div class="summary-note">
+        صفحة حساسة لتحديث إسناد المدارس للمشرفين بشكل جماعي. يوصى بتصدير نسخة احتياطية من الوضع الحالي قبل أي استيراد، ثم فحص الملف ومراجعة النتائج قبل التنفيذ.
+      </div>
+
+      <div class="summary-right">
+        <a class="chip" href="{% url 'visits:admin_schools_with_supervisors_import_template' %}">
+          <span class="dot"></span> تحميل قالب Excel
+        </a>
+        <a class="chip" href="{% url 'visits:admin_schools_with_supervisors_export' %}?scope=all">
+          تصدير نسخة احتياطية
+        </a>
+        <a class="chip" href="{% url 'visits:admin_schools_with_supervisors_export' %}?scope=assigned">
+          تصدير المسندة
+        </a>
+        <a class="chip" href="{% url 'visits:admin_schools_with_supervisors_export' %}?scope=unassigned">
+          تصدير غير المسندة
+        </a>
+      </div>
+    </div>
+
+
+    <div class="safety-card">
+      <div class="safety-icon">⚠</div>
+      <div>
+        <div class="safety-title">تنبيه قبل الاستيراد الجماعي</div>
+        <div class="safety-text">
+          هذه العملية قد تنشئ أو تحدّث أو تنقل إسنادات المدارس للمشرفين دفعة واحدة. ابدأ بتصدير نسخة احتياطية، ثم ارفع الملف وافحصه، ولا تنفّذ الاستيراد إلا بعد مراجعة الأخطاء والتعارضات والصفوف الجاهزة.
+        </div>
+      </div>
+    </div>
+
+    {% if commit_result %}
+      <div class="kpis">
+        <div class="kpi">
+          <div class="kpi-meta">
+            <div class="kpi-label">مدارس جديدة</div>
+            <div class="kpi-value">{{ commit_result.created_schools }}</div>
+          </div>
+          <div class="kpi-icon">01</div>
+        </div>
+
+        <div class="kpi">
+          <div class="kpi-meta">
+            <div class="kpi-label">مدارس محدثة</div>
+            <div class="kpi-value">{{ commit_result.updated_schools }}</div>
+          </div>
+          <div class="kpi-icon">02</div>
+        </div>
+
+        <div class="kpi blue">
+          <div class="kpi-meta">
+            <div class="kpi-label">إسنادات جديدة</div>
+            <div class="kpi-value">{{ commit_result.created_assignments }}</div>
+          </div>
+          <div class="kpi-icon">03</div>
+        </div>
+
+        <div class="kpi amber">
+          <div class="kpi-meta">
+            <div class="kpi-label">إسنادات منقولة</div>
+            <div class="kpi-value">{{ commit_result.transferred_assignments }}</div>
+          </div>
+          <div class="kpi-icon">04</div>
+        </div>
+      </div>
+    {% endif %}
+
+    <div class="main-grid">
+      <form class="filters-card" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="preview">
+
+        <div class="card-head">
+          <h3 class="card-title">رفع الملف وفحصه</h3>
+          <div class="card-note">الفحص لا يحفظ البيانات، وإنما يعرض الأخطاء والتعارضات قبل التنفيذ.</div>
+        </div>
+
+        <div class="upload-grid">
+          <div class="field">
+            <label>ملف Excel</label>
+            <input class="input" type="file" name="file" accept=".xlsx" required>
+          </div>
+
+          <button class="btn primary" type="submit">فحص الملف</button>
+        </div>
+
+        <div class="options-grid">
+          <label class="option">
+            <input type="checkbox" name="update_schools" value="1" {% if options.update_schools %}checked{% endif %}>
+            <span>تحديث بيانات المدرسة إذا كانت موجودة</span>
+          </label>
+
+          <label class="option">
+            <input type="checkbox" name="create_missing_schools" value="1" {% if options.create_missing_schools %}checked{% endif %}>
+            <span>إنشاء المدرسة إذا لم تكن موجودة</span>
+          </label>
+
+          <label class="option">
+            <input type="checkbox" name="update_supervisors" value="1" {% if options.update_supervisors %}checked{% endif %}>
+            <span>تحديث بيانات المشرف إذا كان موجودًا</span>
+          </label>
+
+          <label class="option">
+            <input type="checkbox" name="create_missing_supervisors" value="1" {% if options.create_missing_supervisors %}checked{% endif %}>
+            <span>إنشاء المشرف إذا لم يكن موجودًا</span>
+          </label>
+
+          <label class="option">
+            <input type="checkbox" name="create_missing_sectors" value="1" {% if options.create_missing_sectors %}checked{% endif %}>
+            <span>إنشاء القطاع إذا لم يكن موجودًا</span>
+          </label>
+
+          <label class="option">
+            <input type="checkbox" name="allow_transfer" value="1" {% if options.allow_transfer %}checked{% endif %}>
+            <span>السماح بنقل المدرسة من مشرف آخر</span>
+          </label>
+
+          <label class="option danger">
+            <input type="checkbox" name="deactivate_when_supervisor_blank" value="1" {% if options.deactivate_when_supervisor_blank %}checked{% endif %}>
+            <span>
+              وضع التحديث الشامل: إذا كان حقل المشرف فارغًا في الصف، يتم تعطيل أي إسناد نشط للمدرسة
+              <div class="mode-hint">لا تستخدم هذا الخيار إلا إذا كان الملف يمثل الوضع النهائي الكامل للإسناد.</div>
+            </span>
+          </label>
+        </div>
+      </form>
+
+      <aside class="guide-card">
+        <div class="card-head">
+          <h3 class="card-title">آلية العمل المقترحة</h3>
+          <div class="card-note">لضمان سلامة الإسناد الجماعي وتجنب التكرار.</div>
+        </div>
+
+        <div class="guide-list">
+          <div class="guide-item">
+            <div class="guide-num">1</div>
+            <div>
+              <div class="guide-title">صدّر نسخة احتياطية أولًا</div>
+              <div class="guide-text">ابدأ بتصدير الوضع الحالي لجميع المدارس والمشرفين، ثم احتفظ بنسخة قبل التعديل.</div>
+            </div>
+          </div>
+
+          <div class="guide-item">
+            <div class="guide-num">2</div>
+            <div>
+              <div class="guide-title">كل صف يمثل مدرسة واحدة</div>
+              <div class="guide-text">الرقم الإحصائي هو المرجع الأساسي، وسجل المشرف هو المرجع الأفضل للإسناد.</div>
+            </div>
+          </div>
+
+          <div class="guide-item">
+            <div class="guide-num">3</div>
+            <div>
+              <div class="guide-title">افحص ثم نفّذ</div>
+              <div class="guide-text">بعد الفحص تظهر الصفوف الجاهزة، ولا يتم الحفظ إلا بعد الضغط على تنفيذ الاستيراد.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions-inline">
+          <a class="btn export" href="{% url 'visits:admin_schools_with_supervisors_export' %}?scope=all">تصدير نسخة احتياطية</a>
+          <a class="btn soft" href="{% url 'visits:admin_schools_with_supervisors_import_template' %}">القالب</a>
+        </div>
+      </aside>
+    </div>
+
+    {% if result %}
+
+      <div class="safety-card">
+        <div class="safety-icon">{% if result.ok %}✓{% else %}!{% endif %}</div>
+        <div>
+          <div class="safety-title">
+            {% if result.ok %}
+              نتيجة الفحص جاهزة للمراجعة
+            {% else %}
+              توجد أخطاء تمنع التنفيذ
+            {% endif %}
+          </div>
+          <div class="safety-text">
+            {% if result.ok %}
+              راجع الأرقام والصفوف الجاهزة قبل الضغط على تنفيذ الاستيراد. لن يتم حفظ أي تغيير قبل التنفيذ.
+            {% else %}
+              حمّل ملف الأخطاء أو راجع الجدول أدناه، ثم صحح ملف Excel وأعد رفعه.
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="kpis">
+        <div class="kpi">
+          <div class="kpi-meta">
+            <div class="kpi-label">إجمالي الصفوف</div>
+            <div class="kpi-value">{{ result.summary.total_rows }}</div>
+          </div>
+          <div class="kpi-icon">01</div>
+        </div>
+
+        <div class="kpi">
+          <div class="kpi-meta">
+            <div class="kpi-label">جاهز للتنفيذ</div>
+            <div class="kpi-value">{{ result.summary.valid_count }}</div>
+          </div>
+          <div class="kpi-icon">02</div>
+        </div>
+
+        <div class="kpi red">
+          <div class="kpi-meta">
+            <div class="kpi-label">الأخطاء</div>
+            <div class="kpi-value">{{ result.summary.error_count }}</div>
+          </div>
+          <div class="kpi-icon">03</div>
+        </div>
+
+        <div class="kpi blue">
+          <div class="kpi-meta">
+            <div class="kpi-label">إسنادات جديدة</div>
+            <div class="kpi-value">{{ result.summary.new_assignments }}</div>
+          </div>
+          <div class="kpi-icon">04</div>
+        </div>
+
+        <div class="kpi amber">
+          <div class="kpi-meta">
+            <div class="kpi-label">نقل إسناد</div>
+            <div class="kpi-value">{{ result.summary.transfer_assignments }}</div>
+          </div>
+          <div class="kpi-icon">05</div>
+        </div>
+
+        <div class="kpi red">
+          <div class="kpi-meta">
+            <div class="kpi-label">تعطيل متوقع</div>
+            <div class="kpi-value">{{ result.summary.estimated_deactivations }}</div>
+          </div>
+          <div class="kpi-icon">06</div>
+        </div>
+
+        <div class="kpi red">
+          <div class="kpi-meta">
+            <div class="kpi-label">تعارضات</div>
+            <div class="kpi-value">{{ result.summary.conflicts }}</div>
+          </div>
+          <div class="kpi-icon">07</div>
+        </div>
+
+        <div class="kpi amber">
+          <div class="kpi-meta">
+            <div class="kpi-label">تكرارات</div>
+            <div class="kpi-value">{{ result.summary.duplicates }}</div>
+          </div>
+          <div class="kpi-icon">08</div>
+        </div>
+      </div>
+
+      {% if result.errors %}
+        <div class="table-card">
+          <div class="table-head">
+            <div class="table-head-left">
+              <div class="hint">
+                <span class="mini red">!</span>
+                توجد أخطاء يجب تصحيحها قبل التنفيذ
+              </div>
+            </div>
+
+            <div class="table-head-right">
+              <a class="btn danger" href="{% url 'visits:download_rejected' %}">تحميل الأخطاء</a>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:9%;">الصف</th>
+                  <th style="width:17%;">الرقم الإحصائي</th>
+                  <th style="width:27%;">اسم المدرسة</th>
+                  <th style="width:22%;">المشرف</th>
+                  <th style="width:25%;">الملاحظة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for err in result.errors %}
+                  <tr>
+                    <td>{{ err.row_no }}</td>
+                    <td>{{ err.school_stat_code|default:"—" }}</td>
+                    <td>{{ err.school_name|default:"—" }}</td>
+                    <td>{{ err.supervisor|default:"—" }}</td>
+                    <td><span class="badge red">{{ err.message }}</span></td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="5" class="empty">لا توجد أخطاء.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endif %}
+
+      {% if result.rows %}
+        <div class="table-card">
+          <div class="table-head">
+            <div class="table-head-left">
+              <div class="hint">
+                <span class="mini">✓</span>
+                عدد الصفوف الجاهزة: <b>{{ result.rows|length }}</b>
+              </div>
+            </div>
+
+            <div class="table-head-right">
+              {% if result.ok %}
+                <form method="post" class="actions-inline">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="commit">
+                  <button class="btn primary" type="submit">تأكيد وتنفيذ الاستيراد الآن</button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:8%;">الصف</th>
+                  <th style="width:14%;">الإجراء</th>
+                  <th style="width:14%;">الرقم الإحصائي</th>
+                  <th style="width:24%;">المدرسة</th>
+                  <th style="width:10%;">الجنس</th>
+                  <th style="width:14%;">القطاع</th>
+                  <th style="width:22%;">المشرف المسند</th>
+                  <th style="width:16%;">سجل المشرف</th>
+                  <th style="width:22%;">المشرف الحالي</th>
+                  <th style="width:12%;">الحالة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in result.rows %}
+                  <tr>
+                    <td>{{ row.row_no }}</td>
+
+                    <td>
+                      {% if row.action == "create_assignment" %}
+                        <span class="badge ok">إسناد جديد</span>
+                      {% elif row.action == "update_assignment" %}
+                        <span class="badge blue">تحديث</span>
+                      {% elif row.action == "transfer_assignment" %}
+                        <span class="badge amber">نقل</span>
+                      {% elif row.action == "create_supervisor_and_assignment" %}
+                        <span class="badge ok">مشرف + إسناد</span>
+                      {% elif row.action == "create_school_and_assignment" %}
+                        <span class="badge ok">مدرسة + إسناد</span>
+                      {% elif row.action == "deactivate_assignment" %}
+                        <span class="badge red">تعطيل</span>
+                      {% elif row.action == "no_assignment" %}
+                        <span class="badge">بدون إسناد</span>
+                      {% else %}
+                        <span class="badge">{{ row.action }}</span>
+                      {% endif %}
+                    </td>
+
+                    <td>{{ row.school_stat_code|default:"—" }}</td>
+
+                    <td>
+                      <div class="name">{{ row.school_name }}</div>
+                    </td>
+
+                    <td>
+                      {% if row.school_gender == "boys" %}
+                        <span class="badge boys">بنين</span>
+                      {% elif row.school_gender == "girls" %}
+                        <span class="badge girls">بنات</span>
+                      {% else %}
+                        <span class="muted">—</span>
+                      {% endif %}
+                    </td>
+
+                    <td>{{ row.school_sector_name|default:"—" }}</td>
+
+                    <td>
+                      <div class="name">{{ row.supervisor_name|default:"—" }}</div>
+                    </td>
+
+                    <td>{{ row.supervisor_national_id|default:"—" }}</td>
+                    <td>{{ row.current_supervisor_name|default:"—" }}</td>
+
+                    <td>
+                      {% if row.assignment_active %}
+                        <span class="badge ok">نشط</span>
+                      {% else %}
+                        <span class="badge">غير نشط</span>
+                      {% endif %}
+                    </td>
+                  </tr>
+                {% empty %}
+                  <tr>
+                    <td colspan="10" class="empty">لا توجد صفوف جاهزة.</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      {% endif %}
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}

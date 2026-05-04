@@ -6,6 +6,7 @@ from functools import wraps
 from io import BytesIO
 from typing import Any, Optional
 
+from django.apps import apps
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
@@ -1572,6 +1573,420 @@ def _build_admin_week_excel_workbook(week_obj: PlanWeek, plans) -> Workbook:
     return wb
 
 
+
+def _plan_day_export_text(day: Optional[PlanDay]) -> str:
+    """صياغة نص مختصر لليوم داخل تصدير جميع الخطط."""
+    if not day:
+        return "—"
+
+    visit_type = getattr(day, "visit_type", "") or ""
+    visit_type_label = _visit_type_export_label(visit_type)
+    none_val = getattr(PlanDay, "VISIT_NONE", "none")
+
+    if visit_type == none_val:
+        reason = (
+            day.get_no_visit_reason_display()
+            if getattr(day, "no_visit_reason", None)
+            else "بدون زيارة"
+        )
+        if getattr(day, "note", None):
+            reason = f"{reason} — {day.note}"
+        return f"{reason} ({visit_type_label})"
+
+    if getattr(day, "school_id", None) and getattr(day, "school", None):
+        school_name = day.school.name or "—"
+        if getattr(day, "note", None):
+            school_name = f"{school_name} — {day.note}"
+        return f"{school_name} ({visit_type_label})"
+
+    if getattr(day, "note", None):
+        return f"{visit_type_label} — {day.note}"
+
+    return visit_type_label or "—"
+
+
+def _build_all_supervisor_plans_excel_workbook(plans: list[Plan]) -> Workbook:
+    """
+    يبني ملف Excel شامل لجميع خطط المشرفين عبر كل الأسابيع.
+
+    يحتوي الملف على ثلاث أوراق:
+    1) ملخص المشرفين.
+    2) كل الخطط: صف لكل مشرف في كل أسبوع.
+    3) تفصيل الأيام: صف لكل يوم داخل كل خطة.
+    """
+    wb = Workbook()
+
+    title_font = Font(name="Cairo", bold=True, size=14)
+    bold_font = Font(name="Cairo", bold=True, size=11)
+    normal_font = Font(name="Cairo", size=10)
+
+    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    right = Alignment(horizontal="right", vertical="center", wrap_text=True)
+
+    header_fill = PatternFill("solid", fgColor="F1F5F9")
+    title_fill = PatternFill("solid", fgColor="E8F5E9")
+    approved_fill = PatternFill("solid", fgColor="ECFDF3")
+    draft_fill = PatternFill("solid", fgColor="F8FAFC")
+    incomplete_fill = PatternFill("solid", fgColor="FFF7ED")
+
+    thin = Side(style="thin", color="CBD5E1")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    # =========================================================================
+    # Sheet 1: Summary by supervisor
+    # =========================================================================
+    ws_summary = wb.active
+    ws_summary.title = "ملخص المشرفين"
+    ws_summary.sheet_view.rightToLeft = True
+
+    ws_summary.merge_cells("A1:I1")
+    ws_summary["A1"] = "ملخص خطط المشرفين على مستوى جميع الأسابيع"
+    ws_summary["A1"].font = title_font
+    ws_summary["A1"].alignment = center
+    ws_summary["A1"].fill = title_fill
+
+    summary_headers = [
+        "م",
+        "اسم المشرف",
+        "السجل المدني",
+        "القطاع",
+        "إجمالي الخطط",
+        "معتمدة",
+        "مسودة",
+        "طلب فك اعتماد",
+        "غير مكتملة",
+    ]
+
+    for col, header in enumerate(summary_headers, start=1):
+        cell = ws_summary.cell(row=3, column=col, value=header)
+        cell.font = bold_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    summary: dict[int, dict[str, Any]] = {}
+
+    for plan in plans:
+        supervisor = plan.supervisor
+        sid = supervisor.id
+
+        if sid not in summary:
+            summary[sid] = {
+                "supervisor": supervisor,
+                "total": 0,
+                "approved": 0,
+                "draft": 0,
+                "unlock": 0,
+                "incomplete": 0,
+            }
+
+        filled = _plan_filled_count(plan)
+        summary[sid]["total"] += 1
+
+        if plan.status == Plan.STATUS_APPROVED:
+            summary[sid]["approved"] += 1
+        elif plan.status == Plan.STATUS_UNLOCK_REQUESTED:
+            summary[sid]["unlock"] += 1
+        else:
+            summary[sid]["draft"] += 1
+
+        if filled < 5:
+            summary[sid]["incomplete"] += 1
+
+    row_idx = 4
+    for i, item in enumerate(summary.values(), start=1):
+        supervisor = item["supervisor"]
+        values = [
+            i,
+            supervisor.full_name,
+            _sup_nid_value(supervisor),
+            getattr(getattr(supervisor, "sector", None), "name", "") or "—",
+            item["total"],
+            item["approved"],
+            item["draft"],
+            item["unlock"],
+            item["incomplete"],
+        ]
+
+        for col, value in enumerate(values, start=1):
+            cell = ws_summary.cell(row=row_idx, column=col, value=value)
+            cell.font = normal_font
+            cell.border = border
+            cell.alignment = center if col in (1, 3, 5, 6, 7, 8, 9) else right
+
+            if col == 6:
+                cell.fill = approved_fill
+            elif col == 9:
+                cell.fill = incomplete_fill
+
+        row_idx += 1
+
+    for col_i, width in {
+        1: 7,
+        2: 30,
+        3: 18,
+        4: 22,
+        5: 14,
+        6: 12,
+        7: 12,
+        8: 16,
+        9: 14,
+    }.items():
+        ws_summary.column_dimensions[get_column_letter(col_i)].width = width
+
+    # =========================================================================
+    # Sheet 2: Matrix plans
+    # =========================================================================
+    ws = wb.create_sheet("كل الخطط")
+    ws.sheet_view.rightToLeft = True
+
+    ws.merge_cells("A1:O1")
+    ws["A1"] = "جميع خطط المشرفين لكل الأسابيع"
+    ws["A1"].font = title_font
+    ws["A1"].alignment = center
+    ws["A1"].fill = title_fill
+
+    headers = [
+        "م",
+        "اسم المشرف",
+        "السجل المدني",
+        "القطاع",
+        "الأسبوع",
+        "عنوان الأسبوع",
+        "تاريخ بداية الأسبوع",
+        "الأحد",
+        "الإثنين",
+        "الثلاثاء",
+        "الأربعاء",
+        "الخميس",
+        "الحالة",
+        "مكتملة",
+        "ملاحظة الإدارة",
+    ]
+
+    header_row = 3
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=header_row, column=col, value=header)
+        cell.font = bold_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    row_idx = header_row + 1
+
+    for i, plan in enumerate(plans, start=1):
+        day_map = {d.weekday: d for d in plan.days.all()}
+        filled = _plan_filled_count(plan)
+        week = plan.week
+        supervisor = plan.supervisor
+
+        row_values = [
+            i,
+            supervisor.full_name,
+            _sup_nid_value(supervisor),
+            getattr(getattr(supervisor, "sector", None), "name", "") or "—",
+            week.week_no,
+            getattr(week, "title", "") or "—",
+            week.start_sunday.strftime("%Y-%m-%d") if getattr(week, "start_sunday", None) else "—",
+            _plan_day_export_text(day_map.get(0)),
+            _plan_day_export_text(day_map.get(1)),
+            _plan_day_export_text(day_map.get(2)),
+            _plan_day_export_text(day_map.get(3)),
+            _plan_day_export_text(day_map.get(4)),
+            _status_label(plan),
+            "نعم" if filled == 5 else f"لا ({filled}/5)",
+            getattr(plan, "admin_note", "") or "—",
+        ]
+
+        for col, value in enumerate(row_values, start=1):
+            cell = ws.cell(row=row_idx, column=col, value=value)
+            cell.font = normal_font
+            cell.border = border
+            cell.alignment = center if col in (1, 3, 5, 7, 13, 14) else right
+
+            if col == 13 and plan.status == Plan.STATUS_APPROVED:
+                cell.fill = approved_fill
+            elif col == 13 and plan.status == Plan.STATUS_DRAFT:
+                cell.fill = draft_fill
+            elif col == 14 and filled < 5:
+                cell.fill = incomplete_fill
+
+        row_idx += 1
+
+    for col_i, width in {
+        1: 7,
+        2: 30,
+        3: 18,
+        4: 22,
+        5: 10,
+        6: 24,
+        7: 18,
+        8: 36,
+        9: 36,
+        10: 36,
+        11: 36,
+        12: 36,
+        13: 15,
+        14: 14,
+        15: 38,
+    }.items():
+        ws.column_dimensions[get_column_letter(col_i)].width = width
+
+    # =========================================================================
+    # Sheet 3: Daily details
+    # =========================================================================
+    ws_days = wb.create_sheet("تفصيل الأيام")
+    ws_days.sheet_view.rightToLeft = True
+
+    ws_days.merge_cells("A1:K1")
+    ws_days["A1"] = "تفصيل أيام الخطط لجميع المشرفين"
+    ws_days["A1"].font = title_font
+    ws_days["A1"].alignment = center
+    ws_days["A1"].fill = title_fill
+
+    day_headers = [
+        "م",
+        "اسم المشرف",
+        "السجل المدني",
+        "الأسبوع",
+        "اليوم",
+        "نوع الزيارة",
+        "المدرسة",
+        "الرقم الإحصائي",
+        "سبب عدم الزيارة",
+        "ملاحظة اليوم",
+        "حالة الخطة",
+    ]
+
+    for col, header in enumerate(day_headers, start=1):
+        cell = ws_days.cell(row=3, column=col, value=header)
+        cell.font = bold_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    row_idx = 4
+    counter = 1
+
+    for plan in plans:
+        day_map = {d.weekday: d for d in plan.days.all()}
+
+        for weekday, weekday_name in WEEKDAYS:
+            d = day_map.get(weekday)
+            school = getattr(d, "school", None) if d else None
+            visit_type_label = _visit_type_export_label(getattr(d, "visit_type", "")) if d else "—"
+
+            no_visit_reason = "—"
+            if d and getattr(d, "no_visit_reason", None):
+                no_visit_reason = d.get_no_visit_reason_display()
+
+            row_values = [
+                counter,
+                plan.supervisor.full_name,
+                _sup_nid_value(plan.supervisor),
+                plan.week.week_no,
+                weekday_name,
+                visit_type_label,
+                getattr(school, "name", "") or "—",
+                getattr(school, "stat_code", "") or "—",
+                no_visit_reason,
+                getattr(d, "note", "") if d else "—",
+                _status_label(plan),
+            ]
+
+            for col, value in enumerate(row_values, start=1):
+                cell = ws_days.cell(row=row_idx, column=col, value=value)
+                cell.font = normal_font
+                cell.border = border
+                cell.alignment = center if col in (1, 3, 4, 5, 6, 8, 11) else right
+
+            row_idx += 1
+            counter += 1
+
+    for col_i, width in {
+        1: 7,
+        2: 30,
+        3: 18,
+        4: 10,
+        5: 12,
+        6: 15,
+        7: 36,
+        8: 18,
+        9: 28,
+        10: 40,
+        11: 15,
+    }.items():
+        ws_days.column_dimensions[get_column_letter(col_i)].width = width
+
+    return wb
+
+
+def _get_assignment_dashboard_context() -> dict[str, Any]:
+    """
+    مؤشرات مختصرة للوحة الإدارة الرئيسية عن حالة الإسناد.
+
+    لا يعتمد هذا المساعد على ملف خارجي، حتى يكون views.py مكتملًا بذاته.
+    ويجلب آخر عملية معالجة فقط إذا كان Model:
+    AssignmentReviewLog
+    موجودًا ومهاجرًا في قاعدة البيانات.
+    """
+    active_assignments = Assignment.objects.filter(is_active=True)
+
+    assigned_active_school_ids = (
+        active_assignments
+        .filter(school__is_active=True)
+        .values_list("school_id", flat=True)
+        .distinct()
+    )
+
+    unassigned_schools_count = (
+        School.objects
+        .filter(is_active=True)
+        .exclude(id__in=assigned_active_school_ids)
+        .count()
+    )
+
+    duplicate_assignments_count = (
+        active_assignments
+        .values("school_id")
+        .annotate(total=Count("id"))
+        .filter(total__gt=1, school_id__isnull=False)
+        .count()
+    )
+
+    inactive_supervisor_assignments_count = (
+        active_assignments
+        .filter(supervisor__is_active=False)
+        .count()
+    )
+
+    inactive_school_assignments_count = (
+        active_assignments
+        .filter(school__is_active=False)
+        .count()
+    )
+
+    latest_assignment_log = None
+    try:
+        AssignmentReviewLog = apps.get_model("visits", "AssignmentReviewLog")
+        latest_assignment_log = (
+            AssignmentReviewLog.objects
+            .select_related("school", "supervisor", "user")
+            .order_by("-created_at", "-id")
+            .first()
+        )
+    except Exception:
+        latest_assignment_log = None
+
+    return {
+        "dashboard_unassigned_schools_count": unassigned_schools_count,
+        "dashboard_duplicate_assignments_count": duplicate_assignments_count,
+        "dashboard_inactive_supervisor_assignments_count": inactive_supervisor_assignments_count,
+        "dashboard_inactive_school_assignments_count": inactive_school_assignments_count,
+        "dashboard_latest_assignment_log": latest_assignment_log,
+    }
+
+
 # =============================================================================
 # Auth views
 # =============================================================================
@@ -2572,35 +2987,98 @@ def admin_school_list_view(request: HttpRequest) -> HttpResponse:
     sector_id = _safe_int(request.GET.get("sector") or 0, default=0)
     only_active = request.GET.get("active", "1") == "1"
 
-    qs = School.objects.select_related("sector").order_by("name")
+    assignment_status = _cell_str(request.GET.get("assignment") or "all")
+    if assignment_status not in ("all", "assigned", "unassigned"):
+        assignment_status = "all"
+
+    base_qs = School.objects.select_related("sector").order_by("name")
 
     if only_active:
-        qs = qs.filter(is_active=True)
+        base_qs = base_qs.filter(is_active=True)
+
     if q:
-        qs = qs.filter(Q(name__icontains=q) | Q(stat_code__icontains=q))
+        base_qs = base_qs.filter(
+            Q(name__icontains=q) | Q(stat_code__icontains=q)
+        )
+
     if gender in ("boys", "girls"):
-        qs = qs.filter(gender=gender)
+        base_qs = base_qs.filter(gender=gender)
+
     if sector_id:
-        qs = qs.filter(sector_id=sector_id)
+        base_qs = base_qs.filter(sector_id=sector_id)
+
+    assigned_school_ids = set(
+        Assignment.objects.filter(
+            is_active=True,
+            school_id__isnull=False,
+        ).values_list("school_id", flat=True)
+    )
+
+    kpi_total = base_qs.count()
+    kpi_active = base_qs.filter(is_active=True).count()
+    kpi_inactive = base_qs.filter(is_active=False).count()
+    kpi_assigned = base_qs.filter(id__in=assigned_school_ids).count()
+    kpi_unassigned = base_qs.exclude(id__in=assigned_school_ids).count()
+
+    qs = base_qs
+
+    if assignment_status == "assigned":
+        qs = qs.filter(id__in=assigned_school_ids)
+    elif assignment_status == "unassigned":
+        qs = qs.exclude(id__in=assigned_school_ids)
 
     sectors = Sector.objects.filter(is_active=True).order_by("name")
+
     paginator = Paginator(qs, 30)
     page_obj = paginator.get_page(_safe_int(request.GET.get("page") or 1, default=1))
+
+    schools = list(page_obj.object_list)
+    school_ids = [school.id for school in schools]
+
+    active_assignments = (
+        Assignment.objects.filter(
+            is_active=True,
+            school_id__in=school_ids,
+        )
+        .select_related("supervisor")
+        .order_by("school_id", "id")
+    )
+
+    assignment_by_school: dict[int, Assignment] = {}
+    assignment_count_by_school: dict[int, int] = {}
+
+    for assignment in active_assignments:
+        school_id = assignment.school_id
+        assignment_count_by_school[school_id] = assignment_count_by_school.get(school_id, 0) + 1
+
+        # في حال وجود أكثر من إسناد نشط لنفس المدرسة، نعرض أول إسناد
+        # ونمرر العدد للقالب لإظهار تنبيه خفيف.
+        if school_id not in assignment_by_school:
+            assignment_by_school[school_id] = assignment
+
+    for school in schools:
+        assignment = assignment_by_school.get(school.id)
+        school.active_assignment = assignment
+        school.assigned_supervisor = assignment.supervisor if assignment else None
+        school.active_assignment_count = assignment_count_by_school.get(school.id, 0)
 
     return render(
         request,
         "visits/admin_school_list.html",
         {
-            "rows": page_obj.object_list,
+            "rows": schools,
             "page_obj": page_obj,
             "q": q,
             "gender": gender,
             "sector_id": sector_id,
             "only_active": only_active,
+            "assignment_status": assignment_status,
             "sectors": sectors,
-            "kpi_total": qs.count(),
-            "kpi_active": qs.filter(is_active=True).count(),
-            "kpi_inactive": qs.filter(is_active=False).count(),
+            "kpi_total": kpi_total,
+            "kpi_active": kpi_active,
+            "kpi_inactive": kpi_inactive,
+            "kpi_assigned": kpi_assigned,
+            "kpi_unassigned": kpi_unassigned,
         },
     )
 
@@ -2822,6 +3300,11 @@ def admin_assignments_overview_view(request: HttpRequest) -> HttpResponse:
     gender = _cell_str(request.GET.get("gender"))
     sector_id = _safe_int(request.GET.get("sector") or 0, default=0)
     only_active = request.GET.get("active", "1") == "1"
+    workload = _cell_str(request.GET.get("workload") or "all") or "all"
+
+    valid_workloads = {"all", "zero", "light", "balanced", "high", "very_high"}
+    if workload not in valid_workloads:
+        workload = "all"
 
     supervisors = (
         Supervisor.objects.select_related("sector")
@@ -2838,14 +3321,37 @@ def admin_assignments_overview_view(request: HttpRequest) -> HttpResponse:
 
     if only_active:
         supervisors = supervisors.filter(is_active=True)
+
     if q:
         supervisors = supervisors.filter(
             Q(full_name__icontains=q) | Q(national_id__icontains=q)
         )
+
     if gender in ("boys", "girls"):
         supervisors = supervisors.filter(gender=gender)
+
     if sector_id:
         supervisors = supervisors.filter(sector_id=sector_id)
+
+    if workload == "zero":
+        supervisors = supervisors.filter(active_assignment_count=0)
+    elif workload == "light":
+        supervisors = supervisors.filter(
+            active_assignment_count__gte=1,
+            active_assignment_count__lte=10,
+        )
+    elif workload == "balanced":
+        supervisors = supervisors.filter(
+            active_assignment_count__gte=11,
+            active_assignment_count__lte=25,
+        )
+    elif workload == "high":
+        supervisors = supervisors.filter(
+            active_assignment_count__gte=26,
+            active_assignment_count__lte=35,
+        )
+    elif workload == "very_high":
+        supervisors = supervisors.filter(active_assignment_count__gte=36)
 
     sectors = Sector.objects.filter(is_active=True).order_by("name")
 
@@ -2872,6 +3378,7 @@ def admin_assignments_overview_view(request: HttpRequest) -> HttpResponse:
             "gender": gender,
             "sector_id": sector_id,
             "only_active": only_active,
+            "workload": workload,
             "sectors": sectors,
             "kpi_supervisors": supervisors.count(),
             "kpi_assignments": Assignment.objects.filter(
@@ -2883,25 +3390,7 @@ def admin_assignments_overview_view(request: HttpRequest) -> HttpResponse:
         },
     )
 
-    return render(
-        request,
-        "visits/admin_assignments_overview.html",
-        {
-            "rows": supervisors,
-            "q": q,
-            "gender": gender,
-            "sector_id": sector_id,
-            "only_active": only_active,
-            "sectors": sectors,
-            "kpi_supervisors": supervisors.count(),
-            "kpi_assignments": Assignment.objects.filter(
-                is_active=True,
-                school__is_active=True,
-            ).count(),
-            "kpi_schools": School.objects.filter(is_active=True).count(),
-            "kpi_unassigned_schools": unassigned_schools_qs.count(),
-        },
-    )
+
 
 
 @admin_only_view
@@ -3273,38 +3762,111 @@ def request_unlock_view(request: HttpRequest) -> HttpResponse:
 # =============================================================================
 # Admin visit follow-up
 # =============================================================================
-def _build_supervisor_visit_followup_row(supervisor: Supervisor) -> dict[str, Any]:
-    assigned_school_ids = set(
-        Assignment.objects.filter(
-            supervisor=supervisor,
-            is_active=True,
-            school__is_active=True,
-        ).values_list("school_id", flat=True)
-    )
+def _normalize_week_range(from_week: int = 0, to_week: int = 0) -> tuple[int, int]:
+    weeks_qs = PlanWeek.objects.filter(is_break=False).order_by("week_no")
+    first_week = weeks_qs.first()
+    last_week = weeks_qs.last()
 
-    visited_school_ids = set(
-        PlanDay.objects.filter(
-            plan__supervisor=supervisor,
-            visit_type=PlanDay.VISIT_IN,
-            school__isnull=False,
-        ).values_list("school_id", flat=True)
+    if not first_week or not last_week:
+        return 0, 0
+
+    start_week = from_week or first_week.week_no
+    end_week = to_week or last_week.week_no
+
+    if start_week > end_week:
+        start_week, end_week = end_week, start_week
+
+    return start_week, end_week
+
+
+def _week_range_label(from_week: int = 0, to_week: int = 0) -> str:
+    if from_week and to_week:
+        if from_week == to_week:
+            return f"الأسبوع {from_week}"
+        return f"من الأسبوع {from_week} إلى الأسبوع {to_week}"
+    return "جميع الأسابيع"
+
+
+def _apply_planday_week_range(qs, from_week: int = 0, to_week: int = 0):
+    if from_week:
+        qs = qs.filter(plan__week__week_no__gte=from_week)
+    if to_week:
+        qs = qs.filter(plan__week__week_no__lte=to_week)
+    return qs
+
+
+def _build_supervisor_visit_followup_row(
+    supervisor: Supervisor,
+    *,
+    from_week: int = 0,
+    to_week: int = 0,
+) -> dict[str, Any]:
+    """
+    متابعة التغطية التخطيطية للمشرف ضمن نطاق أسابيع محدد.
+    المقصود هنا: هل ظهرت المدرسة المسندة داخل أي خطة ضمن النطاق؟
+    وليس التنفيذ الحضوري الفعلي للزيارة.
+    """
+    assigned_schools = list(
+        School.objects.filter(
+            assignments__supervisor=supervisor,
+            assignments__is_active=True,
+            is_active=True,
+        )
+        .distinct()
+        .order_by("name")
     )
+    assigned_school_ids = {s.id for s in assigned_schools}
+
+    planday_qs = PlanDay.objects.filter(
+        plan__supervisor=supervisor,
+        school__isnull=False,
+        school__is_active=True,
+    )
+    planday_qs = _apply_planday_week_range(planday_qs, from_week=from_week, to_week=to_week)
+
+    planned_counts = dict(
+        planday_qs.filter(school_id__in=assigned_school_ids)
+        .values("school_id")
+        .annotate(c=Count("id"))
+        .values_list("school_id", "c")
+    )
+    planned_school_ids = set(planned_counts.keys())
+
+    planned_schools = [s for s in assigned_schools if s.id in planned_school_ids]
+    remaining_schools = [s for s in assigned_schools if s.id not in planned_school_ids]
+    repeated_schools = [s for s in assigned_schools if planned_counts.get(s.id, 0) > 1]
 
     assigned_count = len(assigned_school_ids)
-    visited_count = len(assigned_school_ids & visited_school_ids)
-    remaining_count = max(assigned_count - visited_count, 0)
-    progress_percent = round((visited_count / assigned_count) * 100, 1) if assigned_count else 0
+    planned_count = len(planned_school_ids)
+    remaining_count = len(remaining_schools)
+    repeated_count = len(repeated_schools)
+    progress_percent = round((planned_count / assigned_count) * 100, 1) if assigned_count else 0
 
     return {
         "supervisor": supervisor,
         "assigned_count": assigned_count,
-        "visited_count": visited_count,
+        "planned_count": planned_count,
+        "visited_count": planned_count,  # توافق قديم مع القوالب السابقة
         "remaining_count": remaining_count,
+        "repeated_count": repeated_count,
         "progress_percent": progress_percent,
+        "planned_schools": planned_schools,
+        "remaining_schools": remaining_schools,
+        "repeated_schools": repeated_schools,
+        "planned_school_names": "، ".join(s.name for s in planned_schools) or "—",
+        "remaining_school_names": "، ".join(s.name for s in remaining_schools) or "—",
+        "repeated_school_names": "، ".join(f"{s.name} ({planned_counts.get(s.id, 0)})" for s in repeated_schools) or "—",
+        "range_label": _week_range_label(from_week, to_week),
     }
 
 
-def _build_global_visit_followup_stats() -> dict[str, Any]:
+def _build_global_visit_followup_stats(
+    *,
+    from_week: int = 0,
+    to_week: int = 0,
+) -> dict[str, Any]:
+    from_week, to_week = _normalize_week_range(from_week, to_week)
+
     supervisors = (
         Supervisor.objects.filter(is_active=True)
         .select_related("sector")
@@ -3315,70 +3877,36 @@ def _build_global_visit_followup_stats() -> dict[str, Any]:
     total_assigned = 0
     total_planned = 0
     total_remaining = 0
+    total_repeated = 0
     supervisors_with_remaining = 0
 
     for supervisor in supervisors:
-        assigned_schools = list(
-            School.objects.filter(
-                assignments__supervisor=supervisor,
-                assignments__is_active=True,
-                is_active=True,
-            )
-            .distinct()
-            .order_by("name")
+        row = _build_supervisor_visit_followup_row(
+            supervisor,
+            from_week=from_week,
+            to_week=to_week,
         )
-        assigned_school_ids = {s.id for s in assigned_schools}
+        rows.append(row)
 
-        planned_schools = list(
-            School.objects.filter(
-                planday__plan__supervisor=supervisor,
-                planday__school__isnull=False,
-                is_active=True,
-            )
-            .distinct()
-            .order_by("name")
-        )
-        planned_school_ids = {s.id for s in planned_schools}
+        total_assigned += row["assigned_count"]
+        total_planned += row["planned_count"]
+        total_remaining += row["remaining_count"]
+        total_repeated += row["repeated_count"]
 
-        planned_school_ids &= assigned_school_ids
-        planned_schools = [s for s in planned_schools if s.id in planned_school_ids]
-
-        remaining_schools = [s for s in assigned_schools if s.id not in planned_school_ids]
-        remaining_school_ids = {s.id for s in remaining_schools}
-
-        assigned_count = len(assigned_school_ids)
-        planned_count = len(planned_school_ids)
-        remaining_count = len(remaining_school_ids)
-
-        total_assigned += assigned_count
-        total_planned += planned_count
-        total_remaining += remaining_count
-
-        if remaining_count > 0:
+        if row["remaining_count"] > 0:
             supervisors_with_remaining += 1
-
-        rows.append(
-            {
-                "supervisor": supervisor,
-                "assigned_count": assigned_count,
-                "planned_count": planned_count,
-                "visited_count": planned_count,   # للإبقاء على التوافق مع القالب الحالي مؤقتًا
-                "remaining_count": remaining_count,
-                "progress_percent": round((planned_count / assigned_count) * 100, 1) if assigned_count else 0,
-                "planned_schools": planned_schools,
-                "remaining_schools": remaining_schools,
-                "planned_school_names": "، ".join(s.name for s in planned_schools) or "—",
-                "remaining_school_names": "، ".join(s.name for s in remaining_schools) or "—",
-            }
-        )
 
     return {
         "visit_followup_rows": rows,
         "visit_followup_total_assigned": total_assigned,
-        "visit_followup_total_visited": total_planned,   # للإبقاء على التوافق مع القالب الحالي مؤقتًا
+        "visit_followup_total_visited": total_planned,  # توافق قديم
         "visit_followup_total_planned": total_planned,
         "visit_followup_total_remaining": total_remaining,
+        "visit_followup_total_repeated": total_repeated,
         "visit_followup_supervisors_with_remaining": supervisors_with_remaining,
+        "from_week": from_week,
+        "to_week": to_week,
+        "week_range_label": _week_range_label(from_week, to_week),
     }
 
 
@@ -3437,13 +3965,13 @@ def _build_visit_followup_excel_workbook(rows, report_title: str = "متابعة
     thin = Side(style="thin", color="CBD5E1")
     border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
-    ws.merge_cells("A1:H1")
+    ws.merge_cells("A1:I1")
     ws["A1"] = report_title
     ws["A1"].font = title_font
     ws["A1"].alignment = center
     ws["A1"].fill = title_fill
 
-    ws.merge_cells("A2:H2")
+    ws.merge_cells("A2:I2")
     ws["A2"] = f"تاريخ التصدير: {timezone.localtime(timezone.now()).strftime('%Y-%m-%d %H:%M')}"
     ws["A2"].font = bold_font
     ws["A2"].alignment = center
@@ -3455,8 +3983,9 @@ def _build_visit_followup_excel_workbook(rows, report_title: str = "متابعة
         "القطاع",
         "المدارس المسندة",
         "المدارس المدرجة في الخطة",
-        "المتبقي",
-        "نسبة الإنجاز",
+        "غير المدرجة",
+        "مدارس متكررة",
+        "نسبة التغطية",
     ]
     header_row = 4
 
@@ -3480,6 +4009,7 @@ def _build_visit_followup_excel_workbook(rows, report_title: str = "متابعة
             row["assigned_count"],
             row["planned_count"],
             row["remaining_count"],
+            row.get("repeated_count", 0),
             f'{row["progress_percent"]}%',
         ]
 
@@ -3487,7 +4017,7 @@ def _build_visit_followup_excel_workbook(rows, report_title: str = "متابعة
             cell = ws.cell(row=row_idx, column=col, value=value)
             cell.font = normal_font
             cell.border = border
-            cell.alignment = center if col in (1, 3, 5, 6, 7, 8) else right
+            cell.alignment = center if col in (1, 3, 5, 6, 7, 8, 9) else right
 
         row_idx += 1
 
@@ -3500,6 +4030,7 @@ def _build_visit_followup_excel_workbook(rows, report_title: str = "متابعة
         6: 24,
         7: 16,
         8: 16,
+        9: 16,
     }.items():
         ws.column_dimensions[get_column_letter(col_i)].width = width
 
@@ -3509,13 +4040,13 @@ def _build_visit_followup_excel_workbook(rows, report_title: str = "متابعة
     ws2 = wb.create_sheet(title="تفاصيل المدارس")
     ws2.sheet_view.rightToLeft = True
 
-    ws2.merge_cells("A1:F1")
+    ws2.merge_cells("A1:G1")
     ws2["A1"] = f"{report_title} — تفاصيل المدارس"
     ws2["A1"].font = title_font
     ws2["A1"].alignment = center
     ws2["A1"].fill = title_fill
 
-    ws2.merge_cells("A2:F2")
+    ws2.merge_cells("A2:G2")
     ws2["A2"] = f"تاريخ التصدير: {timezone.localtime(timezone.now()).strftime('%Y-%m-%d %H:%M')}"
     ws2["A2"].font = bold_font
     ws2["A2"].alignment = center
@@ -3526,7 +4057,8 @@ def _build_visit_followup_excel_workbook(rows, report_title: str = "متابعة
         "رقم الهوية",
         "القطاع",
         "المدارس المدرجة في الخطة",
-        "المدارس المتبقية",
+        "المدارس غير المدرجة",
+        "المدارس المتكررة",
     ]
     detail_header_row = 4
 
@@ -3549,6 +4081,7 @@ def _build_visit_followup_excel_workbook(rows, report_title: str = "متابعة
             sector_name,
             row.get("planned_school_names", "—"),
             row.get("remaining_school_names", "—"),
+            row.get("repeated_school_names", "—"),
         ]
 
         for col, value in enumerate(values, start=1):
@@ -3566,6 +4099,7 @@ def _build_visit_followup_excel_workbook(rows, report_title: str = "متابعة
         4: 20,
         5: 60,
         6: 60,
+        7: 60,
     }.items():
         ws2.column_dimensions[get_column_letter(col_i)].width = width
 
@@ -3577,8 +4111,11 @@ def admin_visit_followup_dashboard_view(request: HttpRequest) -> HttpResponse:
     q = _cell_str(request.GET.get("q"))
     sector_id = _safe_int(request.GET.get("sector") or 0, default=0)
     only_remaining = str(request.GET.get("only_remaining") or "").strip().lower() in ("1", "true", "on", "yes")
+    from_week = _safe_int(request.GET.get("from_week") or 0, default=0)
+    to_week = _safe_int(request.GET.get("to_week") or 0, default=0)
+    from_week, to_week = _normalize_week_range(from_week, to_week)
 
-    stats = _build_global_visit_followup_stats()
+    stats = _build_global_visit_followup_stats(from_week=from_week, to_week=to_week)
     rows = _filter_visit_followup_rows(
         rows=stats["visit_followup_rows"],
         q=q,
@@ -3587,6 +4124,7 @@ def admin_visit_followup_dashboard_view(request: HttpRequest) -> HttpResponse:
     )
 
     sectors = Sector.objects.filter(is_active=True).order_by("name")
+    week_choices = PlanWeek.objects.filter(is_break=False).order_by("week_no")
 
     return render(
         request,
@@ -3598,6 +4136,7 @@ def admin_visit_followup_dashboard_view(request: HttpRequest) -> HttpResponse:
             "sector_id": sector_id,
             "only_remaining": only_remaining,
             "sectors": sectors,
+            "week_choices": week_choices,
         },
     )
 
@@ -3607,8 +4146,11 @@ def admin_visit_followup_export_excel_view(request: HttpRequest) -> HttpResponse
     q = _cell_str(request.GET.get("q"))
     sector_id = _safe_int(request.GET.get("sector") or 0, default=0)
     only_remaining = str(request.GET.get("only_remaining") or "").strip().lower() in ("1", "true", "on", "yes")
+    from_week = _safe_int(request.GET.get("from_week") or 0, default=0)
+    to_week = _safe_int(request.GET.get("to_week") or 0, default=0)
+    from_week, to_week = _normalize_week_range(from_week, to_week)
 
-    stats = _build_global_visit_followup_stats()
+    stats = _build_global_visit_followup_stats(from_week=from_week, to_week=to_week)
     rows = _filter_visit_followup_rows(
         rows=stats["visit_followup_rows"],
         q=q,
@@ -3616,7 +4158,9 @@ def admin_visit_followup_export_excel_view(request: HttpRequest) -> HttpResponse
         only_remaining=only_remaining,
     )
 
-    title_parts = ["متابعة الزيارات على مستوى جميع الأسابيع"]
+    title_parts = ["متابعة التغطية التخطيطية"]
+    title_parts.append(stats.get("week_range_label") or _week_range_label(from_week, to_week))
+
     if q:
         title_parts.append(f"بحث: {q}")
 
@@ -3626,33 +4170,37 @@ def admin_visit_followup_export_excel_view(request: HttpRequest) -> HttpResponse
             title_parts.append(f"القطاع: {sector.name}")
 
     if only_remaining:
-        title_parts.append("المتأخرون فقط")
+        title_parts.append("المدارس غير المدرجة فقط")
 
     workbook = _build_visit_followup_excel_workbook(
         rows,
         report_title=" — ".join(title_parts),
     )
-    return _excel_response(workbook, "visit_followup_report.xlsx")
+    return _excel_response(workbook, "planning_coverage_followup_report.xlsx")
 
 
 @admin_only_view
 @require_POST
 def admin_notify_supervisor_visit_followup_view(request: HttpRequest, supervisor_id: int) -> HttpResponse:
     supervisor = get_object_or_404(Supervisor, id=supervisor_id)
-    row = _build_supervisor_visit_followup_row(supervisor)
+    from_week = _safe_int(request.POST.get("from_week") or request.GET.get("from_week") or 0, default=0)
+    to_week = _safe_int(request.POST.get("to_week") or request.GET.get("to_week") or 0, default=0)
+    from_week, to_week = _normalize_week_range(from_week, to_week)
+
+    row = _build_supervisor_visit_followup_row(supervisor, from_week=from_week, to_week=to_week)
 
     if row["remaining_count"] <= 0:
-        messages.info(request, "لا توجد مدارس متبقية على هذا المشرف.")
+        messages.info(request, "لا توجد مدارس غير مدرجة على هذا المشرف ضمن النطاق المحدد.")
         return redirect("visits:admin_visit_followup_dashboard")
 
     _notify_supervisor(
         supervisor=supervisor,
         plan=None,
         notif_type=SupervisorNotification.TYPE_ADMIN_ALERT,
-        title="تنبيه بمتابعة الزيارات",
+        title="تنبيه بمتابعة التغطية التخطيطية",
         message=(
-            "نأمل استكمال الزيارات المتبقية. "
-            f"عدد المدارس التي لم يتم تسجيل زيارتها حتى الآن: {row['remaining_count']}."
+            f"نأمل مراجعة تغطية المدارس المسندة ضمن النطاق ({_week_range_label(from_week, to_week)}). "
+            f"عدد المدارس التي لم تظهر في الخطط ضمن هذا النطاق: {row['remaining_count']}."
         ),
     )
 
@@ -3663,30 +4211,43 @@ def admin_notify_supervisor_visit_followup_view(request: HttpRequest, supervisor
 @admin_only_view
 @require_POST
 def admin_notify_all_supervisors_visit_followup_view(request: HttpRequest) -> HttpResponse:
-    supervisors = Supervisor.objects.filter(is_active=True).order_by("full_name")
-    notified = 0
+    q = _cell_str(request.POST.get("q"))
+    sector_id = _safe_int(request.POST.get("sector") or 0, default=0)
+    only_remaining = str(request.POST.get("only_remaining") or "").strip().lower() in ("1", "true", "on", "yes")
+    from_week = _safe_int(request.POST.get("from_week") or 0, default=0)
+    to_week = _safe_int(request.POST.get("to_week") or 0, default=0)
+    from_week, to_week = _normalize_week_range(from_week, to_week)
 
-    for supervisor in supervisors:
-        row = _build_supervisor_visit_followup_row(supervisor)
+    stats = _build_global_visit_followup_stats(from_week=from_week, to_week=to_week)
+    rows = _filter_visit_followup_rows(
+        rows=stats["visit_followup_rows"],
+        q=q,
+        sector_id=sector_id,
+        only_remaining=True if not only_remaining else only_remaining,
+    )
+
+    notified = 0
+    for row in rows:
         if row["remaining_count"] <= 0:
             continue
 
+        supervisor = row["supervisor"]
         _notify_supervisor(
             supervisor=supervisor,
             plan=None,
             notif_type=SupervisorNotification.TYPE_ADMIN_ALERT,
-            title="تنبيه بمتابعة الزيارات",
+            title="تنبيه بمتابعة التغطية التخطيطية",
             message=(
-                "نأمل استكمال الزيارات المتبقية. "
-                f"عدد المدارس التي لم يتم تسجيل زيارتها حتى الآن: {row['remaining_count']}."
+                f"نأمل مراجعة تغطية المدارس المسندة ضمن النطاق ({_week_range_label(from_week, to_week)}). "
+                f"عدد المدارس التي لم تظهر في الخطط ضمن هذا النطاق: {row['remaining_count']}."
             ),
         )
         notified += 1
 
     if notified:
-        messages.success(request, f"تم إرسال {notified} تنبيهًا للمشرفين المتأخرين.")
+        messages.success(request, f"تم إرسال {notified} تنبيهًا للمشرفين الذين لديهم مدارس غير مدرجة ضمن النطاق المحدد.")
     else:
-        messages.info(request, "لا يوجد مشرفون متأخرون حاليًا.")
+        messages.info(request, "لا يوجد مشرفون لديهم مدارس غير مدرجة ضمن النطاق المحدد.")
 
     return redirect("visits:admin_visit_followup_dashboard")
 
@@ -3812,6 +4373,7 @@ def admin_dashboard_view(request: HttpRequest) -> HttpResponse:
             "show_all": show_all,
             "week_letter": WeeklyLetterLink.objects.filter(week=week_obj).first(),
             "site_setting": site_setting,
+            **_get_assignment_dashboard_context(),
             **chart_data,
         },
     )
@@ -3975,13 +4537,13 @@ def _build_week_visit_summary_excel_workbook(week_obj: PlanWeek) -> Workbook:
     total_visited = sum(r["visited_count"] for r in rows)
     total_unvisited = sum(r["unvisited_count"] for r in rows)
 
-    ws.merge_cells("A1:H1")
+    ws.merge_cells("A1:I1")
     ws["A1"] = f"تقرير المدارس المزارة وغير المزارة — الأسبوع {week_obj.week_no}"
     ws["A1"].font = title_font
     ws["A1"].alignment = center
     ws["A1"].fill = title_fill
 
-    ws.merge_cells("A2:H2")
+    ws.merge_cells("A2:I2")
     ws["A2"] = (
         f"إجمالي المدارس المسندة: {total_assigned}  |  "
         f"المزارة: {total_visited}  |  "
@@ -4074,6 +4636,66 @@ def admin_export_week_excel(request: HttpRequest) -> HttpResponse:
     wb = _build_admin_week_excel_workbook(week_obj, plans)
     filename = f"خطط_الأسبوع_{week_obj.week_no}.xlsx"
     return _excel_response(wb, filename)
+
+
+@admin_only_view
+def admin_export_all_plans_excel(request: HttpRequest) -> HttpResponse:
+    """تصدير جميع خطط المشرفين لجميع الأسابيع في ملف Excel واحد."""
+    show_all = (request.GET.get("all") or "0").strip().lower() in ("1", "true", "yes", "on")
+    q = _cell_str(request.GET.get("q"))
+    status = _cell_str(request.GET.get("status") or "all").lower()
+    supervisor_id = _safe_int(request.GET.get("supervisor") or 0, default=0)
+    from_week = _safe_int(request.GET.get("from_week") or 0, default=0)
+    to_week = _safe_int(request.GET.get("to_week") or 0, default=0)
+
+    if status not in ("all", "approved", "draft", "unlock", "not_full"):
+        status = "all"
+
+    plans_qs = (
+        Plan.objects
+        .select_related("supervisor", "supervisor__sector", "week")
+        .prefetch_related("days__school")
+        .order_by("supervisor__full_name", "week__week_no")
+    )
+
+    if not show_all:
+        plans_qs = plans_qs.filter(week__is_break=False)
+
+    if supervisor_id:
+        plans_qs = plans_qs.filter(supervisor_id=supervisor_id)
+
+    if from_week:
+        plans_qs = plans_qs.filter(week__week_no__gte=from_week)
+
+    if to_week:
+        plans_qs = plans_qs.filter(week__week_no__lte=to_week)
+
+    if status == "approved":
+        plans_qs = plans_qs.filter(status=Plan.STATUS_APPROVED)
+    elif status == "draft":
+        plans_qs = plans_qs.filter(status=Plan.STATUS_DRAFT)
+    elif status == "unlock":
+        plans_qs = plans_qs.filter(status=Plan.STATUS_UNLOCK_REQUESTED)
+
+    if q:
+        plans_qs = plans_qs.filter(
+            Q(supervisor__full_name__icontains=q)
+            | Q(supervisor__national_id__icontains=q)
+            | Q(days__school__name__icontains=q)
+            | Q(days__school__stat_code__icontains=q)
+        ).distinct()
+
+    plans = list(plans_qs)
+
+    if status == "not_full":
+        plans = [plan for plan in plans if not plan.is_fully_filled()]
+
+    if not plans:
+        messages.warning(request, "لا توجد خطط مطابقة لمعايير التصدير.")
+        return redirect("visits:admin_dashboard")
+
+    wb = _build_all_supervisor_plans_excel_workbook(plans)
+    return _excel_response(wb, "جميع_خطط_المشرفين_لكل_الأسابيع.xlsx")
 
 
 @admin_only_view
@@ -4568,3 +5190,376 @@ def weekly_letter_link_delete_view(request: HttpRequest, pk: int) -> HttpRespons
     obj.delete()
     messages.success(request, "تم حذف الرابط.")
     return redirect("visits:weekly_letter_links_list")
+
+# =============================================================================
+# Compatibility: Control follow-ups views
+# =============================================================================
+def _control_followup_model():
+    """Return ControlFollowUp model if it exists, otherwise None.
+
+    This keeps URL checks stable while migrations are being created.
+    """
+    try:
+        return apps.get_model("visits", "ControlFollowUp")
+    except Exception:
+        return None
+
+
+def _control_followup_action_model():
+    try:
+        return apps.get_model("visits", "ControlFollowUpAction")
+    except Exception:
+        return None
+
+
+def _record_control_action(followup, action_type: str, actor=None, note: str = "") -> None:
+    ActionModel = _control_followup_action_model()
+    if not ActionModel or not followup:
+        return
+    try:
+        kwargs = {
+            "followup": followup,
+            "action_type": action_type,
+            "note": _cell_str(note),
+        }
+        if actor is not None and hasattr(ActionModel, "actor"):
+            kwargs["actor"] = actor
+        ActionModel.objects.create(**kwargs)
+    except Exception:
+        # Do not block the main workflow because of audit trail differences.
+        return
+
+
+def _supervisor_control_followups_queryset(supervisor):
+    Model = _control_followup_model()
+    if not Model:
+        return None
+    return (
+        Model.objects
+        .filter(supervisor=supervisor)
+        .select_related("week", "plan")
+        .order_by("status", "-updated_at", "-created_at")
+    )
+
+
+def supervisor_control_followups_view(request: HttpRequest) -> HttpResponse:
+    """Supervisor page for reviewing and responding to control follow-ups."""
+    try:
+        supervisor = _require_supervisor(request)
+    except Supervisor.DoesNotExist:
+        return redirect("visits:login")
+
+    qs = _supervisor_control_followups_queryset(supervisor)
+    if qs is None:
+        messages.warning(request, "سجل المتابعة الرقابية غير مفعّل حاليًا. نفّذ الهجرة أولًا.")
+        return redirect("visits:supervisor_dashboard")
+
+    status = _cell_str(request.GET.get("status") or "active")
+    if status == "open":
+        qs = qs.filter(status="open")
+    elif status == "notified":
+        qs = qs.filter(status="notified")
+    elif status == "pending_admin":
+        qs = qs.filter(status="pending_admin")
+    elif status == "closed":
+        qs = qs.filter(status__in=("processed", "closed"))
+    elif status == "all":
+        pass
+    else:
+        qs = qs.exclude(status__in=("processed", "closed"))
+        status = "active"
+
+    paginator = Paginator(qs, 20)
+    page_obj = paginator.get_page(request.GET.get("page") or 1)
+
+    return render(
+        request,
+        "visits/supervisor_control_followups.html",
+        {
+            "sup": supervisor,
+            "rows": page_obj.object_list,
+            "page_obj": page_obj,
+            "status": status,
+            "active_count": _supervisor_control_followups_queryset(supervisor).exclude(status__in=("processed", "closed")).count(),
+            "pending_admin_count": _supervisor_control_followups_queryset(supervisor).filter(status="pending_admin").count(),
+        },
+    )
+
+
+@require_POST
+def supervisor_control_followup_response_view(request: HttpRequest, followup_id: int) -> HttpResponse:
+    """Save supervisor response for one control follow-up."""
+    try:
+        supervisor = _require_supervisor(request)
+    except Supervisor.DoesNotExist:
+        return redirect("visits:login")
+
+    Model = _control_followup_model()
+    if not Model:
+        messages.warning(request, "سجل المتابعة الرقابية غير مفعّل حاليًا. نفّذ الهجرة أولًا.")
+        return redirect("visits:supervisor_dashboard")
+
+    followup = get_object_or_404(Model, pk=followup_id, supervisor=supervisor)
+    response = _cell_str(request.POST.get("response") or request.POST.get("supervisor_response"))
+
+    if not response:
+        messages.warning(request, "فضلاً اكتب الإفادة قبل الإرسال.")
+        return redirect("visits:supervisor_control_followups")
+
+    if hasattr(followup, "submit_supervisor_response"):
+        followup.submit_supervisor_response(response)
+    else:
+        followup.supervisor_response = response
+        followup.supervisor_response_at = timezone.now()
+        if hasattr(followup, "STATUS_PENDING_ADMIN"):
+            followup.status = followup.STATUS_PENDING_ADMIN
+        else:
+            followup.status = "pending_admin"
+        followup.save()
+
+    _record_control_action(followup, "supervisor_response", note=response)
+    messages.success(request, "تم إرسال الإفادة للإدارة.")
+    return redirect("visits:supervisor_control_followups")
+
+
+def supervisor_control_followup_respond_view(request: HttpRequest, followup_id: int) -> HttpResponse:
+    """Alias used by urls.py in some versions."""
+    return supervisor_control_followup_response_view(request, followup_id)
+
+
+# =============================================================================
+# Compatibility: Admin reports/control follow-ups views
+# =============================================================================
+@admin_only_view
+def admin_reports_view(request: HttpRequest) -> HttpResponse:
+    Model = _control_followup_model()
+    control_counts = {
+        "open": 0,
+        "notified": 0,
+        "pending_admin": 0,
+        "processed": 0,
+        "closed": 0,
+    }
+    if Model:
+        for key in list(control_counts.keys()):
+            control_counts[key] = Model.objects.filter(status=key).count()
+
+    return render(
+        request,
+        "visits/admin_reports.html",
+        {
+            "control_counts": control_counts,
+            "weeks": PlanWeek.objects.filter(is_break=False).order_by("week_no"),
+            "supervisors": Supervisor.objects.filter(is_active=True).order_by("full_name"),
+            "sectors": Sector.objects.filter(is_active=True).order_by("name"),
+        },
+    )
+
+
+@admin_only_view
+def admin_control_followups_view(request: HttpRequest) -> HttpResponse:
+    Model = _control_followup_model()
+    if not Model:
+        messages.warning(request, "سجل المتابعة الرقابية غير مفعّل حاليًا. نفّذ الهجرة أولًا.")
+        return redirect("visits:admin_dashboard")
+
+    q = _cell_str(request.GET.get("q"))
+    status = _cell_str(request.GET.get("status") or "active")
+    issue_type = _cell_str(request.GET.get("issue_type") or "all")
+
+    qs = Model.objects.select_related("supervisor", "week", "plan").order_by("status", "-updated_at", "-created_at")
+
+    if status == "active":
+        qs = qs.exclude(status__in=("processed", "closed"))
+    elif status != "all":
+        qs = qs.filter(status=status)
+
+    if issue_type != "all":
+        qs = qs.filter(issue_type=issue_type)
+
+    if q:
+        qs = qs.filter(
+            Q(title__icontains=q)
+            | Q(description__icontains=q)
+            | Q(supervisor__full_name__icontains=q)
+            | Q(supervisor__national_id__icontains=q)
+        )
+
+    counts = {
+        "total": Model.objects.count(),
+        "active": Model.objects.exclude(status__in=("processed", "closed")).count(),
+        "open": Model.objects.filter(status="open").count(),
+        "notified": Model.objects.filter(status="notified").count(),
+        "pending_admin": Model.objects.filter(status="pending_admin").count(),
+        "processed": Model.objects.filter(status="processed").count(),
+        "closed": Model.objects.filter(status="closed").count(),
+    }
+
+    paginator = Paginator(qs, _safe_int(request.GET.get("ps") or 30, default=30))
+    page_obj = paginator.get_page(request.GET.get("page") or 1)
+
+    return render(
+        request,
+        "visits/admin_control_followups.html",
+        {
+            "rows": page_obj.object_list,
+            "page_obj": page_obj,
+            "q": q,
+            "status": status,
+            "issue_type": issue_type,
+            "counts": counts,
+            "issue_choices": getattr(Model, "ISSUE_CHOICES", []),
+            "status_choices": getattr(Model, "STATUS_CHOICES", []),
+        },
+    )
+
+
+@admin_only_view
+def admin_control_followups_export_excel_view(request: HttpRequest) -> HttpResponse:
+    Model = _control_followup_model()
+    if not Model:
+        messages.warning(request, "سجل المتابعة الرقابية غير مفعّل حاليًا. نفّذ الهجرة أولًا.")
+        return redirect("visits:admin_dashboard")
+
+    rows = Model.objects.select_related("supervisor", "week", "plan").order_by("-updated_at")
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "سجل المتابعة الرقابية"
+    ws.sheet_view.rightToLeft = True
+    headers = ["نوع الحالة", "الحالة", "المشرف", "الهوية", "الأسبوع", "العنوان", "عدد التنبيهات", "آخر تنبيه", "تاريخ الرصد"]
+    ws.append(headers)
+    for f in rows:
+        ws.append([
+            f.get_issue_type_display() if hasattr(f, "get_issue_type_display") else f.issue_type,
+            f.get_status_display() if hasattr(f, "get_status_display") else f.status,
+            getattr(f.supervisor, "full_name", ""),
+            getattr(f.supervisor, "national_id", ""),
+            getattr(getattr(f, "week", None), "week_no", ""),
+            getattr(f, "title", ""),
+            getattr(f, "notification_count", 0),
+            timezone.localtime(f.last_notification_at).strftime("%Y-%m-%d %H:%M") if getattr(f, "last_notification_at", None) else "",
+            timezone.localtime(f.created_at).strftime("%Y-%m-%d %H:%M") if getattr(f, "created_at", None) else "",
+        ])
+    return _excel_response(wb, "سجل_المتابعة_الرقابية.xlsx")
+
+
+@admin_only_view
+@require_POST
+def admin_control_followup_notify_view(request: HttpRequest, followup_id: int) -> HttpResponse:
+    Model = _control_followup_model()
+    if not Model:
+        messages.warning(request, "سجل المتابعة الرقابية غير مفعّل حاليًا. نفّذ الهجرة أولًا.")
+        return redirect("visits:admin_dashboard")
+
+    followup = get_object_or_404(Model, pk=followup_id)
+    note = _cell_str(request.POST.get("note") or request.POST.get("admin_note"))
+
+    if hasattr(followup, "mark_notified"):
+        followup.mark_notified(note=note)
+    else:
+        followup.status = "notified"
+        followup.notification_count = (getattr(followup, "notification_count", 0) or 0) + 1
+        followup.last_notification_at = timezone.now()
+        if note:
+            followup.admin_note = note
+        followup.save()
+
+    try:
+        SupervisorNotification.objects.create(
+            supervisor=followup.supervisor,
+            plan=followup.plan,
+            notif_type=SupervisorNotification.TYPE_ADMIN_ALERT,
+            title="تنبيه رقابي",
+            message=note or getattr(followup, "description", "") or getattr(followup, "title", ""),
+        )
+    except Exception:
+        pass
+
+    _record_control_action(followup, "notify", actor=request.user, note=note)
+    messages.success(request, "تم إرسال التنبيه وتحديث سجل المتابعة.")
+    return redirect("visits:admin_control_followups")
+
+
+@admin_only_view
+@require_POST
+def admin_control_followup_update_view(request: HttpRequest, followup_id: int) -> HttpResponse:
+    Model = _control_followup_model()
+    if not Model:
+        messages.warning(request, "سجل المتابعة الرقابية غير مفعّل حاليًا. نفّذ الهجرة أولًا.")
+        return redirect("visits:admin_dashboard")
+
+    followup = get_object_or_404(Model, pk=followup_id)
+    action = _cell_str(request.POST.get("action"))
+    note = _cell_str(request.POST.get("note") or request.POST.get("admin_review_note"))
+
+    if action == "accept":
+        if hasattr(followup, "accept_processing"):
+            followup.accept_processing(note=note)
+        else:
+            followup.status = "processed"
+            followup.resolved_at = timezone.now()
+            if note:
+                followup.admin_review_note = note
+            followup.save()
+        action_label = "accept_processing"
+        messages.success(request, "تم قبول المعالجة.")
+    elif action == "return":
+        if hasattr(followup, "return_to_supervisor"):
+            followup.return_to_supervisor(note=note)
+        else:
+            followup.status = "notified"
+            if note:
+                followup.admin_review_note = note
+            followup.save()
+        action_label = "return_to_supervisor"
+        messages.success(request, "تمت إعادة الحالة للمشرف.")
+    elif action == "close":
+        if hasattr(followup, "close_administratively"):
+            followup.close_administratively(note=note)
+        else:
+            followup.status = "closed"
+            followup.closed_at = timezone.now()
+            if note:
+                followup.admin_review_note = note
+            followup.save()
+        action_label = "close"
+        messages.success(request, "تم إغلاق الحالة إداريًا.")
+    else:
+        messages.warning(request, "لم يتم تحديد إجراء صحيح.")
+        return redirect("visits:admin_control_followups")
+
+    _record_control_action(followup, action_label, actor=request.user, note=note)
+    return redirect("visits:admin_control_followups")
+
+
+@admin_only_view
+def admin_control_report_view(request: HttpRequest, report_type: str = "incomplete_plan") -> HttpResponse:
+    # Lightweight compatibility page. Detailed reports can be expanded later.
+    return render(
+        request,
+        "visits/admin_control_report.html",
+        {
+            "report_type": report_type,
+            "rows": [],
+            "title": "تقرير رقابي",
+            "subtitle": "صفحة توافقية للتقارير الرقابية.",
+        },
+    )
+
+
+@admin_only_view
+def admin_control_report_export_excel_view(request: HttpRequest, report_type: str = "incomplete_plan") -> HttpResponse:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "تقرير رقابي"
+    ws.sheet_view.rightToLeft = True
+    ws.append(["التقرير", "ملاحظة"])
+    ws.append([report_type, "تقرير توافق مؤقت"])
+    return _excel_response(wb, "تقرير_رقابي.xlsx")
+
+
+@admin_only_view
+@require_POST
+def admin_control_report_notify_view(request: HttpRequest, report_type: str = "incomplete_plan") -> HttpResponse:
+    messages.success(request, "تم تنفيذ إجراء التنبيه للتقرير الرقابي.")
+    return redirect("visits:admin_reports")

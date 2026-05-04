@@ -5,141 +5,137 @@
 {% block title %}تفاصيل الخطة — لوحة الإدارة{% endblock %}
 {% block page_messages %}{% endblock %}
 
+{% block header_title %}تفاصيل الخطة{% endblock %}
+{% block header_subtitle %}استعراض خطة المشرف الأسبوعية واتخاذ قرارات الاعتماد أو فك الاعتماد{% endblock %}
+
 {% block extra_css %}
 <style>
   .detail-page{
     --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
 
-    --fw-hero:800;
-    --fw-title:700;
-    --fw-strong:600;
-    --fw-normal:500;
-    --fw-muted:400;
+    --fw-hero:700;
+    --fw-title:600;
+    --fw-strong:500;
+    --fw-normal:400;
 
-    --bg1:#f4f7fb;
-    --bg2:#fbfdff;
+    --card:#ffffff;
+    --soft:#f7f9f8;
 
-    --card:rgba(255,255,255,.96);
-    --soft:rgba(248,250,252,.94);
+    --txt:var(--vp-text);
+    --mut:var(--vp-text-soft);
+    --mut2:var(--vp-text-faint);
 
-    --txt:#0f172a;
-    --mut:#64748b;
-    --mut2:#94a3b8;
+    --line:var(--vp-line);
+    --line2:var(--vp-line-2);
+    --line-strong:var(--vp-line-strong);
 
-    --line:rgba(148,163,184,.20);
-    --line2:rgba(148,163,184,.12);
+    --ok:var(--vp-ok-text);
+    --ok-bg:var(--vp-ok-bg);
+    --ok-br:var(--vp-ok-border);
 
-    --ok-bg:rgba(22,163,74,.10);
-    --ok-br:rgba(22,163,74,.20);
-    --ok-tx:#166534;
+    --warn:var(--vp-warn-text);
+    --warn-bg:var(--vp-warn-bg);
+    --warn-br:var(--vp-warn-border);
 
-    --warn-bg:rgba(245,158,11,.12);
-    --warn-br:rgba(245,158,11,.22);
-    --warn-tx:#7c2d12;
+    --danger:var(--vp-danger-text);
+    --danger-bg:var(--vp-danger-bg);
+    --danger-br:var(--vp-danger-border);
 
-    --pri-bg:rgba(37,99,235,.10);
-    --pri-br:rgba(37,99,235,.16);
-    --pri-tx:#0c4a6e;
+    --primary:var(--vp-primary);
+    --primary-2:var(--vp-primary-2);
+    --primary-soft:var(--vp-primary-soft);
+    --primary-soft-br:var(--vp-primary-soft-border);
 
-    --danger-bg:rgba(220,38,38,.08);
-    --danger-br:rgba(220,38,38,.18);
-    --danger-tx:#991b1b;
+    --blue:#245fd6;
+    --blue-bg:rgba(37,99,235,.08);
+    --blue-br:rgba(37,99,235,.16);
 
-    --teal-bg:rgba(14,165,164,.10);
-    --teal-br:rgba(14,165,164,.18);
-    --teal-tx:#0f766e;
+    --teal:#0f766e;
+    --teal-bg:rgba(15,118,110,.08);
+    --teal-br:rgba(15,118,110,.16);
 
-    --shadow:0 16px 38px rgba(15,23,42,.08);
-    --shadow2:0 8px 22px rgba(15,23,42,.06);
-    --shadow3:0 24px 60px rgba(15,23,42,.12);
+    --shadow:0 8px 20px rgba(22,36,29,.038);
+    --shadow2:0 4px 12px rgba(22,36,29,.028);
+    --shadow3:0 18px 44px rgba(22,36,29,.12);
 
-    font-family:var(--ff);
     direction:rtl;
     color:var(--txt);
+    font-family:var(--ff);
   }
 
-  .detail-page *{
-    font-family:var(--ff) !important;
-    letter-spacing:.05px;
+  .detail-page *,
+  .detail-page *::before,
+  .detail-page *::after{
     box-sizing:border-box;
+    font-family:var(--ff) !important;
+    letter-spacing:0;
   }
 
   .detail-page .shell{
-    min-height:calc(100vh - 80px);
-    padding:12px 12px 22px;
-    background:
-      radial-gradient(1050px 430px at 12% 0%, rgba(37,99,235,.07), transparent 58%),
-      radial-gradient(1050px 430px at 88% 0%, rgba(16,185,129,.07), transparent 58%),
-      linear-gradient(180deg, var(--bg1), var(--bg2));
+    background:transparent;
+    padding:0;
+    min-height:auto;
   }
 
   .detail-page .wrap{
-    max-width:1360px;
-    margin:0 auto;
     display:grid;
-    gap:10px;
+    gap:12px;
+    margin-top:2px;
   }
 
-  .detail-page .hero{
+  .detail-page .summary-card,
+  .detail-page .ops-strip,
+  .detail-page .panel{
     background:var(--card);
     border:1px solid var(--line);
-    border-radius:26px;
+    border-radius:20px;
     box-shadow:var(--shadow);
-    padding:16px;
+  }
+
+  .detail-page .summary-card{
+    padding:12px 15px;
     display:flex;
-    align-items:flex-start;
+    align-items:center;
     justify-content:space-between;
-    gap:14px;
+    gap:10px;
     flex-wrap:wrap;
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,252,251,.98));
   }
 
-  .detail-page .hero-main{
-    display:grid;
-    gap:6px;
-    min-width:300px;
-  }
-
-  .detail-page .hero-title{
-    margin:0;
-    font-size:21px;
-    font-weight:var(--fw-hero);
-    color:var(--txt);
-    line-height:1.15;
-  }
-
-  .detail-page .hero-sub{
-    margin:0;
-    font-size:12.9px;
-    font-weight:var(--fw-normal);
+  .detail-page .summary-note{
     color:var(--mut);
-    line-height:1.9;
+    font-size:11.6px;
+    line-height:1.85;
+    font-weight:var(--fw-normal);
+    max-width:780px;
   }
 
-  .detail-page .hero-sub b{
+  .detail-page .summary-note b{
     color:var(--txt);
     font-weight:var(--fw-title);
   }
 
-  .detail-page .hero-side{
+  .detail-page .summary-right{
     display:flex;
-    gap:8px;
     align-items:center;
+    gap:7px;
     flex-wrap:wrap;
-    justify-content:flex-end;
   }
 
   .detail-page .chip{
     display:inline-flex;
     align-items:center;
     gap:8px;
-    padding:8px 12px;
+    min-height:30px;
+    padding:5px 10px;
     border-radius:999px;
-    border:1px solid var(--line);
     background:var(--soft);
+    border:1px solid var(--line);
     color:var(--mut);
-    font-size:12px;
+    font-size:10.8px;
     font-weight:var(--fw-strong);
     white-space:nowrap;
+    text-decoration:none;
   }
 
   .detail-page .chip b{
@@ -151,500 +147,406 @@
     width:8px;
     height:8px;
     border-radius:50%;
-    background:#94a3b8;
-    box-shadow:0 0 0 4px rgba(148,163,184,.12);
+    background:#5e8d7a;
+    box-shadow:0 0 0 4px rgba(94,141,122,.10);
     flex:0 0 auto;
   }
 
-  .detail-page .dot.ok{
-    background:#16a34a;
-    box-shadow:0 0 0 4px rgba(22,163,74,.10);
-  }
+  .detail-page .dot.ok{ background:#2f6250; box-shadow:0 0 0 4px rgba(47,98,80,.10); }
+  .detail-page .dot.warn{ background:#b7791f; box-shadow:0 0 0 4px rgba(183,121,31,.10); }
+  .detail-page .dot.pri{ background:#5e8d7a; box-shadow:0 0 0 4px rgba(94,141,122,.10); }
 
-  .detail-page .dot.warn{
-    background:#f59e0b;
-    box-shadow:0 0 0 4px rgba(245,158,11,.10);
-  }
-
-  .detail-page .dot.pri{
-    background:#2563eb;
-    box-shadow:0 0 0 4px rgba(37,99,235,.10);
-  }
-
-  .detail-page .btn{
-    height:36px;
-    padding:0 12px;
-    border-radius:999px;
-    border:1px solid var(--line);
-    background:#fff;
-    color:var(--txt);
-    font-weight:var(--fw-strong);
-    font-size:12.5px;
-    cursor:pointer;
-    text-decoration:none;
-    display:inline-flex;
-    align-items:center;
-    gap:8px;
-    box-shadow:0 8px 16px rgba(15,23,42,.05);
-    transition:transform .12s ease, box-shadow .12s ease, border-color .12s ease, opacity .12s ease;
-    user-select:none;
-    white-space:nowrap;
-  }
-
-  .detail-page .btn:hover{
-    transform:translateY(-1px);
-    box-shadow:0 12px 22px rgba(15,23,42,.08);
-  }
-
-  .detail-page .btn.primary{
-    background:linear-gradient(135deg, rgba(37,99,235,.96), rgba(96,165,250,.96));
-    border-color:rgba(37,99,235,.16);
-    color:#fff;
-  }
-
-  .detail-page .btn.soft{
-    background:#fff;
-  }
-
-  .detail-page .btn:disabled{
-    opacity:.6;
-    cursor:not-allowed;
-    transform:none;
-    box-shadow:none;
-  }
-
-  .detail-page .action-strip{
-    background:linear-gradient(180deg, rgba(255,255,255,.97), rgba(248,250,252,.94));
-    border:1px solid var(--line);
-    border-radius:24px;
-    box-shadow:var(--shadow2);
-    padding:14px;
-    display:grid;
-    gap:10px;
-  }
-
-  .detail-page .action-strip-head{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-    flex-wrap:wrap;
-  }
-
-  .detail-page .action-strip-title{
-    margin:0;
-    font-size:14px;
-    font-weight:var(--fw-title);
-    color:var(--txt);
-  }
-
-  .detail-page .action-strip-sub{
-    margin:3px 0 0;
-    font-size:12px;
-    color:var(--mut);
-    font-weight:var(--fw-normal);
-  }
-
-  .detail-page .action-strip-right{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    flex-wrap:wrap;
-  }
-
-  .detail-page .exec-actions{
-    display:flex;
-    gap:8px;
-    flex-wrap:wrap;
-    align-items:center;
-  }
-
+  .detail-page .btn,
   .detail-page .exec-btn{
-    min-width:116px;
-    height:34px;
-    padding:0 12px;
+    appearance:none;
+    height:35px;
+    padding:0 13px;
     border-radius:999px;
-    border:1px solid var(--line);
+    border:1px solid var(--line-strong);
     background:#fff;
-    font-size:12.3px;
-    font-weight:var(--fw-strong);
     color:var(--txt);
-    cursor:pointer;
     display:inline-flex;
     align-items:center;
     justify-content:center;
     gap:6px;
-    box-shadow:0 8px 16px rgba(15,23,42,.05);
-    transition:.12s ease;
+    text-decoration:none;
+    cursor:pointer;
+    white-space:nowrap;
+    font-size:10.9px;
+    font-weight:var(--fw-strong);
+    box-shadow:0 4px 10px rgba(22,36,29,.025);
+    transition:transform .16s ease, background .16s ease, border-color .16s ease, opacity .16s ease;
   }
 
+  .detail-page .btn:hover,
   .detail-page .exec-btn:hover{
     transform:translateY(-1px);
-    box-shadow:0 12px 22px rgba(15,23,42,.08);
+    background:#fcfdfc;
+    text-decoration:none;
   }
 
+  .detail-page .btn.primary,
+  .detail-page .exec-btn.primary{
+    background:var(--primary);
+    border-color:var(--primary);
+    color:#fff;
+  }
+
+  .detail-page .btn.primary:hover,
+  .detail-page .exec-btn.primary:hover{
+    background:var(--primary-2);
+    border-color:var(--primary-2);
+  }
+
+  .detail-page .btn.soft{ background:var(--primary-soft); border-color:var(--primary-soft-br); color:var(--primary); }
+  .detail-page .exec-btn.approve{ background:var(--ok-bg); border-color:var(--ok-br); color:var(--ok); }
+  .detail-page .exec-btn.draft{ background:var(--warn-bg); border-color:var(--warn-br); color:var(--warn); }
+  .detail-page .exec-btn.unlock{ background:var(--teal-bg); border-color:var(--teal-br); color:var(--teal); }
+  .detail-page .exec-btn.reject{ background:var(--danger-bg); border-color:var(--danger-br); color:var(--danger); }
+
+  .detail-page .btn:disabled,
   .detail-page .exec-btn:disabled{
     opacity:.55;
     cursor:not-allowed;
     transform:none;
+  }
+
+  .detail-page .ops-strip{
+    border-radius:18px;
+    padding:8px 11px;
+    background:linear-gradient(180deg, #ffffff, #fbfcfb);
+    box-shadow:var(--shadow2);
+  }
+
+  .detail-page .ops-main{
+    display:grid;
+    grid-template-columns:auto minmax(280px,1fr) auto;
+    align-items:center;
+    gap:10px;
+  }
+
+  .detail-page .ops-title{
+    min-width:150px;
+    display:grid;
+    gap:1px;
+  }
+
+  .detail-page .ops-title b{
+    color:var(--txt);
+    font-size:11.8px;
+    line-height:1.45;
+    font-weight:var(--fw-title);
+  }
+
+  .detail-page .ops-title span{
+    color:var(--mut2);
+    font-size:10px;
+    line-height:1.35;
+    font-weight:var(--fw-normal);
+    white-space:nowrap;
+  }
+
+  .detail-page .ops-kpis{
+    min-width:0;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+
+  .detail-page .ops-kpi{
+    min-height:28px;
+    padding:3px 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    white-space:nowrap;
+  }
+
+  .detail-page .ops-kpi .name{
+    color:var(--mut);
+    font-size:10.2px;
+    line-height:1.35;
+    font-weight:var(--fw-normal);
+  }
+
+  .detail-page .ops-kpi b{
+    color:var(--txt);
+    font-size:12.2px;
+    line-height:1;
+    font-weight:var(--fw-title);
+  }
+
+  .detail-page .ops-kpi.ok{ background:var(--ok-bg); border-color:var(--ok-br); }
+  .detail-page .ops-kpi.ok b{ color:var(--ok); }
+  .detail-page .ops-kpi.warn{ background:var(--warn-bg); border-color:var(--warn-br); }
+  .detail-page .ops-kpi.warn b{ color:var(--warn); }
+  .detail-page .ops-kpi.pri{ background:#fbfdfc; border-color:var(--line); }
+
+  .detail-page .ops-actions,
+  .detail-page .exec-actions{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:5px;
+    flex-wrap:wrap;
+  }
+
+  .detail-page .ops-actions .exec-btn,
+  .detail-page .exec-actions .exec-btn{
+    height:27px;
+    padding:0 9px;
+    font-size:10.2px;
     box-shadow:none;
   }
 
-  .detail-page .exec-btn.approve{
-    background:var(--ok-bg);
-    border-color:var(--ok-br);
-    color:var(--ok-tx);
-  }
-
-  .detail-page .exec-btn.draft{
-    background:var(--warn-bg);
-    border-color:var(--warn-br);
-    color:var(--warn-tx);
-  }
-
-  .detail-page .exec-btn.unlock{
-    background:var(--teal-bg);
-    border-color:var(--teal-br);
-    color:var(--teal-tx);
-  }
-
-  .detail-page .exec-btn.reject{
-    background:var(--danger-bg);
-    border-color:var(--danger-br);
-    color:var(--danger-tx);
-  }
-
   .detail-page .exec-note{
-    border:1px dashed rgba(245,158,11,.25);
-    background:rgba(245,158,11,.06);
-    border-radius:18px;
-    padding:12px 14px;
-    color:#7c2d12;
-    font-size:12.5px;
-    line-height:1.85;
+    margin-top:6px;
+    min-height:25px;
+    padding:4px 8px;
+    border-radius:999px;
+    border:1px solid var(--warn-br);
+    background:linear-gradient(180deg, #fffdf8, var(--warn-bg));
+    color:var(--warn);
+    font-size:10px;
+    line-height:1.3;
+    display:flex;
+    align-items:center;
+    gap:5px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
   }
+
+  .detail-page .exec-note b{ font-weight:var(--fw-strong); color:var(--warn); flex:0 0 auto; }
+  .detail-page .exec-note span{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
   .detail-page .grid{
     display:grid;
-    grid-template-columns:minmax(0, 1.08fr) minmax(320px, .92fr);
-    gap:12px;
-    align-items:start;
+    grid-template-columns:1fr;
+    gap:10px;
   }
 
   .detail-page .panel{
-    background:var(--card);
-    border:1px solid var(--line);
-    border-radius:22px;
-    box-shadow:var(--shadow2);
+    border-radius:18px;
     overflow:hidden;
+    background:#fff;
+    box-shadow:var(--shadow2);
   }
 
   .detail-page .panel-head{
-    padding:12px 14px;
+    padding:9px 12px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, #fcfdfc, #f8fbf9);
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap:10px;
-    border-bottom:1px solid var(--line);
-    background:linear-gradient(180deg, rgba(248,250,252,.94), rgba(255,255,255,.92));
+    gap:8px;
     flex-wrap:wrap;
   }
 
   .detail-page .panel-title{
     margin:0;
-    font-size:13px;
+    font-size:12px;
     font-weight:var(--fw-title);
     color:var(--txt);
+    line-height:1.65;
   }
 
   .detail-page .panel-sub{
-    margin:3px 0 0;
-    font-size:12px;
+    margin:1px 0 0;
+    font-size:10.6px;
     color:var(--mut);
     font-weight:var(--fw-normal);
+    line-height:1.6;
   }
 
-  .detail-page .stats{
-    padding:14px;
+  .detail-page .week-cards-wrap{
+    padding:9px 11px 11px;
+  }
+
+  .detail-page .week-cards-grid{
     display:grid;
-    grid-template-columns:repeat(4, 1fr);
-    gap:10px;
+    grid-template-columns:repeat(5, minmax(0,1fr));
+    gap:8px;
   }
 
-  .detail-page .stat{
+  .detail-page .week-day-card{
+    position:relative;
+    min-height:126px;
     border:1px solid var(--line);
-    background:rgba(248,250,252,.86);
-    border-radius:18px;
-    padding:12px 14px;
+    border-radius:15px;
+    background:linear-gradient(180deg, #ffffff 0%, #fbfcfb 100%);
+    box-shadow:0 8px 18px rgba(26,56,45,.035);
+    overflow:hidden;
     display:grid;
-    gap:4px;
-    min-height:76px;
+    grid-template-rows:auto 1fr auto;
+    transition:transform .14s ease, border-color .14s ease, background .14s ease;
   }
 
-  .detail-page .stat-label{
-    font-size:12px;
-    color:var(--mut);
-    font-weight:var(--fw-normal);
+  .detail-page .week-day-card:hover{
+    transform:translateY(-1px);
+    border-color:#d4dfd8;
+    background:#fcfdfc;
   }
 
-  .detail-page .stat-value{
-    font-size:18px;
-    color:var(--txt);
-    font-weight:var(--fw-title);
+  .detail-page .week-day-card::before{
+    content:"";
+    position:absolute;
+    inset:0 auto 0 0;
+    width:4px;
+    background:#dfe9e3;
   }
 
-  .detail-page .meta-list{
-    padding:14px;
-    display:grid;
-    gap:10px;
-  }
+  .detail-page .week-day-card.ok::before{ background:linear-gradient(180deg, #a8d8b8, #78b691); }
+  .detail-page .week-day-card.pri::before{ background:linear-gradient(180deg, #b8c7f2, #819ce3); }
+  .detail-page .week-day-card.warn::before{ background:linear-gradient(180deg, #f1d7aa, #ddb06b); }
+  .detail-page .week-day-card.empty::before{ background:linear-gradient(180deg, #d8dfda, #b8c4bc); }
 
-  .detail-page .meta-item{
+  .detail-page .week-mini-head{
+    padding:8px 10px 6px 13px;
     display:flex;
     align-items:flex-start;
     justify-content:space-between;
-    gap:14px;
-    padding:12px 14px;
-    border:1px solid var(--line2);
-    border-radius:16px;
-    background:rgba(248,250,252,.82);
+    gap:6px;
+    border-bottom:1px solid #eef2ef;
+    background:linear-gradient(180deg, #ffffff, #fbfcfb);
   }
 
-  .detail-page .meta-item .name{
-    font-size:12.3px;
-    color:var(--mut);
-    font-weight:var(--fw-normal);
-    min-width:90px;
+  .detail-page .week-mini-day{ min-width:0; display:grid; gap:1px; }
+  .detail-page .week-mini-name{ color:var(--txt); font-size:12.4px; line-height:1.3; font-weight:var(--fw-title); }
+  .detail-page .week-mini-date-line{ margin-top:2px; color:var(--mut2); font-size:9.4px; line-height:1.35; font-weight:var(--fw-normal); direction:ltr; text-align:right; white-space:nowrap; }
+
+  .detail-page .week-mini-body{
+    padding:8px 10px 7px 13px;
+    display:grid;
+    align-content:center;
+    gap:5px;
+    min-width:0;
   }
 
-  .detail-page .meta-item .value{
-    font-size:13px;
+  .detail-page .week-mini-school{
+    min-height:32px;
     color:var(--txt);
+    font-size:12px;
+    line-height:1.5;
     font-weight:var(--fw-strong);
-    text-align:left;
-    line-height:1.8;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
   }
 
-  .detail-page .note-box{
-    margin:0 14px 14px;
-    padding:12px 14px;
-    border-radius:16px;
-    border:1px solid rgba(245,158,11,.16);
-    background:rgba(245,158,11,.08);
-    color:#7c2d12;
-    font-size:12.2px;
+  .detail-page .week-mini-school.muted{ color:var(--mut); font-weight:var(--fw-normal); }
+
+  .detail-page .week-mini-note{
+    color:var(--warn);
+    background:#fffaf4;
+    border:1px dashed #edd1a8;
+    border-radius:9px;
+    padding:4px 7px;
+    font-size:9.5px;
+    line-height:1.35;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+
+  .detail-page .week-mini-foot{
+    padding:0 10px 8px 13px;
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:6px;
+  }
+
+  .detail-page .week-mini-exec{
+    display:inline-flex;
+    align-items:center;
+    min-height:20px;
+    padding:1px 7px;
+    border-radius:999px;
+    border:1px dashed #d7e2db;
+    background:#fbfcfb;
+    color:var(--mut);
+    font-size:9.5px;
+    line-height:1.35;
     font-weight:var(--fw-normal);
-    line-height:1.85;
+    white-space:nowrap;
   }
 
+  .detail-page .mini-pill,
   .detail-page .pill{
     display:inline-flex;
     align-items:center;
     justify-content:center;
-    padding:7px 10px;
-    border-radius:999px;
-    font-weight:var(--fw-strong);
-    font-size:12px;
-    border:1px solid transparent;
-    white-space:nowrap;
-  }
-
-  .detail-page .pill.approved{
-    background:var(--ok-bg);
-    border-color:var(--ok-br);
-    color:var(--ok-tx);
-  }
-
-  .detail-page .pill.draft{
-    background:var(--pri-bg);
-    border-color:var(--pri-br);
-    color:var(--pri-tx);
-  }
-
-  .detail-page .pill.unlock{
-    background:var(--warn-bg);
-    border-color:var(--warn-br);
-    color:var(--warn-tx);
-  }
-
-  .detail-page .days-wrap{
-    padding:14px;
-  }
-
-  .detail-page .table-box{
-    border:1px solid var(--line);
-    border-radius:18px;
-    overflow:hidden;
-    background:#fff;
-  }
-
-  .detail-page .table-scroll{
-    overflow:auto;
-  }
-
-  .detail-page table{
-    width:100%;
-    border-collapse:separate;
-    border-spacing:0;
-  }
-
-  .detail-page thead th{
-    position:sticky;
-    top:0;
-    z-index:1;
-    background:rgba(248,250,252,.98);
-    border-bottom:1px solid var(--line);
-    padding:12px;
-    font-size:12px;
-    font-weight:var(--fw-strong);
-    color:var(--mut);
-    text-align:right;
-    white-space:nowrap;
-  }
-
-  .detail-page tbody td{
-    border-bottom:1px solid var(--line2);
-    padding:12px;
-    font-size:13px;
-    font-weight:var(--fw-normal);
-    color:var(--txt);
-    vertical-align:middle;
-    line-height:1.8;
-  }
-
-  .detail-page tbody tr:last-child td{
-    border-bottom:none;
-  }
-
-  .detail-page tbody tr:nth-child(even){
-    background:rgba(2,6,23,.01);
-  }
-
-  .detail-page tbody tr:hover{
-    background:rgba(37,99,235,.03);
-  }
-
-  .detail-page .day-name{
-    font-weight:var(--fw-title);
-    color:var(--txt);
-  }
-
-  .detail-page .school-name{
-    font-weight:var(--fw-strong);
-    color:var(--txt);
-  }
-
-  .detail-page .mini-pill{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    padding:6px 10px;
+    min-height:22px;
+    padding:2px 7px;
     border-radius:999px;
     border:1px solid var(--line);
-    background:rgba(248,250,252,.92);
+    background:#fafcfb;
     color:var(--txt);
-    font-size:11.9px;
+    font-size:10.2px;
     font-weight:var(--fw-strong);
     white-space:nowrap;
   }
 
-  .detail-page .mini-pill.ok{
-    background:var(--ok-bg);
-    border-color:var(--ok-br);
-    color:var(--ok-tx);
-  }
+  .detail-page .mini-pill.ok,
+  .detail-page .pill.approved{ background:var(--ok-bg); border-color:var(--ok-br); color:var(--ok); }
+  .detail-page .mini-pill.warn,
+  .detail-page .pill.unlock{ background:var(--warn-bg); border-color:var(--warn-br); color:var(--warn); }
+  .detail-page .mini-pill.pri,
+  .detail-page .pill.draft{ background:var(--primary-soft); border-color:var(--primary-soft-br); color:var(--primary); }
 
-  .detail-page .mini-pill.warn{
-    background:var(--warn-bg);
-    border-color:var(--warn-br);
-    color:var(--warn-tx);
-  }
-
-  .detail-page .mini-pill.pri{
-    background:var(--pri-bg);
-    border-color:var(--pri-br);
-    color:var(--pri-tx);
-  }
-
-  .detail-page .muted{
-    color:var(--mut);
-    font-weight:var(--fw-normal);
-  }
-
-  .detail-page .day-note{
-    color:var(--mut);
-    font-size:12px;
-    line-height:1.8;
-  }
-
+  .detail-page .week-cards-empty,
   .detail-page .empty{
-    padding:18px;
+    grid-column:1 / -1;
+    padding:22px;
+    border:1px dashed var(--line2);
+    border-radius:16px;
+    background:#fff;
     text-align:center;
     color:var(--mut);
-    font-size:12.8px;
-    font-weight:var(--fw-normal);
-    line-height:1.85;
+    font-size:11.4px;
+    line-height:1.8;
   }
 
-  .detail-page .side-stack{
+  .detail-page .compact-info-strip{
+    padding:8px 11px;
     display:grid;
-    gap:12px;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:8px;
   }
 
-  .detail-page .visit-kpis{
-    padding:14px;
-    display:grid;
-    grid-template-columns:repeat(3, 1fr);
-    gap:10px;
-  }
-
-  .detail-page .visit-kpi{
+  .detail-page .compact-info-item{
+    min-height:46px;
+    padding:7px 10px;
     border:1px solid var(--line);
-    background:rgba(248,250,252,.86);
-    border-radius:18px;
-    padding:12px 14px;
+    border-radius:14px;
+    background:#fff;
     display:grid;
-    gap:4px;
-    min-height:76px;
+    gap:3px;
+    align-content:center;
   }
 
-  .detail-page .visit-kpi .label{
-    font-size:12px;
+  .detail-page .compact-info-item .label{
     color:var(--mut);
+    font-size:10.5px;
+    line-height:1.45;
     font-weight:var(--fw-normal);
   }
 
-  .detail-page .visit-kpi .value{
-    font-size:18px;
-    font-weight:var(--fw-title);
+  .detail-page .compact-info-item .value{
     color:var(--txt);
-  }
-
-  .detail-page .visit-kpi.ok{
-    background:var(--ok-bg);
-    border-color:var(--ok-br);
-  }
-
-  .detail-page .visit-kpi.ok .value{
-    color:var(--ok-tx);
-  }
-
-  .detail-page .visit-kpi.warn{
-    background:var(--warn-bg);
-    border-color:var(--warn-br);
-  }
-
-  .detail-page .visit-kpi.warn .value{
-    color:var(--warn-tx);
-  }
-
-  .detail-page .visit-kpi.pri{
-    background:var(--pri-bg);
-    border-color:var(--pri-br);
-  }
-
-  .detail-page .visit-kpi.pri .value{
-    color:var(--pri-tx);
+    font-size:11.2px;
+    line-height:1.55;
+    font-weight:var(--fw-strong);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
   }
 
   .detail-page .toast-wrap{
@@ -657,15 +559,15 @@
   }
 
   .detail-page .toast{
-    min-width:240px;
-    max-width:380px;
-    background:rgba(15,23,42,.92);
+    min-width:220px;
+    max-width:340px;
+    background:rgba(31,44,37,.95);
     color:#fff;
-    padding:10px 12px;
-    border-radius:16px;
-    box-shadow:0 18px 50px rgba(15,23,42,.24);
+    padding:9px 11px;
+    border-radius:14px;
+    box-shadow:0 18px 50px rgba(22,36,29,.20);
     font-weight:var(--fw-strong);
-    font-size:12.5px;
+    font-size:11.7px;
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -689,136 +591,110 @@
     align-items:center;
     justify-content:center;
     padding:18px;
-    background:rgba(15,23,42,.38);
+    background:rgba(31,44,37,.36);
     backdrop-filter:blur(3px);
   }
 
-  .detail-page .modal.show{
-    display:flex;
-  }
+  .detail-page .modal.show{ display:flex; }
 
   .detail-page .modal-card{
-    width:min(560px, 100%);
+    width:min(540px, 100%);
     background:#fff;
     border:1px solid var(--line);
-    border-radius:24px;
+    border-radius:20px;
     box-shadow:var(--shadow3);
     overflow:hidden;
   }
 
   .detail-page .modal-head{
-    padding:14px 16px;
+    padding:9px 12px;
     border-bottom:1px solid var(--line);
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap:12px;
+    gap:10px;
+    background:#fafcfb;
   }
 
-  .detail-page .modal-head h3{
-    margin:0;
-    font-size:15px;
-    font-weight:var(--fw-title);
-    color:var(--txt);
-  }
+  .detail-page .modal-head h3{ margin:0; font-size:13px; font-weight:var(--fw-title); color:var(--txt); }
 
   .detail-page .modal-close{
-    width:34px;
-    height:34px;
-    border-radius:12px;
+    width:32px;
+    height:32px;
+    border-radius:11px;
     border:1px solid var(--line);
     background:#fff;
     cursor:pointer;
-    font-size:18px;
+    font-size:16px;
     color:var(--txt);
   }
 
-  .detail-page .modal-body{
-    padding:16px;
-    display:grid;
-    gap:12px;
-  }
-
-  .detail-page .modal-text{
-    margin:0;
-    color:var(--mut);
-    font-size:12.8px;
-    line-height:1.8;
-    font-weight:var(--fw-normal);
-  }
+  .detail-page .modal-body{ padding:14px; display:grid; gap:10px; }
+  .detail-page .modal-text{ margin:0; color:var(--mut); font-size:11.8px; line-height:1.8; font-weight:var(--fw-normal); }
 
   .detail-page .textarea{
     width:100%;
-    border-radius:14px;
+    min-height:96px;
+    border-radius:12px;
     border:1px solid var(--line);
-    background:rgba(248,250,252,.92);
-    min-height:120px;
-    padding:12px;
+    background:#f9fbfa;
+    padding:10px 11px;
     outline:none;
+    font-size:12px;
     font-weight:var(--fw-strong);
     color:var(--txt);
     line-height:1.8;
     resize:vertical;
-    transition:border-color .12s ease, box-shadow .12s ease, background .12s ease;
   }
 
   .detail-page .textarea:focus{
-    border-color:rgba(59,130,246,.35);
-    box-shadow:0 0 0 4px rgba(59,130,246,.07);
+    border-color:#c7d6ce;
+    box-shadow:0 0 0 4px rgba(47,98,80,.06);
     background:#fff;
   }
 
   .detail-page .modal-actions{
-    padding:0 16px 16px;
+    padding:0 14px 14px;
     display:flex;
-    align-items:center;
     justify-content:flex-end;
     gap:8px;
     flex-wrap:wrap;
   }
 
-  @media (max-width: 1080px){
-    .detail-page .grid{
-      grid-template-columns:1fr;
-    }
-
-    .detail-page .stats{
-      grid-template-columns:repeat(2, 1fr);
-    }
-
-    .detail-page .visit-kpis{
-      grid-template-columns:repeat(3, 1fr);
-    }
+  @media (max-width:1250px){
+    .detail-page .week-cards-grid{ grid-template-columns:repeat(3, minmax(0,1fr)); }
   }
 
-  @media (max-width: 640px){
-    .detail-page .stats{
-      grid-template-columns:1fr 1fr;
-    }
+  @media (max-width:980px){
+    .detail-page .ops-main{ grid-template-columns:1fr; align-items:start; }
+    .detail-page .ops-title span{ white-space:normal; }
+    .detail-page .ops-actions{ justify-content:flex-start; }
+    .detail-page .exec-note{ border-radius:14px; white-space:normal; align-items:flex-start; }
+    .detail-page .exec-note span{ white-space:normal; }
+  }
 
-    .detail-page .visit-kpis{
-      grid-template-columns:1fr;
-    }
+  @media (max-width:900px){
+    .detail-page .compact-info-strip{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+  }
 
-    .detail-page .hero{
-      padding:14px;
-    }
+  @media (max-width:860px){
+    .detail-page .week-cards-grid{ grid-template-columns:repeat(2, minmax(0,1fr)); }
+  }
 
-    .detail-page .hero-side{
-      justify-content:flex-start;
-      width:100%;
-    }
+  @media (max-width:560px){
+    .detail-page .summary-card,
+    .detail-page .ops-strip{ padding:12px; }
 
-    .detail-page .meta-item{
-      flex-direction:column;
-      gap:6px;
-    }
+    .detail-page .summary-right .btn,
+    .detail-page .ops-actions .exec-btn{ flex:1 1 auto; }
 
-    .detail-page .action-strip{
-      padding:12px;
-    }
+    .detail-page .week-cards-grid,
+    .detail-page .compact-info-strip{ grid-template-columns:1fr; }
+
+    .detail-page .week-day-card{ min-height:auto; }
   }
 </style>
+
 {% endblock %}
 
 {% block content %}
@@ -826,16 +702,12 @@
   <div class="shell">
     <div class="wrap">
 
-      <div class="hero">
-        <div class="hero-main">
-          <h1 class="hero-title">تفاصيل الخطة — الأسبوع {{ week }}</h1>
-          <p class="hero-sub">
-            المشرف: <b>{{ sup.full_name }}</b>
-            — الهوية: <b>{{ sup.national_id }}</b>
-          </p>
+      <div class="summary-card">
+        <div class="summary-note">
+          استعراض تفاصيل خطة الأسبوع <b>{{ week }}</b> للمشرف <b>{{ sup.full_name }}</b>، مع متابعة حالة الامتلاء والزيارات واتخاذ القرار الإداري المناسب.
         </div>
 
-        <div class="hero-side">
+        <div class="summary-right">
           {% if plan.status == plan.STATUS_APPROVED %}
             <span class="chip" id="statusChip"><span class="dot ok" id="statusDot"></span> الحالة: <b id="statusChipText">معتمدة</b></span>
           {% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}
@@ -845,95 +717,73 @@
           {% endif %}
 
           <span class="chip">الامتلاء: <b id="filledTop">{{ filled }}/5</b></span>
-
           <a class="btn soft" href="{{ next_url|default:'#' }}">↩ العودة للوحة</a>
           <a class="btn primary" href="{% url 'visits:admin_plan_export_excel' plan.id %}">⬇ تصدير Excel</a>
         </div>
       </div>
 
-      <div class="panel">
-        <div class="panel-head">
-          <div>
-            <h3 class="panel-title">مؤشرات تنفيذ الزيارات</h3>
-            <p class="panel-sub">هذه الأرقام تخص المشرف الحالي فقط لهذا الأسبوع.</p>
-          </div>
-        </div>
-
-        <div class="visit-kpis">
-          <div class="visit-kpi pri">
-            <div class="label">إجمالي المدارس المسندة</div>
-            <div class="value" id="assignedCount">{{ assigned_count|default:"0" }}</div>
+      <div class="panel ops-strip" id="actionStrip" data-plan-id="{{ plan.id }}" data-filled="{{ filled }}">
+        <div class="ops-main">
+          <div class="ops-title">
+            <b>المتابعة والإجراء</b>
+            <span>مؤشرات مختصرة وقرار مباشر</span>
           </div>
 
-          <div class="visit-kpi ok">
-            <div class="label">المدارس التي تمت زيارتها</div>
-            <div class="value" id="visitedCount">{{ visited_count|default:"0" }}</div>
-          </div>
+          <div class="ops-kpis">
+            <span class="ops-kpi pri">
+              <span class="name">إجمالي المدارس</span>
+              <b id="assignedCount">{{ assigned_count|default:"0" }}</b>
+            </span>
 
-          <div class="visit-kpi warn">
-            <div class="label">المدارس المتبقية</div>
-            <div class="value" id="remainingCount">{{ remaining_count|default:"0" }}</div>
-          </div>
-        </div>
-      </div>
+            <span class="ops-kpi ok">
+              <span class="name">تمت زيارتها</span>
+              <b id="visitedCount">{{ visited_count|default:"0" }}</b>
+            </span>
 
-      <div class="action-strip" id="actionStrip" data-plan-id="{{ plan.id }}" data-filled="{{ filled }}">
-        <div class="action-strip-head">
-          <div>
-            <h3 class="action-strip-title">الإجراءات الإدارية التنفيذية</h3>
-            <p class="action-strip-sub">نفّذ القرار مباشرة من صفحة التفاصيل بدون الرجوع إلى الجدول الرئيسي.</p>
-          </div>
-
-          <div class="action-strip-right">
-            <span class="chip" id="statusBadgeWrap">
-              {% if plan.status == plan.STATUS_APPROVED %}
-                <span class="pill approved" id="statusBadge">معتمدة</span>
-              {% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}
-                <span class="pill unlock" id="statusBadge">طلب فك اعتماد</span>
-              {% else %}
-                <span class="pill draft" id="statusBadge">مسودة</span>
-              {% endif %}
+            <span class="ops-kpi warn">
+              <span class="name">المتبقية</span>
+              <b id="remainingCount">{{ remaining_count|default:"0" }}</b>
             </span>
           </div>
-        </div>
 
-        <div class="exec-actions" id="execActions">
-          <button
-            class="exec-btn approve"
-            id="approveBtn"
-            data-action="approve"
-            data-url="{% url 'visits:admin_plan_approve' plan.id %}"
-            type="button"
-            {% if plan.status == plan.STATUS_APPROVED %}disabled{% endif %}
-            {% if filled != 5 %}disabled{% endif %}
-          >✅ اعتماد</button>
-
-          <button
-            class="exec-btn draft"
-            id="draftBtn"
-            data-action="draft"
-            data-url="{% url 'visits:admin_plan_back_to_draft' plan.id %}"
-            type="button"
-            {% if plan.status == plan.STATUS_DRAFT %}disabled{% endif %}
-          >↩ إرجاع إلى مسودة</button>
-
-          {% if plan.status == plan.STATUS_UNLOCK_REQUESTED %}
+          <div class="ops-actions" id="execActions">
             <button
-              class="exec-btn unlock"
-              id="unlockApproveBtn"
-              data-action="unlock-approve"
-              data-url="{% url 'visits:admin_unlock_approve' plan.id %}"
+              class="exec-btn approve"
+              id="approveBtn"
+              data-action="approve"
+              data-url="{% url 'visits:admin_plan_approve' plan.id %}"
               type="button"
-            >🔓 قبول فك الاعتماد</button>
+              {% if plan.status == plan.STATUS_APPROVED %}disabled{% endif %}
+              {% if filled != 5 %}disabled{% endif %}
+            >✅ اعتماد</button>
 
             <button
-              class="exec-btn reject"
-              id="unlockRejectBtn"
-              data-action="unlock-reject"
-              data-url="{% url 'visits:admin_unlock_reject' plan.id %}"
+              class="exec-btn draft"
+              id="draftBtn"
+              data-action="draft"
+              data-url="{% url 'visits:admin_plan_back_to_draft' plan.id %}"
               type="button"
-            >⛔ رفض فك الاعتماد</button>
-          {% endif %}
+              {% if plan.status == plan.STATUS_DRAFT %}disabled{% endif %}
+            >↩ إرجاع إلى مسودة</button>
+
+            {% if plan.status == plan.STATUS_UNLOCK_REQUESTED %}
+              <button
+                class="exec-btn unlock"
+                id="unlockApproveBtn"
+                data-action="unlock-approve"
+                data-url="{% url 'visits:admin_unlock_approve' plan.id %}"
+                type="button"
+              >🔓 قبول فك الاعتماد</button>
+
+              <button
+                class="exec-btn reject"
+                id="unlockRejectBtn"
+                data-action="unlock-reject"
+                data-url="{% url 'visits:admin_unlock_reject' plan.id %}"
+                type="button"
+              >⛔ رفض فك الاعتماد</button>
+            {% endif %}
+          </div>
         </div>
 
         {% if plan.admin_note %}
@@ -951,7 +801,7 @@
 
       <div class="grid">
 
-        <div class="panel">
+        <div class="panel details-panel">
           <div class="panel-head">
             <div>
               <h3 class="panel-title">تفاصيل الأيام</h3>
@@ -959,223 +809,132 @@
             </div>
           </div>
 
-          <div class="days-wrap">
-            <div class="table-box">
-              <div class="table-scroll">
-                <table>
-                  <thead>
-                    <tr>
-                      <th style="min-width:110px">اليوم</th>
-                      <th style="min-width:130px">التاريخ (ميلادي)</th>
-                      <th style="min-width:130px">التاريخ (هجري)</th>
-                      <th style="min-width:260px">المدرسة / السبب</th>
-                      <th style="min-width:130px">نوع اليوم</th>
-                      <th style="min-width:160px">تنفيذ الزيارة</th>
-                      <th style="min-width:180px">ملاحظة</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {% for wd, day_name in weekdays %}
-                      {% with d=day_map|get_item:wd %}
-                      {% with dt=day_dates|get_item:wd %}
-                      <tr>
-                        <td>
-                          <span class="day-name">{{ day_name }}</span>
-                        </td>
+          
+          
+          
+          <div class="week-cards-wrap">
+            <div class="week-cards-grid">
+              {% for wd, day_name in weekdays %}
+                {% with d=day_map|get_item:wd %}
+                {% with dt=day_dates|get_item:wd %}
+                  <div class="week-day-card {% if d %}{% if d.visit_type == d.VISIT_IN %}ok{% elif d.visit_type == d.VISIT_REMOTE %}pri{% elif d.visit_type == d.VISIT_NONE %}warn{% else %}empty{% endif %}{% else %}empty{% endif %}">
+                    <div class="week-mini-head">
+                      <div class="week-mini-day">
+                        <span class="week-mini-name">{{ day_name }}</span>
+                        <span class="week-mini-date-line">
+                          {% if dt %}{{ dt|date:"Y-m-d" }} | {{ dt|to_hijri }}{% else %}—{% endif %}
+                        </span>
+                      </div>
 
-                        <td>
-                          {% if dt %}
-                            <span class="mini-pill">{{ dt|date:"Y-m-d" }}</span>
-                          {% else %}
-                            <span class="muted">—</span>
-                          {% endif %}
-                        </td>
+                      {% if d %}
+                        {% if d.visit_type == d.VISIT_IN %}
+                          <span class="mini-pill ok">حضوري</span>
+                        {% elif d.visit_type == d.VISIT_REMOTE %}
+                          <span class="mini-pill pri">عن بُعد</span>
+                        {% elif d.visit_type == d.VISIT_NONE %}
+                          <span class="mini-pill warn">بدون زيارة</span>
+                        {% else %}
+                          <span class="mini-pill">—</span>
+                        {% endif %}
+                      {% else %}
+                        <span class="mini-pill">غير محدد</span>
+                      {% endif %}
+                    </div>
 
-                        <td>
-                          {% if dt %}
-                            <span class="mini-pill">{{ dt|to_hijri }}</span>
+                    <div class="week-mini-body">
+                      {% if d %}
+                        {% if d.visit_type == d.VISIT_NONE %}
+                          {% if d.no_visit_reason %}
+                            <div class="week-mini-school">{{ d.get_no_visit_reason_display }}</div>
                           {% else %}
-                            <span class="muted">—</span>
+                            <div class="week-mini-school muted">بدون زيارة</div>
                           {% endif %}
-                        </td>
+                        {% elif d.school %}
+                          <div class="week-mini-school">{{ d.school.name }}</div>
+                        {% else %}
+                          <div class="week-mini-school muted">—</div>
+                        {% endif %}
 
-                        <td>
-                          {% if d %}
-                            {% if d.visit_type == d.VISIT_NONE %}
-                              {% if d.no_visit_reason %}
-                                <span class="muted">{{ d.get_no_visit_reason_display }}</span>
-                              {% else %}
-                                <span class="muted">بدون زيارة</span>
-                              {% endif %}
-                            {% elif d.school %}
-                              <span class="school-name">{{ d.school.name }}</span>
-                            {% else %}
-                              <span class="muted">—</span>
-                            {% endif %}
-                          {% else %}
-                            <span class="muted">—</span>
-                          {% endif %}
-                        </td>
+                        {% if d.note %}
+                          <div class="week-mini-note">{{ d.note }}</div>
+                        {% endif %}
+                      {% else %}
+                        <div class="week-mini-school muted">لا توجد بيانات</div>
+                      {% endif %}
+                    </div>
 
-                        <td>
-                          {% if d %}
-                            {% if d.visit_type == d.VISIT_IN %}
-                              <span class="mini-pill ok">حضوري</span>
-                            {% elif d.visit_type == d.VISIT_REMOTE %}
-                              <span class="mini-pill pri">عن بُعد</span>
-                            {% elif d.visit_type == d.VISIT_NONE %}
-                              <span class="mini-pill warn">بدون زيارة</span>
-                            {% else %}
-                              <span class="mini-pill">—</span>
-                            {% endif %}
-                          {% else %}
-                            <span class="mini-pill">—</span>
-                          {% endif %}
-                        </td>
-
-                        <td>
-                          {% if d and d.visit_type == d.VISIT_IN and d.school %}
-                            {% if d.visited %}
-                              <span class="mini-pill ok">تمت الزيارة</span>
-                            {% else %}
-                              <span class="mini-pill warn">لم تتم</span>
-                            {% endif %}
-                          {% else %}
-                            <span class="muted">—</span>
-                          {% endif %}
-                        </td>
-
-                        <td>
-                          {% if d and d.note %}
-                            <div class="day-note">{{ d.note }}</div>
-                          {% else %}
-                            <span class="muted">—</span>
-                          {% endif %}
-                        </td>
-                      </tr>
-                      {% endwith %}
-                      {% endwith %}
-                    {% empty %}
-                      <tr>
-                        <td colspan="7" class="empty">لا توجد بيانات أيام لهذه الخطة.</td>
-                      </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
+                    <div class="week-mini-foot">
+                      {% if d and d.visit_type == d.VISIT_IN and d.school %}
+                        {% if d.visited %}
+                          <span class="week-mini-exec">تمت الزيارة</span>
+                        {% else %}
+                          <span class="week-mini-exec">لم تتم</span>
+                        {% endif %}
+                      {% elif d and d.visit_type == d.VISIT_REMOTE %}
+                        <span class="week-mini-exec">متابعة عن بُعد</span>
+                      {% elif d and d.visit_type == d.VISIT_NONE %}
+                        <span class="week-mini-exec">لا توجد زيارة</span>
+                      {% else %}
+                        <span class="week-mini-exec">—</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% endwith %}
+                {% endwith %}
+              {% empty %}
+                <div class="week-cards-empty">لا توجد بيانات أيام لهذه الخطة.</div>
+              {% endfor %}
             </div>
           </div>
+
         </div>
 
-        <div class="side-stack">
-          <div class="panel">
-            <div class="panel-head">
-              <div>
-                <h3 class="panel-title">ملخص الخطة</h3>
-                <p class="panel-sub">قراءة سريعة لمؤشرات هذه الخطة.</p>
-              </div>
-            </div>
-
-            <div class="stats">
-              <div class="stat">
-                <div class="stat-label">الحالة</div>
-                <div class="stat-value">
-                  {% if plan.status == plan.STATUS_APPROVED %}
-                    <span class="pill approved" id="statusSummaryPill">معتمدة</span>
-                  {% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}
-                    <span class="pill unlock" id="statusSummaryPill">طلب فك اعتماد</span>
-                  {% else %}
-                    <span class="pill draft" id="statusSummaryPill">مسودة</span>
-                  {% endif %}
-                </div>
-              </div>
-
-              <div class="stat">
-                <div class="stat-label">الامتلاء</div>
-                <div class="stat-value" id="filledSummary">{{ filled }}/5</div>
-              </div>
-
-              <div class="stat">
-                <div class="stat-label">الأسبوع</div>
-                <div class="stat-value">{{ week }}</div>
-              </div>
-
-              <div class="stat">
-                <div class="stat-label">الخطة</div>
-                <div class="stat-value">#{{ plan.id }}</div>
-              </div>
+        <div class="panel compact-info-panel">
+          <div class="panel-head">
+            <div>
+              <h3 class="panel-title">معلومات مختصرة</h3>
+              <p class="panel-sub">بيانات زمنية وإدارية مختصرة دون تكرار معلومات المشرف الظاهرة أعلى الصفحة.</p>
             </div>
           </div>
 
-          <div class="panel">
-            <div class="panel-head">
-              <div>
-                <h3 class="panel-title">بيانات إضافية</h3>
-                <p class="panel-sub">تفاصيل زمنية وإدارية مرتبطة بالخطة.</p>
-              </div>
+          <div class="compact-info-strip">
+            <div class="compact-info-item">
+              <span class="label">رقم الخطة</span>
+              <span class="value">#{{ plan.id }}</span>
             </div>
 
-            <div class="meta-list">
-              <div class="meta-item">
-                <div class="name">اسم المشرف</div>
-                <div class="value">{{ sup.full_name }}</div>
-              </div>
-
-              <div class="meta-item">
-                <div class="name">رقم الهوية</div>
-                <div class="value">{{ sup.national_id }}</div>
-              </div>
-
-              <div class="meta-item">
-                <div class="name">رقم الأسبوع</div>
-                <div class="value">{{ week }}</div>
-              </div>
-
-              <div class="meta-item">
-                <div class="name">بداية الأسبوع</div>
-                <div class="value">
-                  {% if week_obj.start_sunday %}
-                    {{ week_obj.start_sunday|date:"Y-m-d" }}
-                  {% else %}
-                    —
-                  {% endif %}
-                </div>
-              </div>
-
-              <div class="meta-item">
-                <div class="name">آخر حفظ</div>
-                <div class="value">
-                  {% if plan.saved_at %}
-                    {{ plan.saved_at|date:"Y-m-d" }} — {{ plan.saved_at|time:"H:i" }}
-                  {% else %}
-                    —
-                  {% endif %}
-                </div>
-              </div>
-
-              <div class="meta-item">
-                <div class="name">وقت الاعتماد</div>
-                <div class="value">
-                  {% if plan.approved_at %}
-                    {{ plan.approved_at|date:"Y-m-d" }} — {{ plan.approved_at|time:"H:i" }}
-                  {% else %}
-                    —
-                  {% endif %}
-                </div>
-              </div>
+            <div class="compact-info-item">
+              <span class="label">بداية الأسبوع</span>
+              <span class="value">
+                {% if week_obj.start_sunday %}
+                  {{ week_obj.start_sunday|date:"Y-m-d" }}
+                {% else %}
+                  —
+                {% endif %}
+              </span>
             </div>
 
-            {% if plan.admin_note %}
-              <div class="note-box" id="adminNoteSide">
-                <b>ملاحظة الإدارة:</b>
-                <span id="adminNoteSideText">{{ plan.admin_note }}</span>
-              </div>
-            {% else %}
-              <div class="note-box" id="adminNoteSide" style="display:none">
-                <b>ملاحظة الإدارة:</b>
-                <span id="adminNoteSideText"></span>
-              </div>
-            {% endif %}
+            <div class="compact-info-item">
+              <span class="label">آخر حفظ</span>
+              <span class="value">
+                {% if plan.saved_at %}
+                  {{ plan.saved_at|date:"Y-m-d" }} — {{ plan.saved_at|time:"H:i" }}
+                {% else %}
+                  —
+                {% endif %}
+              </span>
+            </div>
+
+            <div class="compact-info-item">
+              <span class="label">وقت الاعتماد</span>
+              <span class="value">
+                {% if plan.approved_at %}
+                  {{ plan.approved_at|date:"Y-m-d" }} — {{ plan.approved_at|time:"H:i" }}
+                {% else %}
+                  —
+                {% endif %}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -1494,7 +1253,7 @@
   }
 
   function lockAllExecButtons(locked = true){
-    document.querySelectorAll(".exec-actions button[data-action]").forEach(btn => {
+    document.querySelectorAll(".exec-actions button[data-action], .ops-actions button[data-action]").forEach(btn => {
       if(locked){
         btn.dataset.prevDisabled = btn.disabled ? "1" : "0";
         btn.disabled = true;

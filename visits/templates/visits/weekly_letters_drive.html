@@ -1,47 +1,628 @@
-{% extends "base.html" %}
+{% extends "visits/base.html" %}
 
 {% block title %}خطابات الأسبوع {{ week_number }}{% endblock %}
-{% block page_heading %}خطابات الأسبوع {{ week_number }}{% endblock %}
-{% block page_subtitle %}استعراض ملفات الخطابات المخزنة في Google Drive{% endblock %}
+{% block page_messages %}{% endblock %}
+
+{% block header_title %}خطابات الأسبوع {{ week_number }}{% endblock %}
+{% block header_subtitle %}استعراض ملفات الخطابات المخزنة في Google Drive{% endblock %}
+
+{% block extra_css %}
+<style>
+  .drive-letters-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+
+    --fw-title:700;
+    --fw-strong:600;
+    --fw-normal:500;
+
+    --card:#ffffff;
+    --soft:#f7f9f8;
+    --txt:var(--vp-text);
+    --mut:var(--vp-text-soft);
+    --mut2:var(--vp-text-faint);
+    --line:var(--vp-line);
+    --line2:var(--vp-line-2);
+    --line-strong:var(--vp-line-strong);
+
+    --ok:var(--vp-ok-text);
+    --ok-bg:var(--vp-ok-bg);
+    --ok-br:var(--vp-ok-border);
+
+    --warn:var(--vp-warn-text);
+    --warn-bg:var(--vp-warn-bg);
+    --warn-br:var(--vp-warn-border);
+
+    --danger:var(--vp-danger-text);
+    --danger-bg:var(--vp-danger-bg);
+    --danger-br:var(--vp-danger-border);
+
+    --primary:var(--vp-primary);
+    --primary-2:var(--vp-primary-2);
+    --primary-soft:var(--vp-primary-soft);
+    --primary-soft-br:var(--vp-primary-soft-border);
+
+    --blue:#245fd6;
+    --blue-bg:rgba(37,99,235,.08);
+    --blue-br:rgba(37,99,235,.16);
+
+    --shadow:var(--vp-shadow);
+    --shadow2:var(--vp-shadow-soft);
+
+    font-family:var(--ff);
+    display:grid;
+    gap:12px;
+    margin-top:2px;
+  }
+
+  .drive-letters-page *,
+  .drive-letters-page *::before,
+  .drive-letters-page *::after{
+    box-sizing:border-box;
+    font-family:var(--ff) !important;
+  }
+
+  .drive-summary,
+  .drive-actions,
+  .drive-panel,
+  .drive-folder-card,
+  .drive-stat{
+    background:var(--card);
+    border:1px solid var(--line);
+    box-shadow:var(--shadow);
+  }
+
+  .drive-summary,
+  .drive-actions{
+    border-radius:20px;
+    padding:13px 15px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,252,251,.98));
+  }
+
+  .drive-summary-note,
+  .drive-action-copy{
+    color:var(--mut);
+    font-size:11.6px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
+    max-width:850px;
+  }
+
+  .drive-chips,
+  .drive-buttons{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    flex-wrap:wrap;
+  }
+
+  .drive-chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    min-height:31px;
+    padding:5px 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--soft);
+    color:var(--mut);
+    font-size:11px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+  }
+
+  .drive-chip b{
+    color:var(--txt);
+    font-weight:var(--fw-title);
+  }
+
+  .drive-dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#5e8d7a;
+    box-shadow:0 0 0 4px rgba(94,141,122,.10);
+    flex:0 0 auto;
+  }
+
+  .drive-dot.ok{
+    background:#2f6250;
+    box-shadow:0 0 0 4px rgba(47,98,80,.10);
+  }
+
+  .drive-dot.warn{
+    background:#b7791f;
+    box-shadow:0 0 0 4px rgba(183,121,31,.10);
+  }
+
+  .drive-btn{
+    height:36px;
+    padding:0 13px;
+    border-radius:999px;
+    border:1px solid var(--line-strong);
+    background:#fff;
+    color:var(--txt);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    text-decoration:none;
+    cursor:pointer;
+    white-space:nowrap;
+    font-size:11.3px;
+    font-weight:var(--fw-strong);
+    transition:.16s ease;
+  }
+
+  .drive-btn:hover{
+    transform:translateY(-1px);
+    background:#fcfdfc;
+  }
+
+  .drive-btn.primary{
+    background:var(--primary);
+    border-color:var(--primary);
+    color:#fff;
+  }
+
+  .drive-btn.primary:hover{
+    background:var(--primary-2);
+    border-color:var(--primary-2);
+  }
+
+  .drive-btn.soft{
+    background:var(--primary-soft);
+    border-color:var(--primary-soft-br);
+    color:var(--primary);
+  }
+
+  .drive-btn.open{
+    background:var(--blue-bg);
+    border-color:var(--blue-br);
+    color:var(--blue);
+  }
+
+  .drive-stats{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+    gap:10px;
+  }
+
+  .drive-stat{
+    border-radius:18px;
+    min-height:78px;
+    padding:11px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    box-shadow:var(--shadow2);
+    background:linear-gradient(180deg, #fff, #fbfcfb);
+  }
+
+  .drive-stat-meta{
+    display:grid;
+    gap:3px;
+  }
+
+  .drive-stat-label{
+    color:var(--mut);
+    font-size:10.8px;
+    line-height:1.7;
+    font-weight:var(--fw-normal);
+  }
+
+  .drive-stat-value{
+    color:var(--txt);
+    font-size:18px;
+    line-height:1.2;
+    font-weight:var(--fw-title);
+  }
+
+  .drive-stat-icon{
+    width:35px;
+    height:35px;
+    border-radius:13px;
+    display:grid;
+    place-items:center;
+    border:1px solid var(--line);
+    background:var(--soft);
+    font-size:15px;
+    flex:0 0 auto;
+  }
+
+  .drive-folder-card{
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow:var(--shadow2);
+  }
+
+  .drive-folder-head,
+  .drive-panel-head{
+    padding:12px 14px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, #fcfdfc, #f8fbf9);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .drive-title{
+    margin:0;
+    color:var(--txt);
+    font-size:12.8px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+  }
+
+  .drive-subtitle{
+    margin-top:3px;
+    color:var(--mut);
+    font-size:10.9px;
+    line-height:1.85;
+    font-weight:var(--fw-normal);
+  }
+
+  .drive-folder-body{
+    padding:13px 14px;
+    display:grid;
+    grid-template-columns:1fr auto;
+    gap:12px;
+    align-items:center;
+  }
+
+  .drive-folder-name{
+    display:grid;
+    gap:4px;
+    min-width:0;
+  }
+
+  .drive-folder-label{
+    color:var(--mut);
+    font-size:10.8px;
+    font-weight:var(--fw-normal);
+  }
+
+  .drive-folder-value{
+    color:var(--txt);
+    font-size:13px;
+    line-height:1.7;
+    font-weight:var(--fw-title);
+    word-break:break-word;
+  }
+
+  .drive-panel{
+    border-radius:20px;
+    overflow:hidden;
+  }
+
+  .drive-table-wrap{
+    overflow:auto;
+  }
+
+  .drive-table{
+    width:100%;
+    min-width:760px;
+    border-collapse:separate;
+    border-spacing:0;
+    table-layout:fixed;
+  }
+
+  .drive-table thead th{
+    position:sticky;
+    top:0;
+    z-index:2;
+    background:#f7faf8;
+    color:#687a70;
+    font-size:11px;
+    font-weight:var(--fw-title);
+    text-align:right;
+    padding:10px 11px;
+    border-bottom:1px solid #d9e2dd;
+    white-space:nowrap;
+  }
+
+  .drive-table thead th:nth-child(1){ width:22%; }
+  .drive-table thead th:nth-child(2){ width:55%; }
+  .drive-table thead th:nth-child(3){ width:23%; text-align:center; }
+
+  .drive-table tbody td{
+    padding:11px;
+    border-bottom:1px solid var(--line2);
+    color:var(--txt);
+    font-size:12px;
+    line-height:1.7;
+    background:#fff;
+    vertical-align:middle;
+  }
+
+  .drive-table tbody tr:nth-child(even) td{
+    background:#fcfdfc;
+  }
+
+  .drive-table tbody tr:hover td{
+    background:#f8fbf9;
+  }
+
+  .drive-code{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:28px;
+    padding:5px 10px;
+    border-radius:999px;
+    background:var(--primary-soft);
+    border:1px solid var(--primary-soft-br);
+    color:var(--primary);
+    font-size:11px;
+    font-weight:var(--fw-title);
+    white-space:nowrap;
+  }
+
+  .drive-file-name{
+    color:var(--txt);
+    font-weight:var(--fw-title);
+    line-height:1.7;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .drive-file-sub{
+    margin-top:2px;
+    color:var(--mut2);
+    font-size:10.6px;
+    line-height:1.6;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    direction:ltr;
+    text-align:left;
+  }
+
+  .drive-action-cell{
+    text-align:center;
+  }
+
+  .empty-state{
+    padding:42px 18px;
+    text-align:center;
+    background:#fff;
+  }
+
+  .empty-icon{
+    width:66px;
+    height:66px;
+    margin:0 auto 13px;
+    border-radius:20px;
+    display:grid;
+    place-items:center;
+    border:1px solid var(--line);
+    background:linear-gradient(135deg, #eef5ef, #fbf6eb);
+    font-size:23px;
+  }
+
+  .empty-state h3{
+    margin:0 0 7px;
+    color:var(--txt);
+    font-size:15px;
+    line-height:1.7;
+    font-weight:var(--fw-title);
+  }
+
+  .empty-state p{
+    margin:0 auto;
+    max-width:620px;
+    color:var(--mut);
+    font-size:11.5px;
+    line-height:1.95;
+    font-weight:var(--fw-normal);
+  }
+
+  .alert-card{
+    border-radius:20px;
+    border:1px solid var(--warn-br);
+    background:linear-gradient(180deg, #fffaf3, #fff);
+    box-shadow:var(--shadow2);
+    padding:18px;
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+  }
+
+  .alert-icon{
+    width:40px;
+    height:40px;
+    border-radius:15px;
+    display:grid;
+    place-items:center;
+    border:1px solid var(--warn-br);
+    background:var(--warn-bg);
+    color:var(--warn);
+    font-size:17px;
+    flex:0 0 auto;
+  }
+
+  .alert-title{
+    margin:0 0 5px;
+    color:var(--warn);
+    font-size:13px;
+    line-height:1.7;
+    font-weight:var(--fw-title);
+  }
+
+  .alert-text{
+    margin:0;
+    color:var(--mut);
+    font-size:11.6px;
+    line-height:1.95;
+    font-weight:var(--fw-normal);
+  }
+
+  @media (max-width: 900px){
+    .drive-stats{
+      grid-template-columns:1fr;
+    }
+
+    .drive-folder-body{
+      grid-template-columns:1fr;
+    }
+
+    .drive-buttons .drive-btn,
+    .drive-folder-body .drive-btn{
+      width:100%;
+    }
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<div style="background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:20px;">
-  {% if week_folder %}
-    <div style="margin-bottom:16px;">
-      <strong>مجلد الأسبوع:</strong>
-      {{ week_folder.name }}
-      —
-      <a href="{{ week_folder.webViewLink }}" target="_blank">فتح المجلد في Google Drive</a>
+<section class="drive-letters-page">
+
+  <div class="drive-summary">
+    <div class="drive-summary-note">
+      استعراض ملفات خطابات الأسبوع رقم {{ week_number }} كما هي محفوظة داخل مجلد Google Drive المرتبط بالأسبوع، مع إمكانية فتح الملف أو المجلد مباشرة.
     </div>
 
-    {% if rows %}
-      <div style="overflow:auto;">
-        <table style="width:100%;border-collapse:collapse;">
-          <thead>
-            <tr>
-              <th style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;">رقم المدرسة / السجل</th>
-              <th style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;">اسم الملف</th>
-              <th style="padding:10px;border-bottom:1px solid #e5e7eb;text-align:right;">الإجراء</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for row in rows %}
-              <tr>
-                <td style="padding:10px;border-bottom:1px solid #f1f5f9;">{{ row.school_code }}</td>
-                <td style="padding:10px;border-bottom:1px solid #f1f5f9;">{{ row.name }}</td>
-                <td style="padding:10px;border-bottom:1px solid #f1f5f9;">
-                  <a href="{{ row.url }}" target="_blank">فتح الخطاب</a>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+    <div class="drive-chips">
+      <span class="drive-chip"><span class="drive-dot ok"></span> الأسبوع: <b>{{ week_number }}</b></span>
+      <span class="drive-chip"><span class="drive-dot"></span> عدد الملفات: <b>{{ rows|length|default:"0" }}</b></span>
+    </div>
+  </div>
+
+  <div class="drive-actions">
+    <div class="drive-action-copy">
+      هذه الصفحة مخصصة للتحقق من ملفات الخطابات داخل المجلد المنشور، والتأكد من ظهور الملفات وربطها بالسجل أو الرقم الموجود في اسم الملف.
+    </div>
+
+    <div class="drive-buttons">
+      <a class="drive-btn soft" href="{% url 'visits:weekly_letter_links_list' %}">↩ روابط الخطابات</a>
+      <a class="drive-btn soft" href="{% url 'visits:admin_dashboard' %}">لوحة الإدارة</a>
+      {% if week_folder and week_folder.webViewLink %}
+        <a class="drive-btn primary" href="{{ week_folder.webViewLink }}" target="_blank" rel="noopener noreferrer">فتح مجلد Drive</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <section class="drive-stats">
+    <article class="drive-stat">
+      <div class="drive-stat-meta">
+        <div class="drive-stat-label">الأسبوع</div>
+        <div class="drive-stat-value">{{ week_number }}</div>
       </div>
-    {% else %}
-      <p>لا توجد ملفات داخل هذا المجلد.</p>
-    {% endif %}
+      <div class="drive-stat-icon">📅</div>
+    </article>
+
+    <article class="drive-stat">
+      <div class="drive-stat-meta">
+        <div class="drive-stat-label">عدد الملفات المقروءة</div>
+        <div class="drive-stat-value">{{ rows|length|default:"0" }}</div>
+      </div>
+      <div class="drive-stat-icon">📄</div>
+    </article>
+
+    <article class="drive-stat">
+      <div class="drive-stat-meta">
+        <div class="drive-stat-label">حالة المجلد</div>
+        <div class="drive-stat-value">{% if week_folder %}موجود{% else %}غير متاح{% endif %}</div>
+      </div>
+      <div class="drive-stat-icon">🗂️</div>
+    </article>
+  </section>
+
+  {% if week_folder %}
+    <section class="drive-folder-card">
+      <div class="drive-folder-head">
+        <div>
+          <h3 class="drive-title">بيانات مجلد الأسبوع</h3>
+          <div class="drive-subtitle">مجلد Google Drive المرتبط بخطابات الأسبوع الحالي.</div>
+        </div>
+
+        {% if week_folder.webViewLink %}
+          <a class="drive-btn open" href="{{ week_folder.webViewLink }}" target="_blank" rel="noopener noreferrer">فتح المجلد</a>
+        {% endif %}
+      </div>
+
+      <div class="drive-folder-body">
+        <div class="drive-folder-name">
+          <div class="drive-folder-label">اسم المجلد</div>
+          <div class="drive-folder-value">{{ week_folder.name }}</div>
+        </div>
+
+        {% if week_folder.webViewLink %}
+          <a class="drive-btn soft" href="{{ week_folder.webViewLink }}" target="_blank" rel="noopener noreferrer">Google Drive</a>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="drive-panel">
+      <div class="drive-panel-head">
+        <div>
+          <h3 class="drive-title">ملفات الخطابات</h3>
+          <div class="drive-subtitle">قائمة الملفات الموجودة داخل مجلد الأسبوع.</div>
+        </div>
+        <span class="drive-chip"><span class="drive-dot"></span> {{ rows|length|default:"0" }} ملف</span>
+      </div>
+
+      {% if rows %}
+        <div class="drive-table-wrap">
+          <table class="drive-table">
+            <thead>
+              <tr>
+                <th>رقم المدرسة / السجل</th>
+                <th>اسم الملف</th>
+                <th>الإجراء</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in rows %}
+                <tr>
+                  <td>
+                    <span class="drive-code">{{ row.school_code|default:"—" }}</span>
+                  </td>
+                  <td>
+                    <div class="drive-file-name">{{ row.name }}</div>
+                    {% if row.mime_type %}
+                      <div class="drive-file-sub">{{ row.mime_type }}</div>
+                    {% endif %}
+                  </td>
+                  <td class="drive-action-cell">
+                    {% if row.url %}
+                      <a class="drive-btn open" href="{{ row.url }}" target="_blank" rel="noopener noreferrer">فتح الخطاب</a>
+                    {% else %}
+                      <span class="drive-chip"><span class="drive-dot warn"></span> لا يوجد رابط</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <h3>لا توجد ملفات داخل هذا المجلد</h3>
+          <p>تم العثور على مجلد الأسبوع، لكن لم يتم قراءة أي ملفات داخله. تحقق من صلاحيات المجلد أو من وجود الملفات داخل Google Drive.</p>
+        </div>
+      {% endif %}
+    </section>
   {% else %}
-    <p>لم يتم العثور على مجلد أو رابط خطابات لهذا الأسبوع.</p>
+    <div class="alert-card">
+      <div class="alert-icon">!</div>
+      <div>
+        <h3 class="alert-title">لم يتم العثور على مجلد أو رابط خطابات لهذا الأسبوع</h3>
+        <p class="alert-text">
+          لا يوجد رابط نشط محفوظ لهذا الأسبوع أو تعذر قراءة رابط Google Drive. يمكنك العودة إلى روابط الخطابات وإضافة رابط صحيح للأسبوع المطلوب.
+        </p>
+      </div>
+    </div>
   {% endif %}
-</div>
+
+</section>
 {% endblock %}

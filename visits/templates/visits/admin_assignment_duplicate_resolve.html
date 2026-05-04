@@ -1,0 +1,524 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}معالجة الإسناد المكرر{% endblock %}
+{% block page_messages %}{% endblock %}
+
+{% block header_title %}معالجة الإسناد المكرر{% endblock %}
+{% block header_subtitle %}اختيار المشرف الصحيح للمدرسة وتعطيل بقية الإسنادات النشطة{% endblock %}
+
+{% block extra_css %}
+<style>
+  .dup-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+
+    --fw-hero:700;
+    --fw-title:600;
+    --fw-strong:500;
+    --fw-normal:400;
+
+    --card:#ffffff;
+    --soft:#f7f9f8;
+
+    --txt:var(--vp-text);
+    --mut:var(--vp-text-soft);
+    --mut2:var(--vp-text-faint);
+
+    --line:var(--vp-line);
+    --line2:var(--vp-line-2);
+    --line-strong:var(--vp-line-strong);
+
+    --ok:#1f6b3f;
+    --ok-bg:var(--vp-ok-bg);
+    --ok-br:var(--vp-ok-border);
+
+    --blue:#245fd6;
+    --blue-bg:rgba(37,99,235,.08);
+    --blue-br:rgba(37,99,235,.16);
+
+    --warn:#8b5c1f;
+    --warn-bg:var(--vp-warn-bg);
+    --warn-br:var(--vp-warn-border);
+
+    --danger:#9f3129;
+    --danger-bg:rgba(225,29,72,.055);
+    --danger-br:rgba(225,29,72,.13);
+
+    --shadow:0 8px 20px rgba(22,36,29,.038);
+    --shadow2:0 4px 12px rgba(22,36,29,.028);
+  }
+
+  .dup-page *{
+    box-sizing:border-box;
+    font-family:var(--ff) !important;
+  }
+
+  .dup-page .wrap{
+    display:grid;
+    gap:12px;
+    margin-top:2px;
+  }
+
+  .dup-page .summary-card,
+  .dup-page .warning-card,
+  .dup-page .table-card,
+  .dup-page .history-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:20px;
+    box-shadow:var(--shadow);
+  }
+
+  .dup-page .summary-card{
+    padding:13px 15px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,252,251,.98));
+  }
+
+  .dup-page .summary-title{
+    color:var(--txt);
+    font-size:14px;
+    font-weight:var(--fw-title);
+    line-height:1.8;
+  }
+
+  .dup-page .summary-note{
+    color:var(--mut);
+    font-size:11.4px;
+    line-height:1.85;
+    font-weight:var(--fw-normal);
+    max-width:780px;
+  }
+
+  .dup-page .summary-right{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    flex-wrap:wrap;
+  }
+
+  .dup-page .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    min-height:30px;
+    padding:5px 10px;
+    border-radius:999px;
+    background:var(--soft);
+    border:1px solid var(--line);
+    color:var(--mut);
+    font-size:10.8px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+    text-decoration:none;
+    transition:.16s ease;
+  }
+
+  .dup-page a.chip:hover{
+    background:#fcfdfc;
+    transform:translateY(-1px);
+    text-decoration:none;
+  }
+
+  .dup-page .chip.warn{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn);
+  }
+
+  .dup-page .chip.danger{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:var(--danger);
+  }
+
+  .dup-page .warning-card{
+    padding:12px 14px;
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    background:linear-gradient(180deg, #fffdf8, #fffaf0);
+    border-color:var(--warn-br);
+    box-shadow:var(--shadow2);
+  }
+
+  .dup-page .warning-icon{
+    width:34px;
+    height:34px;
+    border-radius:13px;
+    display:grid;
+    place-items:center;
+    background:var(--warn-bg);
+    border:1px solid var(--warn-br);
+    color:var(--warn);
+    font-size:14px;
+    flex:0 0 auto;
+  }
+
+  .dup-page .warning-title{
+    color:#7a5400;
+    font-size:12.2px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+  }
+
+  .dup-page .warning-text{
+    color:var(--mut);
+    font-size:10.9px;
+    line-height:1.85;
+    margin-top:2px;
+  }
+
+  .dup-page .table-card,
+  .dup-page .history-card{
+    overflow:hidden;
+    background:#fff;
+  }
+
+  .dup-page .table-head{
+    padding:10px 13px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, #fcfdfc, #f8fbf9);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .dup-page .hint{
+    color:var(--mut);
+    font-size:10.8px;
+    font-weight:var(--fw-normal);
+    line-height:1.9;
+  }
+
+  .dup-page .hint b{
+    color:var(--txt);
+    font-weight:var(--fw-title);
+  }
+
+  .dup-page .table-wrap{
+    overflow-x:hidden;
+  }
+
+  .dup-page table{
+    width:100%;
+    border-collapse:separate;
+    border-spacing:0;
+    table-layout:fixed;
+  }
+
+  .dup-page thead th{
+    background:#f7faf8;
+    border-bottom:1px solid #d9e2dd;
+    padding:9px 8px;
+    text-align:right;
+    color:#687a70;
+    font-size:10.7px;
+    font-weight:var(--fw-title);
+    white-space:nowrap;
+  }
+
+  .dup-page thead th:nth-child(1){ width:8%; }
+  .dup-page thead th:nth-child(2){ width:34%; }
+  .dup-page thead th:nth-child(3){ width:17%; }
+  .dup-page thead th:nth-child(4){ width:18%; }
+  .dup-page thead th:nth-child(5){ width:23%; }
+
+  .dup-page tbody td{
+    padding:9px 8px;
+    border-bottom:1px solid var(--line2);
+    color:var(--txt);
+    font-size:11.4px;
+    vertical-align:middle;
+    background:#fff;
+  }
+
+  .dup-page tbody tr:nth-child(even) td{
+    background:#fcfdfc;
+  }
+
+  .dup-page tbody tr:hover td{
+    background:#f8fbf9;
+  }
+
+  .dup-page .name{
+    font-size:12px;
+    font-weight:var(--fw-strong);
+    color:var(--txt);
+    line-height:1.7;
+  }
+
+  .dup-page .sub{
+    margin-top:3px;
+    color:var(--mut2);
+    font-size:10.4px;
+    line-height:1.75;
+    font-weight:var(--fw-normal);
+  }
+
+  .dup-page .radio-wrap{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+  }
+
+  .dup-page .radio-wrap input{
+    width:17px;
+    height:17px;
+    accent-color:var(--vp-primary);
+  }
+
+  .dup-page .badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:24px;
+    min-width:58px;
+    padding:3px 8px;
+    border-radius:999px;
+    font-size:10.3px;
+    font-weight:var(--fw-strong);
+    border:1px solid transparent;
+    white-space:nowrap;
+  }
+
+  .dup-page .badge.active{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+  }
+
+  .dup-page .badge.inactive{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:var(--danger);
+  }
+
+  .dup-page .actions-box{
+    padding:12px 13px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    background:#fbfcfb;
+    border-top:1px solid var(--line);
+  }
+
+  .dup-page .btn{
+    height:35px;
+    padding:0 13px;
+    border-radius:999px;
+    border:1px solid var(--line-strong);
+    background:#fff;
+    color:var(--txt);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    text-decoration:none;
+    cursor:pointer;
+    white-space:nowrap;
+    font-size:10.9px;
+    font-weight:var(--fw-strong);
+    box-shadow:0 4px 10px rgba(22,36,29,.025);
+    transition:.16s ease;
+  }
+
+  .dup-page .btn:hover{
+    transform:translateY(-1px);
+    background:#fcfdfc;
+    text-decoration:none;
+  }
+
+  .dup-page .btn.primary{
+    background:var(--vp-primary);
+    border-color:var(--vp-primary);
+    color:#fff;
+  }
+
+  .dup-page .btn.warn{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn);
+  }
+
+  .dup-page .empty{
+    padding:20px;
+    text-align:center;
+    color:var(--mut);
+    font-size:11.4px;
+  }
+
+  @media(max-width:900px){
+    .dup-page .table-wrap{
+      overflow-x:auto;
+    }
+
+    .dup-page table{
+      min-width:820px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="dup-page">
+  <div class="wrap">
+
+    <div class="summary-card">
+      <div>
+        <div class="summary-title">{{ school.name }}</div>
+        <div class="summary-note">
+          الرقم الإحصائي: {{ school.stat_code|default:"—" }}
+          —
+          القطاع:
+          {% if school.sector %}{{ school.sector.name }}{% else %}—{% endif %}
+          —
+          الجنس:
+          {% if school.gender == "boys" %}بنين{% elif school.gender == "girls" %}بنات{% else %}—{% endif %}
+        </div>
+      </div>
+
+      <div class="summary-right">
+        <span class="chip {% if active_count > 1 %}danger{% else %}warn{% endif %}">
+          الإسنادات النشطة: {{ active_count }}
+        </span>
+        <a class="chip" href="{% url 'visits:admin_assignment_review' %}?issue=duplicate_assignments">
+          العودة للمراجعة
+        </a>
+      </div>
+    </div>
+
+    <div class="warning-card">
+      <div class="warning-icon">!</div>
+      <div>
+        <div class="warning-title">تنبيه قبل المعالجة</div>
+        <div class="warning-text">
+          اختر المشرف الصحيح الذي يجب أن يبقى مسندًا لهذه المدرسة. عند التأكيد سيتم تعطيل بقية الإسنادات النشطة لنفس المدرسة، ولن يتم حذفها من قاعدة البيانات.
+        </div>
+      </div>
+    </div>
+
+    <form method="post" action="{% url 'visits:admin_assignment_duplicate_keep' school.id %}" class="table-card">
+      {% csrf_token %}
+
+      <div class="table-head">
+        <div class="hint">الإسنادات النشطة الحالية للمدرسة.</div>
+        <div class="hint">اختر مشرفًا واحدًا للإبقاء عليه.</div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>إبقاء</th>
+              <th>المشرف</th>
+              <th>السجل المدني</th>
+              <th>الحالة</th>
+              <th>ملاحظات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for assignment in assignments %}
+              <tr>
+                <td>
+                  <label class="radio-wrap">
+                    <input type="radio" name="keep_assignment_id" value="{{ assignment.id }}" {% if forloop.first %}checked{% endif %}>
+                  </label>
+                </td>
+
+                <td>
+                  <div class="name">{{ assignment.supervisor.full_name }}</div>
+                  {% if assignment.supervisor.email %}
+                    <div class="sub">{{ assignment.supervisor.email }}</div>
+                  {% endif %}
+                </td>
+
+                <td>{{ assignment.supervisor.national_id|default:"—" }}</td>
+
+                <td>
+                  {% if assignment.supervisor.is_active %}
+                    <span class="badge active">مشرف نشط</span>
+                  {% else %}
+                    <span class="badge inactive">مشرف غير نشط</span>
+                  {% endif %}
+                </td>
+
+                <td>
+                  {% if not assignment.supervisor.is_active %}
+                    <span class="sub">يفضل عدم الإبقاء على مشرف غير نشط.</span>
+                  {% else %}
+                    <span class="sub">يمكن الإبقاء عليه إذا كان هو المشرف الصحيح.</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="empty">لا توجد إسنادات نشطة لهذه المدرسة.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="actions-box">
+        <div class="hint">
+          سيتم الإبقاء على الإسناد المحدد وتعطيل بقية الإسنادات النشطة فقط.
+        </div>
+
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <a class="btn" href="{% url 'visits:admin_assignment_review' %}?issue=duplicate_assignments">إلغاء</a>
+          {% if active_count > 1 %}
+            <button class="btn primary" type="submit">تأكيد معالجة التكرار</button>
+          {% else %}
+            <button class="btn warn" type="button" disabled>لا يوجد تكرار نشط</button>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+
+    <div class="history-card">
+      <div class="table-head">
+        <div class="hint">آخر الإسنادات غير النشطة لهذه المدرسة.</div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40%">المشرف</th>
+              <th style="width:25%">السجل المدني</th>
+              <th style="width:20%">الحالة</th>
+              <th style="width:15%">رقم الإسناد</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for assignment in inactive_assignments %}
+              <tr>
+                <td>
+                  <div class="name">{{ assignment.supervisor.full_name }}</div>
+                </td>
+                <td>{{ assignment.supervisor.national_id|default:"—" }}</td>
+                <td><span class="badge inactive">غير نشط</span></td>
+                <td>{{ assignment.id }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="4" class="empty">لا توجد إسنادات غير نشطة مسجلة للمدرسة.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

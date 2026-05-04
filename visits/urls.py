@@ -2,6 +2,7 @@ from django.urls import path
 
 from . import views
 from . import views_import
+from . import views_assignment_review
 
 app_name = "visits"
 
@@ -49,6 +50,13 @@ urlpatterns = [
     ),
     path("plan/unlock/", views.request_unlock_view, name="request_unlock"),
 
+    path("control-followups/", views.supervisor_control_followups_view, name="supervisor_control_followups"),
+    path(
+        "control-followups/<int:pk>/respond/",
+        views.supervisor_control_followup_respond_view,
+        name="supervisor_control_followup_respond",
+    ),
+
     # تتبع تنفيذ الزيارات للمشرف
     path("plan/visit-status/", views.supervisor_visit_status_view, name="supervisor_visit_status"),
     path("plan/day/<int:day_id>/toggle-visited/", views.toggle_day_visited_view, name="toggle_day_visited"),
@@ -62,8 +70,45 @@ urlpatterns = [
     # الإدارة - لوحة الخطط
     # =========================================================
     path("manager/dashboard/", views.admin_dashboard_view, name="admin_dashboard"),
+    path("manager/reports/", views.admin_reports_view, name="admin_reports"),
+    path(
+        "manager/reports/control/<str:report_type>/",
+        views.admin_control_report_view,
+        name="admin_control_report",
+    ),
+    path(
+        "manager/reports/control/<str:report_type>/export.xlsx",
+        views.admin_control_report_export_excel_view,
+        name="admin_control_report_export_excel",
+    ),
+    path(
+        "manager/reports/control/<str:report_type>/notify/",
+        views.admin_control_report_notify_view,
+        name="admin_control_report_notify",
+    ),
+    path("manager/control-followups/", views.admin_control_followups_view, name="admin_control_followups"),
+    path(
+        "manager/control-followups/export.xlsx",
+        views.admin_control_followups_export_excel_view,
+        name="admin_control_followups_export_excel",
+    ),
+    path(
+        "manager/control-followups/<int:pk>/notify/",
+        views.admin_control_followup_notify_view,
+        name="admin_control_followup_notify",
+    ),
+    path(
+        "manager/control-followups/<int:pk>/update/",
+        views.admin_control_followup_update_view,
+        name="admin_control_followup_update",
+    ),
     path("manager/plan/<int:plan_id>/", views.admin_plan_detail_view, name="admin_plan_detail"),
     path("manager/export-week/", views.admin_export_week_excel, name="admin_export_week"),
+    path(
+        "manager/export-all-plans/",
+        views.admin_export_all_plans_excel,
+        name="admin_export_all_plans_excel",
+    ),
     path(
         "manager/export-week-visit-summary/",
         views.admin_export_week_visit_summary_excel,
@@ -141,6 +186,76 @@ urlpatterns = [
     # =========================================================
     # الإدارة - الإسناد
     # =========================================================
+    # مراجعة الإسناد
+    path(
+        "manager/assignment-review/",
+        views_assignment_review.admin_assignment_review_view,
+        name="admin_assignment_review",
+    ),
+    path(
+        "manager/assignment-review/export.xlsx",
+        views_assignment_review.admin_assignment_review_export_view,
+        name="admin_assignment_review_export",
+    ),
+
+    # سجل عمليات معالجة الإسناد
+    path(
+        "manager/assignment-review/logs/",
+        views_assignment_review.admin_assignment_review_logs_view,
+        name="admin_assignment_review_logs",
+    ),
+    path(
+        "manager/assignment-review/logs/export.xlsx",
+        views_assignment_review.admin_assignment_review_logs_export_view,
+        name="admin_assignment_review_logs_export",
+    ),
+
+    # معالجة الإسناد المكرر
+    path(
+        "manager/assignment-review/duplicates/<int:school_id>/",
+        views_assignment_review.admin_assignment_duplicate_resolve_view,
+        name="admin_assignment_duplicate_resolve",
+    ),
+    path(
+        "manager/assignment-review/duplicates/<int:school_id>/keep/",
+        views_assignment_review.admin_assignment_duplicate_keep_view,
+        name="admin_assignment_duplicate_keep",
+    ),
+
+    # معالجة مشرف غير نشط لديه مدارس
+    path(
+        "manager/assignment-review/inactive-supervisors/<int:supervisor_id>/",
+        views_assignment_review.admin_assignment_inactive_supervisor_resolve_view,
+        name="admin_assignment_inactive_supervisor_resolve",
+    ),
+    path(
+        "manager/assignment-review/inactive-supervisors/<int:supervisor_id>/export.xlsx",
+        views_assignment_review.admin_assignment_inactive_supervisor_export_view,
+        name="admin_assignment_inactive_supervisor_export",
+    ),
+    path(
+        "manager/assignment-review/inactive-supervisors/<int:supervisor_id>/disable/",
+        views_assignment_review.admin_assignment_inactive_supervisor_disable_view,
+        name="admin_assignment_inactive_supervisor_disable",
+    ),
+
+    # معالجة مدرسة معطلة لها إسناد نشط
+    path(
+        "manager/assignment-review/inactive-schools/<int:school_id>/",
+        views_assignment_review.admin_assignment_inactive_school_resolve_view,
+        name="admin_assignment_inactive_school_resolve",
+    ),
+    path(
+        "manager/assignment-review/inactive-schools/<int:school_id>/export.xlsx",
+        views_assignment_review.admin_assignment_inactive_school_export_view,
+        name="admin_assignment_inactive_school_export",
+    ),
+    path(
+        "manager/assignment-review/inactive-schools/<int:school_id>/disable/",
+        views_assignment_review.admin_assignment_inactive_school_disable_view,
+        name="admin_assignment_inactive_school_disable",
+    ),
+
     path("manager/assignments/", views.admin_assignments_overview_view, name="admin_assignments_overview"),
     path(
         "manager/assignments/unassigned/export/",
@@ -193,4 +308,23 @@ urlpatterns = [
     # =========================================================
     path("manager/import/", views_import.manager_import_view, name="admin_import"),
     path("manager/import/rejected.xlsx", views_import.download_rejected_view, name="download_rejected"),
+
+    # استيراد المدارس وإسنادها للمشرفين
+    path(
+        "manager/import/schools-supervisors/",
+        views_import.admin_schools_with_supervisors_import_view,
+        name="admin_schools_with_supervisors_import",
+    ),
+    path(
+        "manager/import/schools-supervisors/template/",
+        views_import.admin_schools_with_supervisors_import_template_view,
+        name="admin_schools_with_supervisors_import_template",
+    ),
+
+    # تصدير المدارس بالمشرفين
+    path(
+        "manager/import/schools-supervisors/export.xlsx",
+        views_import.admin_schools_with_supervisors_export_view,
+        name="admin_schools_with_supervisors_export",
+    ),
 ]

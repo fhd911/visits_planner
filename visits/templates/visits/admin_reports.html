@@ -1,0 +1,730 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}مركز التقارير{% endblock %}
+{% block page_messages %}{% endblock %}
+
+{% block header_title %}مركز التقارير{% endblock %}
+{% block header_subtitle %}تقارير الخطط والزيارات والإسناد والتصدير حسب الفلاتر{% endblock %}
+
+{% block topbar_actions %}{% endblock %}
+{% block page_actions %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .reports-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+    --card:#ffffff;
+    --soft:#f7f9f8;
+    --txt:var(--vp-text);
+    --mut:var(--vp-text-soft);
+    --mut2:var(--vp-text-faint);
+    --line:var(--vp-line);
+    --line2:var(--vp-line-2);
+    --line-strong:var(--vp-line-strong);
+    --primary:var(--vp-primary);
+    --primary-2:var(--vp-primary-2);
+    --primary-soft:var(--vp-primary-soft);
+    --primary-soft-br:var(--vp-primary-soft-border);
+    --ok:var(--vp-ok-text);
+    --ok-bg:var(--vp-ok-bg);
+    --ok-br:var(--vp-ok-border);
+    --warn:var(--vp-warn-text);
+    --warn-bg:var(--vp-warn-bg);
+    --warn-br:var(--vp-warn-border);
+    --danger:var(--vp-danger-text);
+    --danger-bg:var(--vp-danger-bg);
+    --danger-br:var(--vp-danger-border);
+    --gold:#9f7a31;
+    --gold-bg:#fff8e8;
+    --gold-br:rgba(202,168,94,.30);
+    --shadow:var(--vp-shadow);
+    --shadow2:var(--vp-shadow-soft);
+    font-family:var(--ff);
+    direction:rtl;
+    color:var(--txt);
+  }
+
+  .reports-page *{
+    font-family:var(--ff) !important;
+    box-sizing:border-box;
+  }
+
+  .reports-page .wrap{
+    display:grid;
+    gap:10px;
+    margin-top:2px;
+  }
+
+  .reports-page .hero,
+  .reports-page .kpi,
+  .reports-page .report-card,
+  .reports-page .filter-panel{
+    background:var(--card);
+    border:1px solid var(--line);
+    box-shadow:var(--shadow);
+  }
+
+  .reports-page .hero{
+    border-radius:22px;
+    padding:13px 15px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    background:linear-gradient(180deg,#fff,#fbfcfb);
+  }
+
+  .reports-page .hero-title{
+    margin:0;
+    font-size:16px;
+    font-weight:700;
+    color:var(--txt);
+    line-height:1.6;
+  }
+
+  .reports-page .hero-note{
+    margin:2px 0 0;
+    color:var(--mut);
+    font-size:11.2px;
+    line-height:1.9;
+    max-width:850px;
+  }
+
+  .reports-page .hero-actions,
+  .reports-page .btn-row{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    flex-wrap:wrap;
+  }
+
+  .reports-page .chip{
+    min-height:30px;
+    padding:5px 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:var(--soft);
+    color:var(--mut);
+    font-size:10.8px;
+    font-weight:600;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    white-space:nowrap;
+  }
+
+  .reports-page .chip b{
+    color:var(--txt);
+    font-weight:700;
+  }
+
+  .reports-page .btn{
+    min-height:32px;
+    padding:0 12px;
+    border-radius:999px;
+    border:1px solid var(--line-strong);
+    background:#fff;
+    color:var(--txt);
+    font-weight:600;
+    font-size:10.7px;
+    cursor:pointer;
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    white-space:nowrap;
+    transition:.12s ease;
+  }
+
+  .reports-page .btn:hover{
+    transform:translateY(-1px);
+    background:#fcfdfc;
+  }
+
+  .reports-page .btn.primary{
+    background:var(--primary);
+    border-color:var(--primary);
+    color:#fff;
+  }
+
+  .reports-page .btn.primary:hover{
+    background:var(--primary-2);
+  }
+
+  .reports-page .btn.soft{
+    background:var(--primary-soft);
+    border-color:var(--primary-soft-br);
+    color:var(--primary);
+  }
+
+  .reports-page .btn.warn{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn);
+  }
+
+  .reports-page .btn.gold{
+    background:var(--gold-bg);
+    border-color:var(--gold-br);
+    color:var(--gold);
+  }
+
+  .reports-page .kpis{
+    display:grid;
+    grid-template-columns:repeat(5, minmax(0,1fr));
+    gap:8px;
+  }
+
+  .reports-page .kpi{
+    border-radius:17px;
+    padding:10px 11px;
+    min-height:66px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    box-shadow:var(--shadow2);
+  }
+
+  .reports-page .kpi-label{
+    color:var(--mut);
+    font-size:10.8px;
+    line-height:1.6;
+    font-weight:500;
+  }
+
+  .reports-page .kpi-value{
+    color:var(--txt);
+    font-size:18px;
+    line-height:1.2;
+    font-weight:700;
+  }
+
+  .reports-page .kpi-icon{
+    width:34px;
+    height:34px;
+    border-radius:13px;
+    border:1px solid var(--line);
+    background:var(--soft);
+    display:grid;
+    place-items:center;
+    flex:0 0 auto;
+    font-size:15px;
+  }
+
+  .reports-page .layout{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+  }
+
+  .reports-page .section-title{
+    margin:6px 2px 0;
+    font-size:13px;
+    color:var(--txt);
+    font-weight:700;
+  }
+
+  .reports-page .section-note{
+    margin:1px 2px 0;
+    font-size:10.8px;
+    line-height:1.8;
+    color:var(--mut);
+  }
+
+  .reports-page .cards{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:9px;
+  }
+
+  .reports-page .report-card{
+    border-radius:20px;
+    padding:12px;
+    box-shadow:var(--shadow2);
+    display:grid;
+    gap:10px;
+    min-height:170px;
+    background:linear-gradient(180deg,#fff,#fbfcfb);
+  }
+
+  .reports-page .report-card.gold-card{
+    background:linear-gradient(180deg,#fffdf8,#fbfaf5);
+    border-color:var(--gold-br);
+  }
+
+  .reports-page .card-head{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+  }
+
+  .reports-page .card-icon{
+    width:38px;
+    height:38px;
+    border-radius:15px;
+    border:1px solid var(--line);
+    background:var(--soft);
+    display:grid;
+    place-items:center;
+    flex:0 0 auto;
+    font-size:16px;
+  }
+
+  .reports-page .gold-card .card-icon{
+    background:var(--gold-bg);
+    border-color:var(--gold-br);
+  }
+
+  .reports-page .card-title{
+    margin:0;
+    font-size:12.8px;
+    color:var(--txt);
+    font-weight:700;
+    line-height:1.6;
+  }
+
+  .reports-page .card-desc{
+    margin:2px 0 0;
+    color:var(--mut);
+    font-size:10.8px;
+    line-height:1.8;
+  }
+
+  .reports-page .card-meta{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    align-items:center;
+  }
+
+  .reports-page .mini-stat{
+    min-height:25px;
+    padding:4px 8px;
+    border-radius:999px;
+    border:1px solid var(--line2);
+    background:#fff;
+    color:var(--mut);
+    font-size:10.2px;
+    font-weight:600;
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+  }
+
+  .reports-page .mini-stat b{
+    color:var(--txt);
+  }
+
+  .reports-page .filter-panel{
+    border-radius:20px;
+    padding:12px;
+    box-shadow:var(--shadow2);
+    display:grid;
+    gap:10px;
+    background:linear-gradient(180deg,#fff,#fbfcfb);
+  }
+
+  .reports-page .filter-title{
+    margin:0;
+    font-size:12.8px;
+    color:var(--txt);
+    font-weight:700;
+  }
+
+  .reports-page .filter-note{
+    margin:2px 0 0;
+    font-size:10.8px;
+    color:var(--mut);
+    line-height:1.8;
+  }
+
+  .reports-page .fields{
+    display:grid;
+    grid-template-columns:repeat(6, minmax(0,1fr));
+    gap:8px;
+    align-items:end;
+  }
+
+  .reports-page .field label{
+    display:block;
+    margin-bottom:5px;
+    color:var(--mut);
+    font-size:10px;
+    font-weight:500;
+  }
+
+  .reports-page .input,
+  .reports-page .select{
+    width:100%;
+    height:33px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:#f9fbfa;
+    color:var(--txt);
+    padding:0 10px;
+    outline:none;
+    font-size:10.8px;
+    font-weight:600;
+  }
+
+  .reports-page .checkline{
+    min-height:33px;
+    display:flex;
+    align-items:center;
+    gap:7px;
+    padding:0 10px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--mut);
+    font-size:10.6px;
+    font-weight:600;
+  }
+
+  .reports-page .quick-grid{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0,1fr));
+    gap:8px;
+  }
+
+  .reports-page .quick-link{
+    min-height:45px;
+    border-radius:15px;
+    border:1px solid var(--line2);
+    background:#fff;
+    text-decoration:none;
+    color:var(--txt);
+    padding:8px 10px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:9px;
+    transition:.12s ease;
+  }
+
+  .reports-page .quick-link:hover{
+    transform:translateY(-1px);
+    background:#fcfdfc;
+  }
+
+  .reports-page .quick-link span{
+    color:var(--mut);
+    font-size:10.2px;
+    line-height:1.5;
+  }
+
+  .reports-page .quick-link b{
+    font-size:11.1px;
+    line-height:1.5;
+  }
+
+  @media(max-width:1180px){
+    .reports-page .kpis{grid-template-columns:repeat(3,1fr)}
+    .reports-page .cards{grid-template-columns:repeat(2,1fr)}
+    .reports-page .fields{grid-template-columns:repeat(3,1fr)}
+    .reports-page .quick-grid{grid-template-columns:repeat(2,1fr)}
+  }
+
+  @media(max-width:720px){
+    .reports-page .kpis{grid-template-columns:repeat(2,1fr)}
+    .reports-page .cards,
+    .reports-page .fields,
+    .reports-page .quick-grid{grid-template-columns:1fr}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="reports-page">
+  <div class="wrap">
+
+    <div class="hero">
+      <div>
+        <h2 class="hero-title">مركز التقارير والتصدير</h2>
+        <p class="hero-note">
+          صفحة مستقلة للتقارير الثقيلة، مع فلاتر قبل التصدير حتى لا تصبح لوحة الإدارة مزدحمة أو يتم تحميل ملفات ضخمة دون حاجة.
+        </p>
+      </div>
+
+      <div class="hero-actions">
+        <span class="chip">الأسبوع الحالي: <b>{{ week }}</b></span>
+        <span class="chip">الأسابيع النشطة: <b>{{ report_stats.active_weeks_count }}</b></span>
+        <a class="btn" href="{% url 'visits:admin_dashboard' %}?week={{ week }}{% if show_all %}&all=1{% endif %}">← العودة للوحة الإدارة</a>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi">
+        <div>
+          <div class="kpi-label">إجمالي الخطط</div>
+          <div class="kpi-value">{{ report_stats.plans_count }}</div>
+        </div>
+        <div class="kpi-icon">📋</div>
+      </div>
+      <div class="kpi">
+        <div>
+          <div class="kpi-label">المعتمدة</div>
+          <div class="kpi-value">{{ report_stats.approved_plans_count }}</div>
+        </div>
+        <div class="kpi-icon">✅</div>
+      </div>
+      <div class="kpi">
+        <div>
+          <div class="kpi-label">غير مكتملة</div>
+          <div class="kpi-value">{{ report_stats.not_full_plans_count }}</div>
+        </div>
+        <div class="kpi-icon">🟠</div>
+      </div>
+      <div class="kpi">
+        <div>
+          <div class="kpi-label">المشرفون النشطون</div>
+          <div class="kpi-value">{{ report_stats.active_supervisors_count }}</div>
+        </div>
+        <div class="kpi-icon">👥</div>
+      </div>
+      <div class="kpi">
+        <div>
+          <div class="kpi-label">المدارس النشطة</div>
+          <div class="kpi-value">{{ report_stats.active_schools_count }}</div>
+        </div>
+        <div class="kpi-icon">🏫</div>
+      </div>
+    </div>
+
+    <div class="filter-panel">
+      <div>
+        <h3 class="filter-title">تصدير خطط المشرفين حسب الفلاتر</h3>
+        <p class="filter-note">ينتج ملف Excel شامل بثلاث أوراق: ملخص المشرفين، كل الخطط، وتفصيل الأيام.</p>
+      </div>
+
+      <form method="get" action="{% url 'visits:admin_export_all_plans_excel' %}" class="fields">
+        <div class="field">
+          <label>من أسبوع</label>
+          <select class="select" name="from_week">
+            <option value="">الكل</option>
+            {% for w,label in week_choices %}
+              <option value="{{ w }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label>إلى أسبوع</label>
+          <select class="select" name="to_week">
+            <option value="">الكل</option>
+            {% for w,label in week_choices %}
+              <option value="{{ w }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label>حالة الخطة</label>
+          <select class="select" name="status">
+            <option value="all">كل الحالات</option>
+            <option value="approved">المعتمدة</option>
+            <option value="draft">المسودات</option>
+            <option value="unlock">طلبات فك الاعتماد</option>
+            <option value="unlocked">مفكوكة للتعديل</option>
+            <option value="not_full">غير المكتملة</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>المشرف</label>
+          <select class="select" name="supervisor">
+            <option value="">كل المشرفين</option>
+            {% for sup in supervisors %}
+              <option value="{{ sup.id }}">{{ sup.full_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field">
+          <label>بحث</label>
+          <input class="input" type="text" name="q" placeholder="اسم مشرف / هوية / مدرسة">
+        </div>
+
+        <div class="field">
+          <label>النطاق</label>
+          <label class="checkline">
+            <input type="checkbox" name="all" value="1" {% if show_all %}checked{% endif %}>
+            تضمين أسابيع الإجازة
+          </label>
+        </div>
+
+        <div class="btn-row" style="grid-column:1/-1;justify-content:flex-end">
+          <button class="btn primary" type="submit">⬇ تصدير حسب الفلاتر</button>
+          <a class="btn soft" href="{% url 'visits:admin_export_all_plans_excel' %}">⬇ تصدير جميع الخطط</a>
+        </div>
+      </form>
+    </div>
+
+    <div>
+      <h3 class="section-title">تقارير الخطط</h3>
+      <p class="section-note">تصديرات مرتبطة بخطط المشرفين والأسبوع الحالي وجميع الأسابيع.</p>
+    </div>
+
+    <div class="cards">
+      <div class="report-card gold-card">
+        <div class="card-head">
+          <div class="card-icon">📋</div>
+          <div>
+            <h3 class="card-title">جميع خطط المشرفين لكل الأسابيع</h3>
+            <p class="card-desc">تقرير شامل للمتابعة الإدارية والتحليل حسب المشرف والأسبوع والأيام.</p>
+          </div>
+        </div>
+        <div class="card-meta">
+          <span class="mini-stat">الخطط: <b>{{ report_stats.plans_count }}</b></span>
+          <span class="mini-stat">غير مكتملة: <b>{{ report_stats.not_full_plans_count }}</b></span>
+        </div>
+        <div class="btn-row">
+          <a class="btn primary" href="{% url 'visits:admin_export_all_plans_excel' %}">⬇ تصدير Excel</a>
+          <a class="btn soft" href="{% url 'visits:admin_dashboard' %}?week={{ week }}">عرض الخطط</a>
+        </div>
+      </div>
+
+      <div class="report-card">
+        <div class="card-head">
+          <div class="card-icon">📅</div>
+          <div>
+            <h3 class="card-title">خطط الأسبوع الحالي</h3>
+            <p class="card-desc">تصدير الخطط المسجلة للأسبوع المحدد في مركز التقارير.</p>
+          </div>
+        </div>
+        <form method="get" action="{% url 'visits:admin_export_week' %}" class="btn-row">
+          <select class="select" name="week" style="max-width:220px">
+            {% for w,label in week_choices %}
+              <option value="{{ w }}" {% if w == week %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          {% if show_all %}<input type="hidden" name="all" value="1">{% endif %}
+          <button class="btn primary" type="submit">⬇ تصدير</button>
+        </form>
+      </div>
+
+      <div class="report-card">
+        <div class="card-head">
+          <div class="card-icon">🔓</div>
+          <div>
+            <h3 class="card-title">طلبات فك الاعتماد</h3>
+            <p class="card-desc">استخراج الخطط التي تحتاج قرارًا إداريًا بخصوص فك الاعتماد.</p>
+          </div>
+        </div>
+        <div class="card-meta">
+          <span class="mini-stat">طلبات: <b>{{ report_stats.unlock_plans_count }}</b></span>
+          <span class="mini-stat">مفكوكة للتعديل: <b>{{ report_stats.unlocked_plans_count|default:"0" }}</b></span>
+        </div>
+        <div class="btn-row">
+          <a class="btn warn" href="{% url 'visits:admin_export_all_plans_excel' %}?status=unlock">⬇ تصدير الطلبات</a>
+          <a class="btn soft" href="{% url 'visits:admin_dashboard' %}?week={{ week }}&status=unlock">عرض في اللوحة</a>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 class="section-title">تقارير الزيارات</h3>
+      <p class="section-note">ملخصات الزيارات الأسبوعية والمتابعة العامة على مستوى جميع الأسابيع.</p>
+    </div>
+
+    <div class="cards">
+      <div class="report-card">
+        <div class="card-head">
+          <div class="card-icon">📄</div>
+          <div>
+            <h3 class="card-title">ملخص زيارات الأسبوع</h3>
+            <p class="card-desc">تقرير مختصر يوضح الحركة حسب أيام الأسبوع وأنواع الزيارة.</p>
+          </div>
+        </div>
+        <form method="get" action="{% url 'visits:admin_export_week_visit_summary' %}" class="btn-row">
+          <select class="select" name="week" style="max-width:220px">
+            {% for w,label in week_choices %}
+              <option value="{{ w }}" {% if w == week %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+          {% if show_all %}<input type="hidden" name="all" value="1">{% endif %}
+          <button class="btn primary" type="submit">⬇ تصدير الملخص</button>
+        </form>
+      </div>
+
+      <div class="report-card gold-card">
+        <div class="card-head">
+          <div class="card-icon">📊</div>
+          <div>
+            <h3 class="card-title">متابعة الزيارات لجميع المشرفين</h3>
+            <p class="card-desc">تقرير عام للمدارس التي تمت زيارتها والمتبقية لكل مشرف.</p>
+          </div>
+        </div>
+        <form method="get" action="{% url 'visits:admin_visit_followup_export_excel' %}" class="fields" style="grid-template-columns:1fr 1fr">
+          <div class="field">
+            <label>بحث</label>
+            <input class="input" type="text" name="q" placeholder="مشرف / مدرسة">
+          </div>
+          <div class="field">
+            <label>القطاع</label>
+            <select class="select" name="sector">
+              <option value="">كل القطاعات</option>
+              {% for sector in sectors %}
+                <option value="{{ sector.id }}">{{ sector.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <label class="checkline" style="grid-column:1/-1">
+            <input type="checkbox" name="only_remaining" value="1">
+            المتأخرون فقط / لديهم مدارس متبقية
+          </label>
+          <div class="btn-row" style="grid-column:1/-1;justify-content:flex-end">
+            <button class="btn primary" type="submit">⬇ تصدير المتابعة</button>
+            <a class="btn soft" href="{% url 'visits:admin_visit_followup_dashboard' %}">عرض المتابعة</a>
+          </div>
+        </form>
+      </div>
+
+      <div class="report-card">
+        <div class="card-head">
+          <div class="card-icon">🏫</div>
+          <div>
+            <h3 class="card-title">المدارس غير المخططة للمشرف</h3>
+            <p class="card-desc">متاح من صفحة خطة المشرف عند الحاجة، ويستخدم لمتابعة تغطية المدارس.</p>
+          </div>
+        </div>
+        <div class="card-meta">
+          <span class="mini-stat">استخدم صفحة تفاصيل المشرف</span>
+        </div>
+        <div class="btn-row">
+          <a class="btn soft" href="{% url 'visits:admin_dashboard' %}?week={{ week }}">اختيار مشرف</a>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 class="section-title">تقارير الإسناد والبيانات</h3>
+      <p class="section-note">تقارير المدارس والمشرفين وحالات الإسناد التي تحتاج معالجة.</p>
+    </div>
+
+    <div class="quick-grid">
+      <a class="quick-link" href="{% url 'visits:admin_schools_with_supervisors_export' %}">
+        <div><b>المدارس بالمشرفين</b><br><span>تصدير كامل للإسناد الحالي.</span></div>
+        <div>⬇</div>
+      </a>
+      <a class="quick-link" href="{% url 'visits:admin_export_unassigned_schools_excel' %}">
+        <div><b>المدارس غير المسندة</b><br><span>عددها الحالي: {{ dashboard_unassigned_schools_count|default:"—" }}</span></div>
+        <div>⬇</div>
+      </a>
+      <a class="quick-link" href="{% url 'visits:admin_assignment_review_export' %}">
+        <div><b>مراجعة الإسناد</b><br><span>مكرر: {{ dashboard_duplicate_assignments_count|default:"—" }}</span></div>
+        <div>⬇</div>
+      </a>
+      <a class="quick-link" href="{% url 'visits:admin_assignment_review_logs_export' %}">
+        <div><b>سجل المعالجة</b><br><span>تصدير سجل قرارات الإسناد.</span></div>
+        <div>⬇</div>
+      </a>
+    </div>
+
+  </div>
+</section>
+{% endblock %}

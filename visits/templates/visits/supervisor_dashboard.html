@@ -7,484 +7,635 @@
 
 {% block extra_css %}
 <style>
-  .sup-dashboard{
-    max-width: 1120px;
-    margin: 0 auto;
-    padding: 12px 0 8px;
-    display: grid;
-    gap: 12px;
+  .sup-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+
+    --fw-title:600;
+    --fw-strong:500;
+    --fw-normal:400;
+
+    --card:#ffffff;
+    --soft:#f7f9f8;
+
+    --txt:var(--vp-text);
+    --mut:var(--vp-text-soft);
+    --mut2:var(--vp-text-faint);
+
+    --line:var(--vp-line);
+    --line2:var(--vp-line-2);
+    --line-strong:var(--vp-line-strong);
+
+    --ok:var(--vp-ok-text);
+    --ok-bg:var(--vp-ok-bg);
+    --ok-br:var(--vp-ok-border);
+
+    --warn:var(--vp-warn-text);
+    --warn-bg:var(--vp-warn-bg);
+    --warn-br:var(--vp-warn-border);
+
+    --primary:var(--vp-primary);
+    --primary-2:var(--vp-primary-2);
+    --primary-soft:var(--vp-primary-soft);
+    --primary-soft-br:var(--vp-primary-soft-border);
+
+    --shadow:0 8px 20px rgba(22,36,29,.038);
+    --shadow2:0 4px 12px rgba(22,36,29,.028);
+
+    font-family:var(--ff);
+    direction:rtl;
+    color:var(--txt);
   }
 
-  .sup-panel{
-    background: var(--vp-card);
-    border: 1px solid var(--vp-line);
-    border-radius: var(--vp-radius-xl);
-    box-shadow: var(--vp-shadow);
-    overflow: hidden;
+  .sup-page *,
+  .sup-page *::before,
+  .sup-page *::after{
+    box-sizing:border-box;
+    font-family:var(--ff) !important;
   }
 
-  .sup-hero{
-    padding: 14px 16px;
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-    border-bottom: 1px solid var(--vp-line);
-    background: linear-gradient(180deg, #fafcfb, #ffffff);
+  .sup-page .wrap{
+    max-width:1180px;
+    margin:0 auto;
+    display:grid;
+    gap:12px;
   }
 
-  .sup-hero-main{
-    display: grid;
-    gap: 6px;
-    min-width: 260px;
+  .sup-page .summary-card,
+  .sup-page .kpi,
+  .sup-page .panel-card,
+  .sup-page .notice-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:20px;
+    box-shadow:var(--shadow);
   }
 
-  .sup-title-row{
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+  .sup-page .summary-card{
+    padding:12px 15px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,252,251,.98));
   }
 
-  .sup-icon{
-    width: 40px;
-    height: 40px;
-    border-radius: 14px;
-    display: grid;
-    place-items: center;
-    background: var(--vp-primary-soft);
-    border: 1px solid var(--vp-primary-soft-border);
-    color: var(--vp-primary);
-    font-size: 18px;
+  .sup-page .summary-main{
+    display:grid;
+    gap:3px;
+    min-width:260px;
   }
 
-  .sup-title{
-    margin: 0;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--vp-text);
-    line-height: 1.4;
+  .sup-page .summary-title{
+    margin:0;
+    color:var(--txt);
+    font-size:14px;
+    font-weight:var(--fw-title);
+    line-height:1.55;
   }
 
-  .sup-subtitle{
-    margin: 0;
-    font-size: 12.7px;
-    line-height: 1.8;
-    color: var(--vp-text-soft);
-    font-weight: 500;
+  .sup-page .summary-note{
+    color:var(--mut);
+    font-size:11.3px;
+    line-height:1.85;
+    font-weight:var(--fw-normal);
+    max-width:760px;
   }
 
-  .sup-hero-side{
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+  .sup-page .summary-right{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    flex-wrap:wrap;
   }
 
-  .sup-chip{
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 34px;
-    padding: 0 12px;
-    border-radius: 999px;
-    border: 1px solid var(--vp-line);
-    background: var(--vp-card-soft);
-    color: var(--vp-text-soft);
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
+  .sup-page .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    min-height:30px;
+    padding:5px 10px;
+    border-radius:999px;
+    background:var(--soft);
+    border:1px solid var(--line);
+    color:var(--mut);
+    font-size:10.8px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+    text-decoration:none;
+    transition:.16s ease;
   }
 
-  .sup-chip b{
-    color: var(--vp-text);
-    font-weight: 700;
+  .sup-page a.chip:hover{
+    background:#fcfdfc;
+    transform:translateY(-1px);
+    text-decoration:none;
   }
 
-  .sup-dot{
-    width: 8px;
-    height: 8px;
-    border-radius: 999px;
-    background: #94a3b8;
-    box-shadow: 0 0 0 4px rgba(148,163,184,.10);
+  .sup-page .chip b{
+    color:var(--txt);
+    font-weight:var(--fw-title);
   }
 
-  .sup-dot.ok{
-    background: #2f7a4f;
-    box-shadow: 0 0 0 4px rgba(47,122,79,.08);
+  .sup-page .chip.warn{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn);
   }
 
-  .sup-stats{
-    padding: 14px 16px 0;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
+  .sup-page .chip.warn b{
+    color:var(--warn);
   }
 
-  .sup-stat{
-    background: #fff;
-    border: 1px solid var(--vp-line);
-    border-radius: 18px;
-    padding: 12px 13px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    min-height: 72px;
+  .sup-page .dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#5e8d7a;
+    box-shadow:0 0 0 4px rgba(94,141,122,.10);
+    flex:0 0 auto;
   }
 
-  .sup-stat-meta{
-    display: grid;
-    gap: 4px;
+  .sup-page .dot.ok{
+    background:#2f6250;
+    box-shadow:0 0 0 4px rgba(47,98,80,.10);
   }
 
-  .sup-stat-label{
-    font-size: 11.2px;
-    color: var(--vp-text-soft);
-    font-weight: 500;
+  .sup-page .dot.warn{
+    background:#b7791f;
+    box-shadow:0 0 0 4px rgba(183,121,31,.10);
   }
 
-  .sup-stat-value{
-    font-size: 18px;
-    color: var(--vp-text);
-    font-weight: 700;
-    line-height: 1.2;
+  .sup-page .kpis{
+    display:grid;
+    grid-template-columns:repeat(5, minmax(0, 1fr));
+    gap:8px;
   }
 
-  .sup-stat-icon{
-    width: 38px;
-    height: 38px;
-    border-radius: 14px;
-    display: grid;
-    place-items: center;
-    background: var(--vp-card-soft);
-    border: 1px solid var(--vp-line);
-    font-size: 16px;
-    flex: 0 0 auto;
+  .sup-page .kpi{
+    box-shadow:var(--shadow2);
+    padding:11px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    min-height:66px;
+    border-radius:17px;
   }
 
-  .sup-body{
-    padding: 14px 16px 16px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
+  .sup-page .kpi.alert{
+    background:linear-gradient(180deg, #fffdf7, #fffaf0);
+    border-color:var(--warn-br);
   }
 
-  .sup-card{
-    background: #fff;
-    border: 1px solid var(--vp-line);
-    border-radius: 20px;
-    overflow: hidden;
+  .sup-page .kpi-meta{
+    display:grid;
+    gap:2px;
+    min-width:0;
   }
 
-  .sup-card-head{
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--vp-line);
-    background: linear-gradient(180deg, #fafcfb, #ffffff);
+  .sup-page .kpi-label{
+    font-size:10.7px;
+    font-weight:var(--fw-normal);
+    color:var(--mut);
+    line-height:1.7;
   }
 
-  .sup-card-title{
-    margin: 0;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--vp-text);
+  .sup-page .kpi-value{
+    font-size:18px;
+    font-weight:var(--fw-title);
+    color:var(--txt);
+    line-height:1.2;
+    white-space:nowrap;
   }
 
-  .sup-card-sub{
-    margin: 3px 0 0;
-    font-size: 11.4px;
-    line-height: 1.7;
-    color: var(--vp-text-soft);
-    font-weight: 500;
+  .sup-page .kpi.alert .kpi-value{
+    color:var(--warn);
   }
 
-  .sup-card-body{
-    padding: 14px;
+  .sup-page .kpi-icon{
+    width:34px;
+    height:34px;
+    border-radius:12px;
+    display:grid;
+    place-items:center;
+    border:1px solid var(--line);
+    background:var(--soft);
+    color:var(--primary);
+    font-size:13px;
+    font-weight:var(--fw-title);
+    flex:0 0 auto;
   }
 
-  .quick-grid{
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+  .sup-page .kpi.alert .kpi-icon{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn);
   }
 
-  .quick-link{
-    border: 1px solid var(--vp-line);
-    border-radius: 16px;
-    background: #fff;
-    padding: 12px;
-    display: grid;
-    gap: 7px;
-    text-decoration: none;
-    transition: .16s ease;
+  .sup-page .main-grid{
+    display:grid;
+    grid-template-columns:minmax(0, 1.12fr) minmax(330px, .88fr);
+    gap:12px;
+    align-items:start;
   }
 
-  .quick-link:hover{
-    transform: translateY(-1px);
-    border-color: #c4d0c9;
-    background: #fcfdfc;
+  .sup-page .panel-card{
+    overflow:hidden;
   }
 
-  .quick-link-icon{
-    width: 34px;
-    height: 34px;
-    border-radius: 12px;
-    display: grid;
-    place-items: center;
-    background: var(--vp-primary-soft);
-    border: 1px solid var(--vp-primary-soft-border);
-    color: var(--vp-primary);
-    font-size: 15px;
+  .sup-page .panel-head{
+    padding:10px 13px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, #fcfdfc, #f8fbf9);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    flex-wrap:wrap;
   }
 
-  .quick-link-title{
-    font-size: 12.4px;
-    color: var(--vp-text);
-    font-weight: 700;
-    line-height: 1.6;
+  .sup-page .panel-title{
+    margin:0;
+    color:var(--txt);
+    font-size:12.2px;
+    font-weight:var(--fw-title);
+    line-height:1.6;
   }
 
-  .quick-link-sub{
-    font-size: 11.3px;
-    color: var(--vp-text-soft);
-    font-weight: 500;
-    line-height: 1.75;
+  .sup-page .panel-sub{
+    margin:1px 0 0;
+    color:var(--mut);
+    font-size:10.6px;
+    line-height:1.65;
+    font-weight:var(--fw-normal);
   }
 
-  .info-list{
-    display: grid;
-    gap: 10px;
+  .sup-page .panel-body{
+    padding:12px;
   }
 
-  .info-item{
-    border: 1px solid var(--vp-line);
-    border-radius: 16px;
-    background: #fff;
-    padding: 12px 13px;
-    display: grid;
-    gap: 5px;
+  .sup-page .quick-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:8px;
   }
 
-  .info-label{
-    font-size: 11.1px;
-    color: var(--vp-text-faint);
-    font-weight: 600;
+  .sup-page .quick-link{
+    min-height:82px;
+    border:1px solid var(--line);
+    border-radius:16px;
+    background:#fff;
+    padding:10px 11px;
+    display:grid;
+    grid-template-columns:34px minmax(0,1fr);
+    gap:9px;
+    align-items:start;
+    text-decoration:none;
+    transition:.16s ease;
   }
 
-  .info-value{
-    font-size: 12.7px;
-    color: var(--vp-text);
-    font-weight: 700;
-    line-height: 1.8;
-    word-break: break-word;
+  .sup-page .quick-link:hover{
+    transform:translateY(-1px);
+    border-color:#c4d0c9;
+    background:#fcfdfc;
+    text-decoration:none;
   }
 
-  .status-box{
-    border: 1px solid var(--vp-line);
-    border-radius: 16px;
-    background: #fff;
-    padding: 12px 13px;
-    display: grid;
-    gap: 10px;
+  .sup-page .quick-link.alert{
+    background:linear-gradient(180deg, #fffdf7, #fffaf0);
+    border-color:var(--warn-br);
   }
 
-  .status-row{
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-wrap: wrap;
+  .sup-page .quick-link-icon{
+    width:34px;
+    height:34px;
+    border-radius:12px;
+    display:grid;
+    place-items:center;
+    background:var(--primary-soft);
+    border:1px solid var(--primary-soft-br);
+    color:var(--primary);
+    font-size:14px;
   }
 
-  .status-name{
-    font-size: 12px;
-    color: var(--vp-text-soft);
-    font-weight: 600;
+  .sup-page .quick-link.alert .quick-link-icon{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn);
   }
 
-  .status-pill{
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 30px;
-    padding: 0 10px;
-    border-radius: 999px;
-    border: 1px solid transparent;
-    font-size: 11.4px;
-    font-weight: 700;
-    white-space: nowrap;
+  .sup-page .quick-link-content{
+    min-width:0;
+    display:grid;
+    gap:3px;
   }
 
-  .status-pill.ok{
-    background: var(--vp-ok-bg);
-    border-color: var(--vp-ok-border);
-    color: var(--vp-ok-text);
+  .sup-page .quick-link-title{
+    color:var(--txt);
+    font-size:11.7px;
+    font-weight:var(--fw-title);
+    line-height:1.6;
   }
 
-  .status-pill.warn{
-    background: var(--vp-warn-bg);
-    border-color: var(--vp-warn-border);
-    color: var(--vp-warn-text);
+  .sup-page .quick-link-sub{
+    color:var(--mut);
+    font-size:10.5px;
+    font-weight:var(--fw-normal);
+    line-height:1.75;
   }
 
-  .status-pill.info{
-    background: var(--vp-primary-soft);
-    border-color: var(--vp-primary-soft-border);
-    color: var(--vp-primary);
+  .sup-page .quick-count{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:21px;
+    min-height:21px;
+    padding:0 7px;
+    margin-inline-start:6px;
+    border-radius:999px;
+    background:var(--warn-bg);
+    border:1px solid var(--warn-br);
+    color:var(--warn);
+    font-size:10px;
+    font-weight:var(--fw-title);
   }
 
-  .status-note{
-    border: 1px solid var(--vp-warn-border);
-    background: var(--vp-warn-bg);
-    color: var(--vp-warn-text);
-    border-radius: 16px;
-    padding: 12px 13px;
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 1.85;
+  .sup-page .status-list{
+    display:grid;
+    gap:8px;
   }
 
-  @media (max-width: 1100px){
-    .sup-stats{
-      grid-template-columns: repeat(2, 1fr);
+  .sup-page .info-item,
+  .sup-page .status-box,
+  .sup-page .status-note{
+    border:1px solid var(--line);
+    border-radius:15px;
+    background:#fff;
+    padding:10px 11px;
+  }
+
+  .sup-page .info-item{
+    display:grid;
+    gap:4px;
+  }
+
+  .sup-page .info-label{
+    font-size:10.6px;
+    color:var(--mut2);
+    font-weight:var(--fw-strong);
+  }
+
+  .sup-page .info-value{
+    font-size:11.8px;
+    color:var(--txt);
+    font-weight:var(--fw-title);
+    line-height:1.75;
+    word-break:break-word;
+  }
+
+  .sup-page .status-box{
+    display:grid;
+    gap:8px;
+  }
+
+  .sup-page .status-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .sup-page .status-name{
+    font-size:11.1px;
+    color:var(--mut);
+    font-weight:var(--fw-strong);
+  }
+
+  .sup-page .status-pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:26px;
+    padding:0 9px;
+    border-radius:999px;
+    border:1px solid transparent;
+    font-size:10.6px;
+    font-weight:var(--fw-title);
+    white-space:nowrap;
+    text-decoration:none;
+  }
+
+  .sup-page .status-pill.ok{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+  }
+
+  .sup-page .status-pill.warn{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn);
+  }
+
+  .sup-page .status-pill.info{
+    background:var(--primary-soft);
+    border-color:var(--primary-soft-br);
+    color:var(--primary);
+  }
+
+  .sup-page .status-note{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn);
+    font-size:11px;
+    font-weight:var(--fw-normal);
+    line-height:1.85;
+    text-decoration:none;
+    display:block;
+  }
+
+  .sup-page .status-note:hover{
+    text-decoration:none;
+  }
+
+  @media (max-width: 1120px){
+    .sup-page .kpis{
+      grid-template-columns:repeat(3, minmax(0, 1fr));
     }
 
-    .sup-body{
-      grid-template-columns: 1fr;
+    .sup-page .main-grid{
+      grid-template-columns:1fr;
     }
   }
 
   @media (max-width: 720px){
-    .sup-stats{
-      grid-template-columns: 1fr;
+    .sup-page .kpis,
+    .sup-page .quick-grid{
+      grid-template-columns:1fr;
     }
 
-    .quick-grid{
-      grid-template-columns: 1fr;
+    .sup-page .summary-card{
+      padding:12px;
     }
 
-    .sup-hero-side{
-      justify-content: flex-start;
+    .sup-page .quick-link{
+      min-height:auto;
     }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="sup-dashboard">
-  <div class="sup-panel">
+<section class="sup-page">
+  <div class="wrap">
 
-    <div class="sup-hero">
-      <div class="sup-hero-main">
-        <div class="sup-title-row">
-          <div class="sup-icon">👤</div>
-          <h1 class="sup-title">بوابة المشرف</h1>
+    <div class="summary-card">
+      <div class="summary-main">
+        <h1 class="summary-title">بوابة المشرف</h1>
+        <div class="summary-note">
+          ملخص تنفيذي سريع للوضع الحالي مع وصول مباشر إلى الخطة الأسبوعية، الإشعارات، الملاحظات الرقابية، وخدمات التصدير.
         </div>
-        <p class="sup-subtitle">
-          هذه الصفحة تعرض لك ملخصًا سريعًا للوضع الحالي، مع وصول مباشر إلى أهم الصفحات التنفيذية.
-        </p>
       </div>
 
-      <div class="sup-hero-side">
-        <span class="sup-chip"><span class="sup-dot ok"></span> المشرف: <b>{{ sup.full_name }}</b></span>
-        <span class="sup-chip"><span class="sup-dot"></span> الهوية: <b>{{ sup.national_id }}</b></span>
+      <div class="summary-right">
+        <span class="chip"><span class="dot ok"></span> المشرف: <b>{{ sup.full_name }}</b></span>
+        <span class="chip"><span class="dot"></span> الهوية: <b>{{ sup.national_id }}</b></span>
+        <a class="chip {% if control_followup_count and control_followup_count > 0 %}warn{% endif %}" href="{% url 'visits:supervisor_control_followups' %}">
+          <span class="dot {% if control_followup_count and control_followup_count > 0 %}warn{% endif %}"></span>
+          الملاحظات الرقابية: <b>{{ control_followup_count|default:"0" }}</b>
+        </a>
       </div>
     </div>
 
-    <div class="sup-stats">
-      <div class="sup-stat">
-        <div class="sup-stat-meta">
-          <div class="sup-stat-label">الأسبوع الحالي</div>
-          <div class="sup-stat-value">{{ current_week|default:week|default:"—" }}</div>
+    <div class="kpis">
+      <article class="kpi">
+        <div class="kpi-meta">
+          <div class="kpi-label">الأسبوع الحالي</div>
+          <div class="kpi-value">{{ current_week|default:week|default:"—" }}</div>
         </div>
-        <div class="sup-stat-icon">📅</div>
-      </div>
+        <div class="kpi-icon">📅</div>
+      </article>
 
-      <div class="sup-stat">
-        <div class="sup-stat-meta">
-          <div class="sup-stat-label">المدارس المسندة</div>
-          <div class="sup-stat-value">{{ assignment_count|default:"0" }}</div>
+      <article class="kpi">
+        <div class="kpi-meta">
+          <div class="kpi-label">المدارس المسندة</div>
+          <div class="kpi-value">{{ assignment_count|default:"0" }}</div>
         </div>
-        <div class="sup-stat-icon">🏫</div>
-      </div>
+        <div class="kpi-icon">🏫</div>
+      </article>
 
-      <div class="sup-stat">
-        <div class="sup-stat-meta">
-          <div class="sup-stat-label">الإشعارات غير المقروءة</div>
-          <div class="sup-stat-value">{{ unread_count|default:"0" }}</div>
+      <article class="kpi">
+        <div class="kpi-meta">
+          <div class="kpi-label">الإشعارات غير المقروءة</div>
+          <div class="kpi-value">{{ unread_count|default:"0" }}</div>
         </div>
-        <div class="sup-stat-icon">🔔</div>
-      </div>
+        <div class="kpi-icon">🔔</div>
+      </article>
 
-      <div class="sup-stat">
-        <div class="sup-stat-meta">
-          <div class="sup-stat-label">البريد الإلكتروني</div>
-          <div class="sup-stat-value">
-            {% if supervisor_email %}جاهز{% else %}غير مضاف{% endif %}
+      <article class="kpi {% if control_followup_count and control_followup_count > 0 %}alert{% endif %}">
+        <div class="kpi-meta">
+          <div class="kpi-label">الملاحظات الرقابية</div>
+          <div class="kpi-value">{{ control_followup_count|default:"0" }}</div>
+        </div>
+        <div class="kpi-icon">🧭</div>
+      </article>
+
+      <article class="kpi">
+        <div class="kpi-meta">
+          <div class="kpi-label">البريد الإلكتروني</div>
+          <div class="kpi-value">{% if supervisor_email %}جاهز{% else %}غير مضاف{% endif %}</div>
+        </div>
+        <div class="kpi-icon">📧</div>
+      </article>
+    </div>
+
+    <div class="main-grid">
+      <section class="panel-card">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">الإجراءات السريعة</h2>
+            <div class="panel-sub">اختصارات مباشرة لأهم الصفحات التي يستخدمها المشرف.</div>
           </div>
         </div>
-        <div class="sup-stat-icon">📧</div>
-      </div>
-    </div>
 
-    <div class="sup-body">
-      <div class="sup-card">
-        <div class="sup-card-head">
-          <h2 class="sup-card-title">الإجراءات السريعة</h2>
-          <p class="sup-card-sub">اختصارات مباشرة لأهم الصفحات التي يستخدمها المشرف.</p>
-        </div>
-
-        <div class="sup-card-body">
+        <div class="panel-body">
           <div class="quick-grid">
             <a class="quick-link" href="{% url 'visits:plan' %}?week={{ current_week|default:week }}">
               <div class="quick-link-icon">📝</div>
-              <div class="quick-link-title">الخطة الأسبوعية</div>
-              <div class="quick-link-sub">فتح الخطة الحالية ومتابعة الحفظ أو الاعتماد.</div>
+              <div class="quick-link-content">
+                <div class="quick-link-title">الخطة الأسبوعية</div>
+                <div class="quick-link-sub">فتح الخطة الحالية ومتابعة الحفظ أو الاعتماد.</div>
+              </div>
             </a>
 
             <a class="quick-link" href="{% url 'visits:notifications' %}?week={{ current_week|default:week }}">
               <div class="quick-link-icon">🔔</div>
-              <div class="quick-link-title">الإشعارات</div>
-              <div class="quick-link-sub">استعراض التنبيهات والإشعارات المرتبطة بالخطة.</div>
+              <div class="quick-link-content">
+                <div class="quick-link-title">الإشعارات</div>
+                <div class="quick-link-sub">استعراض التنبيهات والإشعارات المرتبطة بالخطة.</div>
+              </div>
+            </a>
+
+            <a class="quick-link {% if control_followup_count and control_followup_count > 0 %}alert{% endif %}" href="{% url 'visits:supervisor_control_followups' %}">
+              <div class="quick-link-icon">🧭</div>
+              <div class="quick-link-content">
+                <div class="quick-link-title">
+                  الملاحظات الرقابية
+                  {% if control_followup_count and control_followup_count > 0 %}
+                    <span class="quick-count">{{ control_followup_count }}</span>
+                  {% endif %}
+                </div>
+                <div class="quick-link-sub">عرض الملاحظات المطلوب الإفادة عنها ومتابعة حالة المعالجة.</div>
+              </div>
             </a>
 
             <a class="quick-link" href="{% url 'visits:supervisor_email_settings' %}?next={{ request.get_full_path|urlencode }}">
               <div class="quick-link-icon">📧</div>
-              <div class="quick-link-title">إعداد البريد الإلكتروني</div>
-              <div class="quick-link-sub">إضافة البريد الإلكتروني أو تعديله وتفعيل التنبيهات.</div>
+              <div class="quick-link-content">
+                <div class="quick-link-title">إعداد البريد الإلكتروني</div>
+                <div class="quick-link-sub">إضافة البريد الإلكتروني أو تعديله وتفعيل التنبيهات.</div>
+              </div>
             </a>
 
             <a class="quick-link" href="{% url 'visits:print_assignment_letter' %}">
               <div class="quick-link-icon">🖨️</div>
-              <div class="quick-link-title">خطاب الإسناد</div>
-              <div class="quick-link-sub">عرض وطباعة خطاب الإسناد الخاص بك.</div>
+              <div class="quick-link-content">
+                <div class="quick-link-title">خطاب الإسناد</div>
+                <div class="quick-link-sub">عرض وطباعة خطاب الإسناد الخاص بك.</div>
+              </div>
             </a>
 
             <a class="quick-link" href="{% url 'visits:plan_export_planned_schools' %}?week={{ current_week|default:week }}">
               <div class="quick-link-icon">📗</div>
-              <div class="quick-link-title">تصدير المدارس المدرجة</div>
-              <div class="quick-link-sub">المدارس المدرجة في الخطط.</div>
+              <div class="quick-link-content">
+                <div class="quick-link-title">تصدير المدارس المدرجة</div>
+                <div class="quick-link-sub">المدارس المدرجة في الخطط.</div>
+              </div>
             </a>
 
             <a class="quick-link" href="{% url 'visits:plan_export_unplanned_schools' %}?week={{ current_week|default:week }}">
               <div class="quick-link-icon">📙</div>
-              <div class="quick-link-title">تصدير المدارس غير المدرجة</div>
-              <div class="quick-link-sub">المدارس غير المدرجة في الخطط.</div>
+              <div class="quick-link-content">
+                <div class="quick-link-title">تصدير المدارس غير المدرجة</div>
+                <div class="quick-link-sub">المدارس غير المدرجة في الخطط.</div>
+              </div>
             </a>
           </div>
         </div>
-      </div>
+      </section>
 
-      <div class="sup-card">
-        <div class="sup-card-head">
-          <h2 class="sup-card-title">ملخص الحالة الحالية</h2>
-          <p class="sup-card-sub">عرض مختصر للبيانات الأساسية والحالة التنفيذية الحالية.</p>
+      <section class="panel-card">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">ملخص الحالة الحالية</h2>
+            <div class="panel-sub">عرض مختصر للبيانات الأساسية والحالة التنفيذية الحالية.</div>
+          </div>
         </div>
 
-        <div class="sup-card-body">
-          <div class="info-list">
+        <div class="panel-body">
+          <div class="status-list">
             <div class="info-item">
               <div class="info-label">اسم المشرف</div>
               <div class="info-value">{{ sup.full_name }}</div>
@@ -522,10 +673,25 @@
               </div>
 
               <div class="status-row">
+                <div class="status-name">الملاحظات الرقابية النشطة</div>
+                {% if control_followup_count and control_followup_count > 0 %}
+                  <a class="status-pill warn" href="{% url 'visits:supervisor_control_followups' %}">{{ control_followup_count }}</a>
+                {% else %}
+                  <span class="status-pill ok">0</span>
+                {% endif %}
+              </div>
+
+              <div class="status-row">
                 <div class="status-name">عدد المدارس المسندة</div>
                 <span class="status-pill info">{{ assignment_count|default:"0" }}</span>
               </div>
             </div>
+
+            {% if control_followup_count and control_followup_count > 0 %}
+              <a class="status-note" href="{% url 'visits:supervisor_control_followups' %}">
+                لديك {{ control_followup_count }} ملاحظة رقابية تحتاج متابعة أو إفادة. اضغط هنا لاستعراضها والرد عليها.
+              </a>
+            {% endif %}
 
             {% if supervisor_email %}
               <div class="info-item">
@@ -539,9 +705,9 @@
             {% endif %}
           </div>
         </div>
-      </div>
+      </section>
     </div>
 
   </div>
-</div>
+</section>
 {% endblock %}

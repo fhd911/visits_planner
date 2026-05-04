@@ -1,68 +1,534 @@
 {% extends "visits/base.html" %}
 
 {% block title %}حذف رابط الخطاب الأسبوعي{% endblock %}
+{% block page_messages %}{% endblock %}
+
 {% block header_title %}روابط الخطابات{% endblock %}
 {% block header_subtitle %}حذف رابط أسبوعي{% endblock %}
 
-{% block hero %}
-<div class="hero">
-  <div>
-    <h1>حذف رابط الخطاب الأسبوعي</h1>
-    <p>تأكيد حذف الرابط المرتبط بالأسبوع المحدد.</p>
-  </div>
-  <div class="pill-row">
-    <div class="pill"><span class="dot blue"></span> عملية إدارية</div>
-    <div class="pill"><span class="dot"></span> تأكيد قبل الحذف</div>
-  </div>
-</div>
+{% block extra_css %}
+<style>
+  .letter-delete-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+
+    --fw-title:700;
+    --fw-strong:600;
+    --fw-normal:500;
+
+    --card:#ffffff;
+    --card-soft:#fbfcfb;
+    --soft:#f7f9f8;
+
+    --txt:var(--vp-text);
+    --mut:var(--vp-text-soft);
+    --mut2:var(--vp-text-faint);
+
+    --line:var(--vp-line);
+    --line2:var(--vp-line-2);
+    --line-strong:var(--vp-line-strong);
+
+    --danger:var(--vp-danger-text);
+    --danger-bg:var(--vp-danger-bg);
+    --danger-br:var(--vp-danger-border);
+
+    --ok:var(--vp-ok-text);
+    --ok-bg:var(--vp-ok-bg);
+    --ok-br:var(--vp-ok-border);
+
+    --warn:var(--vp-warn-text);
+    --warn-bg:var(--vp-warn-bg);
+    --warn-br:var(--vp-warn-border);
+
+    --primary:var(--vp-primary);
+    --primary-2:var(--vp-primary-2);
+    --primary-soft:var(--vp-primary-soft);
+    --primary-soft-br:var(--vp-primary-soft-border);
+
+    --blue:#245fd6;
+    --blue-bg:rgba(37,99,235,.08);
+    --blue-br:rgba(37,99,235,.16);
+
+    --shadow:var(--vp-shadow);
+    --shadow2:var(--vp-shadow-soft);
+
+    display:grid;
+    gap:12px;
+    margin-top:2px;
+    font-family:var(--ff);
+  }
+
+  .letter-delete-page *{
+    box-sizing:border-box;
+    font-family:var(--ff) !important;
+  }
+
+  .letter-delete-page .summary-card,
+  .letter-delete-page .action-card,
+  .letter-delete-page .delete-card,
+  .letter-delete-page .info-card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:20px;
+    box-shadow:var(--shadow);
+  }
+
+  .letter-delete-page .summary-card{
+    padding:13px 15px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,252,251,.98));
+  }
+
+  .letter-delete-page .summary-note{
+    color:var(--mut);
+    font-size:11.8px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
+    max-width:860px;
+  }
+
+  .letter-delete-page .summary-right,
+  .letter-delete-page .action-buttons{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    flex-wrap:wrap;
+  }
+
+  .letter-delete-page .chip{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    min-height:31px;
+    padding:5px 10px;
+    border-radius:999px;
+    background:var(--soft);
+    border:1px solid var(--line);
+    color:var(--mut);
+    font-size:11px;
+    font-weight:var(--fw-strong);
+    white-space:nowrap;
+  }
+
+  .letter-delete-page .chip b{
+    color:var(--txt);
+    font-weight:var(--fw-title);
+  }
+
+  .letter-delete-page .chip.danger{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:var(--danger);
+  }
+
+  .letter-delete-page .dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#5e8d7a;
+    box-shadow:0 0 0 4px rgba(94,141,122,.10);
+    flex:0 0 auto;
+  }
+
+  .letter-delete-page .dot.danger{
+    background:#b42318;
+    box-shadow:0 0 0 4px rgba(180,35,24,.10);
+  }
+
+  .letter-delete-page .action-card{
+    padding:12px 13px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .letter-delete-page .action-copy{
+    color:var(--mut);
+    font-size:11.2px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
+    max-width:760px;
+  }
+
+  .letter-delete-page .btn,
+  .letter-delete-page .form-btn{
+    height:36px;
+    padding:0 14px;
+    border-radius:999px;
+    border:1px solid var(--line-strong);
+    background:#fff;
+    color:var(--txt);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    text-decoration:none;
+    cursor:pointer;
+    white-space:nowrap;
+    font-size:11.3px;
+    font-weight:var(--fw-strong);
+    transition:.16s ease;
+  }
+
+  .letter-delete-page .btn:hover,
+  .letter-delete-page .form-btn:hover{
+    transform:translateY(-1px);
+    background:#fcfdfc;
+  }
+
+  .letter-delete-page .btn.soft,
+  .letter-delete-page .form-btn.soft{
+    background:var(--primary-soft);
+    border-color:var(--primary-soft-br);
+    color:var(--primary);
+  }
+
+  .letter-delete-page .form-btn.danger{
+    background:var(--danger);
+    border-color:var(--danger);
+    color:#fff;
+  }
+
+  .letter-delete-page .form-btn.danger:hover{
+    background:#84251f;
+    border-color:#84251f;
+  }
+
+  .letter-delete-page .form-btn.open{
+    background:var(--blue-bg);
+    border-color:var(--blue-br);
+    color:var(--blue);
+  }
+
+  .letter-delete-page .content-grid{
+    display:grid;
+    grid-template-columns:minmax(0, 1.1fr) minmax(300px, .9fr);
+    gap:12px;
+    align-items:start;
+  }
+
+  .letter-delete-page .delete-card,
+  .letter-delete-page .info-card{
+    overflow:hidden;
+  }
+
+  .letter-delete-page .card-head{
+    padding:12px 14px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, #fcfdfc, #f8fbf9);
+  }
+
+  .letter-delete-page .card-title{
+    margin:0;
+    color:var(--txt);
+    font-size:12.8px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+  }
+
+  .letter-delete-page .card-subtitle{
+    margin-top:4px;
+    color:var(--mut);
+    font-size:10.9px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
+  }
+
+  .letter-delete-page .card-body{
+    padding:14px;
+    display:grid;
+    gap:12px;
+  }
+
+  .letter-delete-page .danger-alert{
+    border:1px solid var(--danger-br);
+    background:linear-gradient(180deg, var(--danger-bg), #fffafa);
+    color:var(--danger);
+    border-radius:17px;
+    padding:13px 14px;
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+  }
+
+  .letter-delete-page .danger-icon{
+    width:34px;
+    height:34px;
+    border-radius:13px;
+    display:grid;
+    place-items:center;
+    background:#fff;
+    border:1px solid var(--danger-br);
+    color:var(--danger);
+    font-weight:var(--fw-title);
+    flex:0 0 auto;
+  }
+
+  .letter-delete-page .danger-title{
+    font-size:12.6px;
+    font-weight:var(--fw-title);
+    line-height:1.8;
+    color:var(--danger);
+  }
+
+  .letter-delete-page .danger-text{
+    margin-top:2px;
+    font-size:11.2px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
+    color:var(--danger);
+  }
+
+  .letter-delete-page .details-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0,1fr));
+    gap:10px;
+  }
+
+  .letter-delete-page .detail-item{
+    border:1px solid var(--line2);
+    border-radius:15px;
+    background:#fff;
+    padding:11px 12px;
+    min-width:0;
+  }
+
+  .letter-delete-page .detail-item.full{
+    grid-column:1 / -1;
+  }
+
+  .letter-delete-page .detail-label{
+    color:var(--mut2);
+    font-size:10.7px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+    margin-bottom:4px;
+  }
+
+  .letter-delete-page .detail-value{
+    color:var(--txt);
+    font-size:12px;
+    font-weight:var(--fw-title);
+    line-height:1.9;
+    word-break:break-word;
+  }
+
+  .letter-delete-page .detail-value.url{
+    direction:ltr;
+    text-align:left;
+    font-size:11px;
+    font-weight:var(--fw-normal);
+    color:#475569;
+  }
+
+  .letter-delete-page .status-pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:27px;
+    padding:4px 9px;
+    border-radius:999px;
+    font-size:10.8px;
+    font-weight:var(--fw-title);
+    border:1px solid var(--line);
+  }
+
+  .letter-delete-page .status-pill.ok{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+  }
+
+  .letter-delete-page .status-pill.muted{
+    background:#f3f4f6;
+    border-color:#d9dde3;
+    color:#4b5563;
+  }
+
+  .letter-delete-page .delete-form{
+    border-top:1px solid var(--line);
+    padding:13px 14px 14px;
+    background:#fbfcfb;
+  }
+
+  .letter-delete-page .form-actions{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .letter-delete-page .info-list{
+    display:grid;
+    gap:10px;
+  }
+
+  .letter-delete-page .info-note{
+    border:1px solid var(--line2);
+    background:#fff;
+    border-radius:15px;
+    padding:12px;
+  }
+
+  .letter-delete-page .info-note-title{
+    color:var(--txt);
+    font-size:12px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+    margin-bottom:4px;
+  }
+
+  .letter-delete-page .info-note-text{
+    color:var(--mut);
+    font-size:11px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
+  }
+
+  @media (max-width: 980px){
+    .letter-delete-page .content-grid{
+      grid-template-columns:1fr;
+    }
+  }
+
+  @media (max-width: 640px){
+    .letter-delete-page .details-grid{
+      grid-template-columns:1fr;
+    }
+
+    .letter-delete-page .detail-item.full{
+      grid-column:auto;
+    }
+
+    .letter-delete-page .summary-card,
+    .letter-delete-page .action-card{
+      padding:12px;
+    }
+  }
+</style>
 {% endblock %}
 
 {% block content %}
-<div style="margin-top:16px;">
-  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:22px;overflow:hidden;">
-    <div style="padding:16px 20px;border-bottom:1px solid #e2e8f0;font-weight:800;">مراجعة بيانات السجل قبل الحذف</div>
+<section class="letter-delete-page">
 
-    <div style="padding:22px;display:flex;flex-direction:column;gap:16px;">
-      <div style="border:1px solid #fecaca;background:#fff1f2;color:#b91c1c;border-radius:16px;padding:16px 18px;font-weight:800;">
-        هل أنت متأكد من حذف رابط الخطاب المرتبط بالأسبوع {{ obj.week.week_no }}؟
-      </div>
+  <div class="summary-card">
+    <div class="summary-note">
+      مراجعة بيانات رابط الخطاب الأسبوعي قبل الحذف، مع التأكيد أن العملية تحذف السجل من النظام فقط ولا تحذف ملف Google Drive نفسه.
+    </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <div style="border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;background:#fff;">
-          <div style="color:#64748b;font-size:12px;">الأسبوع</div>
-          <div style="font-weight:800;">الأسبوع {{ obj.week.week_no }} — يبدأ {{ obj.week.start_sunday }}</div>
-        </div>
-
-        <div style="border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;background:#fff;">
-          <div style="color:#64748b;font-size:12px;">الحالة</div>
-          <div style="font-weight:800;">{% if obj.is_active %}نشط{% else %}غير نشط{% endif %}</div>
-        </div>
-
-        <div style="border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;background:#fff;">
-          <div style="color:#64748b;font-size:12px;">العنوان</div>
-          <div style="font-weight:800;">{{ obj.title|default:"—" }}</div>
-        </div>
-
-        <div style="border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;background:#fff;">
-          <div style="color:#64748b;font-size:12px;">الملاحظة</div>
-          <div style="font-weight:800;">{{ obj.note|default:"—" }}</div>
-        </div>
-
-        <div style="grid-column:1/-1;border:1px solid #e2e8f0;border-radius:16px;padding:14px 16px;background:#fff;">
-          <div style="color:#64748b;font-size:12px;">الرابط</div>
-          <div style="font-weight:800;direction:ltr;text-align:left;">{{ obj.drive_url }}</div>
-        </div>
-      </div>
-
-      <form method="post">
-        {% csrf_token %}
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button type="submit" style="background:#dc2626;color:#fff;border:none;padding:11px 18px;border-radius:12px;font-weight:800;">تأكيد الحذف</button>
-          <a href="{% url 'visits:weekly_letter_links_list' %}" style="background:#fff;border:1px solid #cbd5e1;padding:11px 18px;border-radius:12px;">إلغاء</a>
-          <a href="{{ obj.drive_url }}" target="_blank" rel="noopener noreferrer" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;padding:11px 18px;border-radius:12px;">فتح الرابط</a>
-        </div>
-      </form>
+    <div class="summary-right">
+      <span class="chip danger"><span class="dot danger"></span> إجراء حذف</span>
+      <span class="chip">الأسبوع: <b>{{ obj.week.week_no }}</b></span>
     </div>
   </div>
-</div>
+
+  <div class="action-card">
+    <div class="action-copy">
+      تأكد من أن الرابط لم يعد مطلوبًا قبل تأكيد الحذف. يمكنك فتح الرابط ومراجعته قبل اتخاذ القرار النهائي.
+    </div>
+
+    <div class="action-buttons">
+      <a href="{% url 'visits:weekly_letter_links_list' %}" class="btn soft">↩ العودة للروابط</a>
+      {% if obj.drive_url %}
+        <a href="{{ obj.drive_url }}" target="_blank" rel="noopener noreferrer" class="btn">فتح الرابط</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="content-grid">
+    <section class="delete-card">
+      <div class="card-head">
+        <h3 class="card-title">مراجعة بيانات السجل قبل الحذف</h3>
+        <div class="card-subtitle">سيتم حذف ربط الأسبوع بالرابط داخل النظام بعد التأكيد.</div>
+      </div>
+
+      <div class="card-body">
+        <div class="danger-alert">
+          <div class="danger-icon">!</div>
+          <div>
+            <div class="danger-title">هل أنت متأكد من حذف رابط الخطاب المرتبط بالأسبوع {{ obj.week.week_no }}؟</div>
+            <div class="danger-text">هذا الإجراء لا يمكن التراجع عنه من شاشة الحذف، وسيحتاج الرابط إلى إضافة جديدة إذا رغبت بإعادته لاحقًا.</div>
+          </div>
+        </div>
+
+        <div class="details-grid">
+          <div class="detail-item">
+            <div class="detail-label">الأسبوع</div>
+            <div class="detail-value">الأسبوع {{ obj.week.week_no }} — يبدأ {{ obj.week.start_sunday }}</div>
+          </div>
+
+          <div class="detail-item">
+            <div class="detail-label">الحالة</div>
+            <div class="detail-value">
+              {% if obj.is_active %}
+                <span class="status-pill ok">نشط</span>
+              {% else %}
+                <span class="status-pill muted">غير نشط</span>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="detail-item">
+            <div class="detail-label">العنوان</div>
+            <div class="detail-value">{{ obj.title|default:"—" }}</div>
+          </div>
+
+          <div class="detail-item">
+            <div class="detail-label">الملاحظة</div>
+            <div class="detail-value">{{ obj.note|default:"—" }}</div>
+          </div>
+
+          <div class="detail-item full">
+            <div class="detail-label">الرابط</div>
+            <div class="detail-value url">{{ obj.drive_url }}</div>
+          </div>
+        </div>
+      </div>
+
+      <form class="delete-form" method="post">
+        {% csrf_token %}
+        <div class="form-actions">
+          <button type="submit" class="form-btn danger">تأكيد الحذف</button>
+          <a href="{% url 'visits:weekly_letter_links_list' %}" class="form-btn soft">إلغاء</a>
+          {% if obj.drive_url %}
+            <a href="{{ obj.drive_url }}" target="_blank" rel="noopener noreferrer" class="form-btn open">فتح الرابط</a>
+          {% endif %}
+        </div>
+      </form>
+    </section>
+
+    <aside class="info-card">
+      <div class="card-head">
+        <h3 class="card-title">تنبيه قبل الحذف</h3>
+        <div class="card-subtitle">ملاحظات تساعدك قبل تنفيذ العملية.</div>
+      </div>
+
+      <div class="card-body">
+        <div class="info-list">
+          <div class="info-note">
+            <div class="info-note-title">الحذف من النظام فقط</div>
+            <div class="info-note-text">لن يتم حذف ملف الخطاب من Google Drive، وإنما سيُحذف الرابط المحفوظ داخل النظام.</div>
+          </div>
+
+          <div class="info-note">
+            <div class="info-note-title">إعادة الإضافة ممكنة</div>
+            <div class="info-note-text">يمكنك إضافة رابط جديد للأسبوع من صفحة روابط الخطابات إذا احتجت إلى إعادة الربط لاحقًا.</div>
+          </div>
+
+          <div class="info-note">
+            <div class="info-note-title">تأكد من الأسبوع</div>
+            <div class="info-note-text">راجع رقم الأسبوع وتاريخ بدايته قبل الحذف لتجنب حذف رابط أسبوع آخر بالخطأ.</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+</section>
 {% endblock %}
