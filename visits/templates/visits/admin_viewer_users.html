@@ -1,0 +1,461 @@
+{% extends "visits/base.html" %}
+
+{% block title %}صلاحيات الاطلاع{% endblock %}
+{% block header_title %}صلاحيات الاطلاع{% endblock %}
+{% block header_subtitle %}إدارة حسابات الأشخاص المخوّلين بدخول بوابة الاطلاع فقط، دون صلاحيات اعتماد أو تعديل أو حذف.{% endblock %}
+
+
+
+{% block hero %}
+  <div class="hero admin-viewer-hero-clean">
+    <div>
+      <h1>صلاحيات الاطلاع</h1>
+      <p>إدارة حسابات الأشخاص المخوّلين بدخول بوابة الاطلاع فقط، دون صلاحيات اعتماد أو تعديل أو حذف.</p>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+
+  .admin-viewer-hero-clean{
+    align-items:flex-start;
+  }
+
+  .admin-viewer-hero-clean > div{
+    max-width:760px;
+  }
+  .viewer-access-page{
+    display:grid;
+    gap:12px;
+    direction:rtl;
+  }
+
+  .viewer-access-card{
+    background:#fff;
+    border:1px solid var(--vp-line);
+    border-radius:18px;
+    box-shadow:var(--vp-shadow-soft);
+    padding:12px 14px;
+  }
+
+  .viewer-access-toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  .viewer-access-title{
+    display:grid;
+    gap:3px;
+    min-width:0;
+  }
+
+  .viewer-access-title h2{
+    margin:0;
+    color:var(--vp-primary);
+    font-size:15px;
+    line-height:1.5;
+    font-weight:var(--fw-title, 600);
+  }
+
+  .viewer-access-title p{
+    margin:0;
+    color:var(--vp-text-soft);
+    font-size:12.2px;
+    line-height:1.8;
+    font-weight:var(--fw-normal, 400);
+  }
+
+  .viewer-access-actions{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .viewer-access-btn{
+    appearance:none;
+    min-height:35px;
+    padding:0 13px;
+    border-radius:999px;
+    border:1px solid var(--vp-line-strong);
+    background:#fff;
+    color:var(--vp-text);
+    font-family:inherit;
+    font-size:12.2px;
+    font-weight:var(--fw-mid, 500);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    text-decoration:none;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:background .18s ease, border-color .18s ease, transform .18s ease;
+  }
+
+  .viewer-access-btn:hover{
+    background:#fcfdfc;
+    border-color:#c4d0c9;
+    transform:translateY(-1px);
+  }
+
+  .viewer-access-btn.primary{
+    background:var(--vp-primary);
+    border-color:var(--vp-primary);
+    color:#fff;
+  }
+
+  .viewer-access-btn.soft{
+    background:var(--vp-primary-soft);
+    border-color:var(--vp-primary-soft-border);
+    color:var(--vp-primary);
+  }
+
+  .viewer-access-btn.warn{
+    background:var(--vp-warn-bg);
+    border-color:var(--vp-warn-border);
+    color:var(--vp-warn-text);
+  }
+
+  .viewer-access-note{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    padding:9px 12px;
+    border-radius:16px;
+    border:1px solid var(--vp-info-border);
+    background:var(--vp-info-bg);
+    color:var(--vp-info-text);
+    font-size:12px;
+    line-height:1.85;
+  }
+
+  .viewer-access-note b{font-weight:var(--fw-strong, 600);}
+
+  .viewer-access-stats{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:10px;
+  }
+
+  .viewer-access-stat{
+    background:linear-gradient(180deg,#fff,#fbfcfb);
+    border:1px solid var(--vp-line);
+    border-radius:16px;
+    padding:10px 11px;
+    min-height:62px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+
+  .viewer-access-stat .label{
+    color:var(--vp-text-soft);
+    font-size:11.4px;
+    font-weight:var(--fw-mid, 500);
+    line-height:1.6;
+  }
+
+  .viewer-access-stat .value{
+    color:var(--vp-primary);
+    font-size:20px;
+    font-weight:700;
+    line-height:1;
+  }
+
+  .viewer-access-filters{
+    display:grid;
+    grid-template-columns:minmax(260px,1.4fr) minmax(150px,.55fr) minmax(150px,.55fr) auto;
+    gap:9px;
+    align-items:end;
+  }
+
+  .viewer-access-field{
+    display:grid;
+    gap:5px;
+    min-width:0;
+  }
+
+  .viewer-access-field label{
+    color:var(--vp-text-soft);
+    font-size:11px;
+    line-height:1.4;
+    font-weight:var(--fw-mid, 500);
+  }
+
+  .viewer-access-input,
+  .viewer-access-select{
+    width:100%;
+    height:36px;
+    border-radius:12px;
+    border:1px solid var(--vp-line);
+    background:#fff;
+    padding:0 11px;
+    font-family:inherit;
+    font-size:12px;
+    color:var(--vp-text);
+    outline:none;
+  }
+
+  .viewer-access-table-card{
+    padding:0;
+    overflow:hidden;
+  }
+
+  .viewer-access-table-wrap{
+    overflow-x:auto;
+    border:1px solid var(--vp-line);
+    border-radius:18px;
+    background:#fff;
+  }
+
+  .viewer-access-table{
+    width:100%;
+    min-width:980px;
+    border-collapse:separate;
+    border-spacing:0;
+  }
+
+  .viewer-access-table th{
+    background:#f8fbfa;
+    color:var(--vp-text);
+    font-size:12px;
+    font-weight:var(--fw-strong, 600);
+    padding:10px 9px;
+    border-bottom:1px solid var(--vp-line);
+    text-align:center;
+    white-space:nowrap;
+  }
+
+  .viewer-access-table td{
+    padding:9px;
+    border-bottom:1px solid #edf2ee;
+    color:var(--vp-text);
+    font-size:12px;
+    text-align:center;
+    vertical-align:middle;
+  }
+
+  .viewer-access-table tr:last-child td{border-bottom:0;}
+
+  .viewer-access-name{
+    text-align:right!important;
+    font-weight:var(--fw-normal, 400);
+  }
+
+  .viewer-access-name-main{
+    display:block;
+    color:var(--vp-text);
+    font-size:12.3px;
+    font-weight:var(--fw-mid, 500);
+    line-height:1.7;
+  }
+
+  .viewer-access-muted{
+    color:var(--vp-text-soft);
+    font-size:10.8px;
+    line-height:1.65;
+    font-weight:var(--fw-normal, 400);
+  }
+
+  .viewer-access-muted .mini-label{
+    color:var(--vp-text-faint);
+    font-weight:var(--fw-mid, 500);
+  }
+
+  .viewer-access-badge{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:25px;
+    padding:0 9px;
+    border-radius:999px;
+    border:1px solid var(--vp-line);
+    background:#fff;
+    font-size:10.8px;
+    font-weight:var(--fw-mid, 500);
+    white-space:nowrap;
+  }
+
+  .viewer-access-badge.ok{
+    background:var(--vp-ok-bg);
+    border-color:var(--vp-ok-border);
+    color:var(--vp-ok-text);
+  }
+
+  .viewer-access-badge.warn{
+    background:var(--vp-warn-bg);
+    border-color:var(--vp-warn-border);
+    color:var(--vp-warn-text);
+  }
+
+  .viewer-access-badge.soft{
+    background:var(--vp-primary-soft);
+    border-color:var(--vp-primary-soft-border);
+    color:var(--vp-primary);
+  }
+
+  .viewer-access-row-actions{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+
+  .viewer-access-empty{
+    padding:24px;
+    text-align:center;
+    color:var(--vp-text-soft);
+    font-size:12.5px;
+  }
+
+  .viewer-access-pager{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    color:var(--vp-text-soft);
+    font-size:12px;
+  }
+
+  @media(max-width:900px){
+    .viewer-access-stats{grid-template-columns:repeat(2,1fr);}
+    .viewer-access-filters{grid-template-columns:1fr 1fr;}
+    .viewer-access-toolbar{align-items:stretch;}
+    .viewer-access-actions{display:grid;grid-template-columns:1fr; width:100%;}
+    .viewer-access-btn{width:100%;}
+  }
+
+  @media(max-width:560px){
+    .viewer-access-stats,
+    .viewer-access-filters{grid-template-columns:1fr;}
+    .viewer-access-row-actions{display:grid;grid-template-columns:1fr;}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="viewer-access-page">
+  <div class="viewer-access-card viewer-access-toolbar">
+    <div class="viewer-access-title">
+      <h2>حسابات الاطلاع</h2>
+      <p>حسابات مخوّلة لعرض الخطط والإسنادات فقط، دون صلاحيات تنفيذية أو دخول إلى لوحة الإدارة.</p>
+    </div>
+    <div class="viewer-access-actions">
+      <a class="viewer-access-btn" href="{% url 'visits:readonly_login' %}" target="_blank" rel="noopener">فتح بوابة الاطلاع</a>
+      <a class="viewer-access-btn primary" href="{% url 'visits:admin_viewer_user_create' %}">+ إضافة حساب اطلاع</a>
+    </div>
+  </div>
+
+  <div class="viewer-access-note">
+    <span>الاسم الظاهر في عمود <b>المستخدم المخوّل</b> هو الاسم الذي يظهر أعلى بوابة الاطلاع، وليس اسم المشرف صاحب الخطة.</span>
+  </div>
+
+  <div class="viewer-access-stats">
+    <div class="viewer-access-stat"><div class="label">إجمالي الحسابات</div><div class="value">{{ total_count }}</div></div>
+    <div class="viewer-access-stat"><div class="label">الحسابات المفعلة</div><div class="value">{{ active_count }}</div></div>
+    <div class="viewer-access-stat"><div class="label">مديرو القسم</div><div class="value">{{ department_count }}</div></div>
+    <div class="viewer-access-stat"><div class="label">مديرو الوحدات</div><div class="value">{{ unit_count }}</div></div>
+  </div>
+
+  <form method="get" class="viewer-access-card viewer-access-filters">
+    <div class="viewer-access-field">
+      <label>بحث</label>
+      <input class="viewer-access-input" type="text" name="q" value="{{ q }}" placeholder="اسم المستخدم أو الاسم الظاهر أو البريد">
+    </div>
+    <div class="viewer-access-field">
+      <label>الدور</label>
+      <select class="viewer-access-select" name="role">
+        <option value="all" {% if role == 'all' %}selected{% endif %}>الكل</option>
+        <option value="department" {% if role == 'department' %}selected{% endif %}>مدير القسم</option>
+        <option value="unit" {% if role == 'unit' %}selected{% endif %}>مدير وحدة</option>
+      </select>
+    </div>
+    <div class="viewer-access-field">
+      <label>الحالة</label>
+      <select class="viewer-access-select" name="active">
+        <option value="all" {% if active == 'all' %}selected{% endif %}>الكل</option>
+        <option value="active" {% if active == 'active' %}selected{% endif %}>مفعل</option>
+        <option value="inactive" {% if active == 'inactive' %}selected{% endif %}>معطل</option>
+      </select>
+    </div>
+    <div class="viewer-access-row-actions">
+      <button class="viewer-access-btn primary" type="submit">تطبيق</button>
+      <a class="viewer-access-btn" href="{% url 'visits:admin_viewer_users' %}">إعادة ضبط</a>
+    </div>
+  </form>
+
+  <div class="viewer-access-card viewer-access-table-card">
+    <div class="viewer-access-table-wrap">
+      <table class="viewer-access-table">
+        <thead>
+          <tr>
+            <th>المستخدم المخوّل</th>
+            <th>الدور</th>
+            <th>نطاق الاطلاع</th>
+            <th>الحالة</th>
+            <th>آخر دخول</th>
+            <th>إجراءات</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td class="viewer-access-name">
+                <span class="viewer-access-name-main">{{ row.display_name }}</span>
+                <div class="viewer-access-muted"><span class="mini-label">اسم المستخدم:</span> {{ row.user.username }}</div>
+                {% if row.user.email %}<div class="viewer-access-muted"><span class="mini-label">البريد:</span> {{ row.user.email }}</div>{% endif %}
+              </td>
+              <td><span class="viewer-access-badge soft">{{ row.meta.role_label }}</span></td>
+              <td>{{ row.meta.scope_label }}</td>
+              <td>
+                {% if row.user.is_active %}<span class="viewer-access-badge ok">مفعل</span>{% else %}<span class="viewer-access-badge warn">معطل</span>{% endif %}
+              </td>
+              <td>{% if row.user.last_login %}{{ row.user.last_login|date:"Y-m-d H:i" }}{% else %}<span class="viewer-access-muted">لم يسجل الدخول</span>{% endif %}</td>
+              <td>
+                <div class="viewer-access-row-actions">
+                  <a class="viewer-access-btn soft" href="{% url 'visits:admin_viewer_user_edit' row.user.id %}">تعديل</a>
+                  <a class="viewer-access-btn" href="{% url 'visits:admin_viewer_user_password' row.user.id %}">إعادة تعيين كلمة المرور</a>
+                  <form method="post" action="{% url 'visits:admin_viewer_user_toggle' row.user.id %}" style="margin:0;">
+                    {% csrf_token %}
+                    {% if row.user.is_active %}
+                      <button class="viewer-access-btn warn" type="submit">تعطيل</button>
+                    {% else %}
+                      <button class="viewer-access-btn primary" type="submit">تفعيل</button>
+                    {% endif %}
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="6"><div class="viewer-access-empty">لا توجد حسابات اطلاع مطابقة.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="viewer-access-card viewer-access-pager">
+    <div>عدد النتائج: {{ page_obj.paginator.count }}</div>
+    <div class="viewer-access-row-actions">
+      {% if page_obj.has_previous %}
+        <a class="viewer-access-btn" href="?q={{ q|urlencode }}&role={{ role }}&active={{ active }}&page={{ page_obj.previous_page_number }}">السابق</a>
+      {% endif %}
+      <span>صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a class="viewer-access-btn" href="?q={{ q|urlencode }}&role={{ role }}&active={{ active }}&page={{ page_obj.next_page_number }}">التالي</a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

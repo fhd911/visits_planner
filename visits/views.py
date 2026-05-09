@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 import re
 from datetime import date, datetime, timedelta
 from functools import wraps
@@ -17,6 +18,7 @@ from django.db.models import Count, Q
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -1046,6 +1048,45 @@ def _admin_json_response(
         return None
     return JsonResponse(_plan_ajax_payload(plan, message, ok=ok, errors=errors), status=http_status)
 
+
+
+
+def _build_dashboard_global_visit_counts(*, include_breaks: bool = False) -> dict[str, int]:
+    """
+    يحسب مؤشرات الزيارات على مستوى جميع الأسابيع للوحة الإدارة.
+    هذه القيم تغذي بطاقات:
+    - الزيارات الحضورية لجميع الأسابيع
+    - الزيارات عن بُعد لجميع الأسابيع
+    """
+    qs = PlanDay.objects.all()
+    if not include_breaks:
+        qs = qs.filter(plan__week__is_break=False)
+
+    visit_in = getattr(PlanDay, "VISIT_IN", "in")
+    visit_remote = getattr(PlanDay, "VISIT_REMOTE", "remote")
+    visit_none = getattr(PlanDay, "VISIT_NONE", "none")
+
+    global_visit_in_total = qs.filter(visit_type=visit_in).count()
+    global_visit_remote_total = qs.filter(visit_type=visit_remote).count()
+    global_visit_none_total = qs.filter(visit_type=visit_none).count()
+
+    global_visit_total = global_visit_in_total + global_visit_remote_total
+    global_days_total = global_visit_total + global_visit_none_total
+
+    global_visit_in_percent = round((global_visit_in_total / global_visit_total) * 100) if global_visit_total else 0
+    global_visit_remote_percent = round((global_visit_remote_total / global_visit_total) * 100) if global_visit_total else 0
+    global_visit_none_percent = round((global_visit_none_total / global_days_total) * 100) if global_days_total else 0
+
+    return {
+        "global_visit_in_total": global_visit_in_total,
+        "global_visit_remote_total": global_visit_remote_total,
+        "global_visit_none_total": global_visit_none_total,
+        "global_visit_total": global_visit_total,
+        "global_days_total": global_days_total,
+        "global_visit_in_percent": global_visit_in_percent,
+        "global_visit_remote_percent": global_visit_remote_percent,
+        "global_visit_none_percent": global_visit_none_percent,
+    }
 
 def _build_chart_counts(week_obj: PlanWeek) -> dict:
     base = (
@@ -3784,14 +3825,27 @@ def request_unlock_view(request: HttpRequest) -> HttpResponse:
         messages.info(request, "لا يمكن طلب فك اعتماد إلا لخطة معتمدة.")
         return redirect(_plan_url(plan.week.week_no))
 
-    req, created = UnlockRequest.objects.get_or_create(plan=plan)
+    reason = _cell_str(request.POST.get("reason"))
+    if not reason:
+        reason = "طلب المشرف فك اعتماد الخطة لإجراء تعديل على بيانات الخطة الأسبوعية."
+
+    req, created = UnlockRequest.objects.get_or_create(
+        plan=plan,
+        defaults={
+            "reason": reason,
+            "status": UnlockRequest.STATUS_PENDING,
+            "resolved_at": None,
+        },
+    )
+
     if not created and req.status == UnlockRequest.STATUS_PENDING:
         messages.info(request, "يوجد طلب فك اعتماد سابق لهذه الخطة بانتظار الإدارة.")
         return redirect(_plan_url(plan.week.week_no))
 
+    req.reason = reason
     req.status = UnlockRequest.STATUS_PENDING
     req.resolved_at = None
-    req.save(update_fields=["status", "resolved_at"])
+    req.save(update_fields=["reason", "status", "resolved_at"])
 
     plan.status = Plan.STATUS_UNLOCK_REQUESTED
     plan.save(update_fields=["status"])
@@ -4316,6 +4370,7 @@ def admin_dashboard_view(request: HttpRequest) -> HttpResponse:
     paginator = Paginator(rows, page_size)
     page_obj = paginator.get_page(page)
     chart_data = _build_chart_counts(week_obj)
+    global_visit_data = _build_dashboard_global_visit_counts(include_breaks=show_all)
     site_setting = _get_site_setting()
     _maintenance_is_active(site_setting, persist=True)
 
@@ -4344,6 +4399,7 @@ def admin_dashboard_view(request: HttpRequest) -> HttpResponse:
             "site_setting": site_setting,
             **_get_assignment_dashboard_context(),
             **chart_data,
+            **global_visit_data,
         },
     )
 
@@ -5878,3 +5934,1929 @@ def weekly_letter_link_delete_view(request: HttpRequest, pk: int) -> HttpRespons
     obj.delete()
     messages.success(request, "تم حذف الرابط.")
     return redirect("visits:weekly_letter_links_list")
+
+
+# =============================================================================
+# Weekly assignment letters status report
+# =============================================================================
+def _weekly_letter_drive_file_key(file_obj: dict) -> str:
+    """مفتاح آمن للملف حتى نميّز الملفات المطابقة وغير المطابقة."""
+    return str(
+        file_obj.get("id")
+        or file_obj.get("webViewLink")
+        or file_obj.get("webContentLink")
+        or file_obj.get("name")
+        or id(file_obj)
+    )
+
+
+def _weekly_letter_drive_file_name(file_obj: dict) -> str:
+    return (file_obj.get("name") or "").strip()
+
+
+def _weekly_letter_drive_file_url(file_obj: dict) -> str:
+    return (
+        file_obj.get("webViewLink")
+        or file_obj.get("webContentLink")
+        or file_obj.get("alternateLink")
+        or ""
+    )
+
+
+def _weekly_letter_drive_file_is_pdf(file_obj: dict) -> bool:
+    """
+    يحدد هل الملف ملف PDF.
+
+    بعض ملفات Google Drive قد يظهر اسمها مثل: pdf.1021880941
+    دون امتداد .pdf، لذلك نعتمد على mimeType متى توفر، ثم اسم الملف.
+    """
+    name = _weekly_letter_drive_file_name(file_obj).lower()
+    mime_type = (file_obj.get("mimeType") or file_obj.get("mime_type") or "").lower()
+
+    if mime_type == "application/pdf":
+        return True
+
+    if name.endswith(".pdf"):
+        return True
+
+    if name.startswith("pdf."):
+        return True
+
+    return False
+
+
+def _weekly_letter_nids_from_file_name(name: str) -> list[str]:
+    """
+    يستخرج أرقام هوية محتملة من اسم الملف.
+    نعتمد على 10 أرقام متتالية؛ لأنها صيغة السجل المدني المتوقعة.
+    """
+    name = name or ""
+    found = re.findall(r"\d{10}", name)
+
+    # احتياط للأسماء التي تحتوي رموزًا بين الأرقام أو اسمها كله عبارة عن رقم.
+    digits = _digits(name)
+    if not found and len(digits) == 10:
+        found.append(digits)
+
+    # إزالة التكرار مع الحفاظ على الترتيب.
+    unique: list[str] = []
+    for nid in found:
+        if nid not in unique:
+            unique.append(nid)
+    return unique
+
+
+def _weekly_letter_file_for_nid(files: list[dict], national_id: str) -> dict | None:
+    """
+    يبحث عن ملف خطاب التكليف داخل ملفات Google Drive
+    بناءً على وجود رقم الهوية الوطنية داخل اسم ملف PDF.
+    """
+    nid = _digits(national_id)
+    if not nid:
+        return None
+
+    for file_obj in files:
+        if not _weekly_letter_drive_file_is_pdf(file_obj):
+            continue
+
+        name = _weekly_letter_drive_file_name(file_obj)
+        name_digits = _digits(name)
+
+        if nid in name or nid in name_digits:
+            return file_obj
+
+    return None
+
+
+def _weekly_letter_supervisors_qs():
+    """
+    مصدر تقرير خطابات التكليف.
+
+    لا نعتمد على وجود خطة أسبوعية فقط؛ لأن المطلوب معرفة من تم تصدير
+    خطاب تكليف له من المشرفين المعنيين. لذلك يكون المصدر الأساسي:
+    المشرفون النشطون الذين لديهم إسناد نشط على مدرسة نشطة.
+    """
+    return (
+        Supervisor.objects
+        .filter(
+            is_active=True,
+            assignments__is_active=True,
+            assignments__school__is_active=True,
+        )
+        .distinct()
+        .order_by("full_name")
+    )
+
+
+def _weekly_letter_status_context(
+    *,
+    week_obj: PlanWeek,
+    filter_status: str = "all",
+) -> dict[str, Any]:
+    """
+    يبني بيانات تقرير حالة خطابات التكليف للأسبوع المحدد.
+
+    المنطق الإداري النهائي:
+    - حالة الخطاب تُحسب فقط من وجود ملف PDF مطابق برقم الهوية داخل مجلد الأسبوع.
+    - جاهزية الخطة معلومة مساعدة ولا تؤثر على حكم: تم التصدير / لم يتم التصدير.
+    - إذا تعذر فحص مجلد Drive تكون الحالة: غير مفحوص.
+    - تُعرض ملفات PDF غير المطابقة لأي مشرف معني في قسم مستقل لمراجعة جودة التسمية.
+    """
+    link_obj = (
+        WeeklyLetterLink.objects
+        .filter(week=week_obj, is_active=True)
+        .select_related("week")
+        .first()
+    )
+
+    folder_id = None
+    drive_files: list[dict] = []
+    drive_error = ""
+    can_inspect_drive = False
+
+    if link_obj and getattr(link_obj, "drive_url", ""):
+        folder_id = _extract_drive_folder_id(link_obj.drive_url)
+
+        if folder_id:
+            try:
+                drive_files = list_files_in_folder(folder_id, page_size=1000)
+                can_inspect_drive = True
+            except Exception as exc:
+                drive_error = f"تعذر فحص مجلد الخطابات: {exc}"
+                drive_files = []
+                can_inspect_drive = False
+        else:
+            drive_error = "رابط مجلد الخطابات غير صالح."
+    else:
+        drive_error = "لا يوجد رابط مجلد خطابات مفعّل لهذا الأسبوع."
+
+    supervisors = list(_weekly_letter_supervisors_qs())
+    supervisor_ids = [sup.id for sup in supervisors]
+    supervisor_nid_set = {
+        _digits(_sup_nid_value(sup))
+        for sup in supervisors
+        if _digits(_sup_nid_value(sup))
+    }
+
+    plans = (
+        Plan.objects
+        .filter(week=week_obj, supervisor_id__in=supervisor_ids)
+        .select_related("supervisor", "week")
+        .prefetch_related("days")
+    )
+    plan_by_supervisor_id = {plan.supervisor_id: plan for plan in plans}
+
+    drive_pdf_files = [file_obj for file_obj in drive_files if _weekly_letter_drive_file_is_pdf(file_obj)] if can_inspect_drive else []
+    matched_pdf_file_keys: set[str] = set()
+    unmatched_pdf_files: list[dict[str, Any]] = []
+
+    if can_inspect_drive:
+        for file_obj in drive_pdf_files:
+            file_name = _weekly_letter_drive_file_name(file_obj)
+            file_url = _weekly_letter_drive_file_url(file_obj)
+            extracted_nids = _weekly_letter_nids_from_file_name(file_name)
+            key = _weekly_letter_drive_file_key(file_obj)
+
+            if extracted_nids and any(nid in supervisor_nid_set for nid in extracted_nids):
+                matched_pdf_file_keys.add(key)
+                continue
+
+            if extracted_nids:
+                reason = "رقم الهوية في اسم الملف لا يطابق مشرفًا معنيًا في هذا التقرير."
+                extracted_label = "، ".join(extracted_nids)
+            else:
+                reason = "لم يتم العثور على رقم هوية من 10 أرقام في اسم الملف."
+                extracted_label = "—"
+
+            unmatched_pdf_files.append(
+                {
+                    "file_name": file_name,
+                    "file_url": file_url,
+                    "extracted_nids": extracted_nids,
+                    "extracted_label": extracted_label,
+                    "reason": reason,
+                }
+            )
+
+    all_rows: list[dict[str, Any]] = []
+
+    for supervisor in supervisors:
+        plan = plan_by_supervisor_id.get(supervisor.id)
+        national_id = _sup_nid_value(supervisor)
+        filled_count = _plan_filled_count(plan) if plan else 0
+        is_full = bool(plan and filled_count == len(WEEKDAYS))
+        found_file = _weekly_letter_file_for_nid(drive_files, national_id) if can_inspect_drive else None
+
+        if plan:
+            plan_status_label = _status_label(plan)
+            plan_status_code = _status_code(plan)
+        else:
+            plan_status_label = "لا توجد خطة"
+            plan_status_code = "no-plan"
+
+        readiness_code = "ready" if is_full else "not_ready"
+        readiness_label = "خطة مكتملة" if is_full else "خطة غير مكتملة/غير موجودة"
+
+        if not can_inspect_drive:
+            letter_status_code = "unchecked"
+            letter_status_label = "غير مفحوص"
+            letter_status_note = drive_error or "تعذر فحص مجلد الخطابات."
+            letter_file_name = ""
+            letter_file_url = ""
+        elif found_file:
+            letter_status_code = "exported"
+            letter_status_label = "تم تصدير الخطاب"
+            letter_status_note = "تم العثور على ملف PDF برقم الهوية."
+            letter_file_name = _weekly_letter_drive_file_name(found_file)
+            letter_file_url = _weekly_letter_drive_file_url(found_file)
+        else:
+            letter_status_code = "missing"
+            letter_status_label = "لم يتم تصدير الخطاب"
+            letter_status_note = "لم يتم العثور على ملف PDF مطابق برقم الهوية."
+            letter_file_name = ""
+            letter_file_url = ""
+
+        all_rows.append(
+            {
+                "plan": plan,
+                "supervisor": supervisor,
+                "supervisor_name": supervisor.full_name,
+                "national_id": national_id,
+                "plan_status_label": plan_status_label,
+                "plan_status_code": plan_status_code,
+                "filled_count": filled_count,
+                "is_full": is_full,
+                "readiness_code": readiness_code,
+                "readiness_label": readiness_label,
+                "letter_status_code": letter_status_code,
+                "letter_status_label": letter_status_label,
+                "letter_status_note": letter_status_note,
+                "letter_file_name": letter_file_name,
+                "letter_file_url": letter_file_url,
+            }
+        )
+
+    total_count = len(all_rows)
+    ready_count = sum(1 for row in all_rows if row["readiness_code"] == "ready")
+    not_ready_count = sum(1 for row in all_rows if row["readiness_code"] == "not_ready")
+    exported_count = sum(1 for row in all_rows if row["letter_status_code"] == "exported")
+    unchecked_count = sum(1 for row in all_rows if row["letter_status_code"] == "unchecked")
+    inspected_count = total_count - unchecked_count
+    missing_count = sum(1 for row in all_rows if row["letter_status_code"] == "missing")
+
+    exported_percent = round((exported_count / inspected_count) * 100) if inspected_count else 0
+    exported_percent_available = bool(inspected_count)
+
+    drive_files_count = len(drive_files) if can_inspect_drive else 0
+    drive_pdf_count = len(drive_pdf_files) if can_inspect_drive else 0
+    drive_matched_pdf_count = len(matched_pdf_file_keys) if can_inspect_drive else 0
+    drive_unmatched_pdf_count = len(unmatched_pdf_files) if can_inspect_drive else 0
+    drive_duplicate_or_extra_pdf_count = max(drive_matched_pdf_count - exported_count, 0) if can_inspect_drive else 0
+
+    rows = all_rows
+    if filter_status == "exported":
+        rows = [row for row in all_rows if row["letter_status_code"] == "exported"]
+    elif filter_status == "missing":
+        rows = [row for row in all_rows if row["letter_status_code"] == "missing"]
+    elif filter_status == "unchecked":
+        rows = [row for row in all_rows if row["letter_status_code"] == "unchecked"]
+    elif filter_status == "not_ready":
+        rows = [row for row in all_rows if row["readiness_code"] == "not_ready"]
+    elif filter_status == "ready":
+        rows = [row for row in all_rows if row["readiness_code"] == "ready"]
+
+    return {
+        "letter_link": link_obj,
+        "letter_folder_id": folder_id or "",
+        "letter_drive_error": drive_error,
+        "letter_can_inspect_drive": can_inspect_drive,
+        "letter_rows": rows,
+        "letter_all_rows_count": total_count,
+        "letter_ready_count": ready_count,
+        "letter_not_ready_count": not_ready_count,
+        "letter_exported_count": exported_count,
+        "letter_missing_count": missing_count,
+        "letter_unchecked_count": unchecked_count,
+        "letter_inspected_count": inspected_count,
+        "letter_exported_percent": exported_percent,
+        "letter_exported_percent_available": exported_percent_available,
+        "letter_filter_status": filter_status,
+        "letter_source_label": "المشرفون النشطون الذين لديهم إسناد نشط",
+        "drive_files_count": drive_files_count,
+        "drive_pdf_count": drive_pdf_count,
+        "drive_matched_pdf_count": drive_matched_pdf_count,
+        "drive_unmatched_pdf_count": drive_unmatched_pdf_count,
+        "drive_duplicate_or_extra_pdf_count": drive_duplicate_or_extra_pdf_count,
+        "drive_unmatched_files": unmatched_pdf_files,
+    }
+
+
+def _build_weekly_letter_status_workbook(
+    *,
+    week_obj: PlanWeek,
+    rows: list[dict[str, Any]],
+    filter_status: str = "all",
+    unmatched_files: list[dict[str, Any]] | None = None,
+) -> Workbook:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = f"الأسبوع {week_obj.week_no}"
+    ws.sheet_view.rightToLeft = True
+
+    title_font = Font(name="Cairo", bold=True, size=14)
+    bold_font = Font(name="Cairo", bold=True, size=11)
+    normal_font = Font(name="Cairo", size=10)
+
+    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    right = Alignment(horizontal="right", vertical="center", wrap_text=True)
+
+    header_fill = PatternFill("solid", fgColor="F1F5F9")
+    title_fill = PatternFill("solid", fgColor="E8F5E9")
+    exported_fill = PatternFill("solid", fgColor="ECFDF3")
+    missing_fill = PatternFill("solid", fgColor="FFF7ED")
+    unchecked_fill = PatternFill("solid", fgColor="F8FAFC")
+
+    thin = Side(style="thin", color="CBD5E1")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    ws.merge_cells("A1:J1")
+    ws["A1"] = f"تقرير حالة خطابات التكليف — الأسبوع {week_obj.week_no}"
+    ws["A1"].font = title_font
+    ws["A1"].alignment = center
+    ws["A1"].fill = title_fill
+
+    filter_label = {
+        "all": "الكل",
+        "ready": "لديهم خطة مكتملة",
+        "exported": "تم تصدير الخطاب",
+        "missing": "لم يتم تصدير الخطاب",
+        "not_ready": "خطة غير مكتملة/غير موجودة",
+        "unchecked": "غير مفحوص",
+    }.get(filter_status, "الكل")
+
+    ws.merge_cells("A2:J2")
+    ws["A2"] = f"الفلتر: {filter_label}"
+    ws["A2"].font = bold_font
+    ws["A2"].alignment = center
+
+    headers = [
+        "م",
+        "اسم المشرف",
+        "السجل المدني",
+        "حالة الخطة",
+        "اكتمال الخطة",
+        "مؤشر الخطة",
+        "حالة الخطاب",
+        "سبب الحالة",
+        "اسم ملف الخطاب",
+        "رابط الخطاب",
+    ]
+
+    header_row = 4
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=header_row, column=col, value=header)
+        cell.font = bold_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    row_idx = header_row + 1
+
+    for i, row in enumerate(rows, start=1):
+        values = [
+            i,
+            row["supervisor_name"],
+            row["national_id"],
+            row["plan_status_label"],
+            "مكتملة" if row["is_full"] else f"{row['filled_count']}/{len(WEEKDAYS)}",
+            row["readiness_label"],
+            row["letter_status_label"],
+            row["letter_status_note"] or "—",
+            row["letter_file_name"] or "—",
+            row["letter_file_url"] or "—",
+        ]
+
+        for col, value in enumerate(values, start=1):
+            cell = ws.cell(row=row_idx, column=col, value=value)
+            cell.font = normal_font
+            cell.border = border
+            cell.alignment = center if col in (1, 3, 4, 5, 6, 7) else right
+
+            if col == 7:
+                if row["letter_status_code"] == "exported":
+                    cell.fill = exported_fill
+                elif row["letter_status_code"] == "missing":
+                    cell.fill = missing_fill
+                elif row["letter_status_code"] == "unchecked":
+                    cell.fill = unchecked_fill
+
+        row_idx += 1
+
+    widths = {
+        1: 7,
+        2: 32,
+        3: 18,
+        4: 16,
+        5: 14,
+        6: 22,
+        7: 20,
+        8: 40,
+        9: 38,
+        10: 55,
+    }
+
+    for col_i, width in widths.items():
+        ws.column_dimensions[get_column_letter(col_i)].width = width
+
+    unmatched_files = unmatched_files or []
+    if unmatched_files:
+        ws_unmatched = wb.create_sheet("ملفات غير مطابقة")
+        ws_unmatched.sheet_view.rightToLeft = True
+
+        ws_unmatched.merge_cells("A1:E1")
+        ws_unmatched["A1"] = f"ملفات PDF غير مطابقة لأي مشرف معني — الأسبوع {week_obj.week_no}"
+        ws_unmatched["A1"].font = title_font
+        ws_unmatched["A1"].alignment = center
+        ws_unmatched["A1"].fill = title_fill
+
+        unmatched_headers = ["م", "اسم الملف", "الأرقام المستخرجة", "سبب عدم المطابقة", "رابط الملف"]
+        for col, header in enumerate(unmatched_headers, start=1):
+            cell = ws_unmatched.cell(row=3, column=col, value=header)
+            cell.font = bold_font
+            cell.fill = header_fill
+            cell.alignment = center
+            cell.border = border
+
+        row_idx = 4
+        for i, file_row in enumerate(unmatched_files, start=1):
+            values = [
+                i,
+                file_row.get("file_name") or "—",
+                file_row.get("extracted_label") or "—",
+                file_row.get("reason") or "—",
+                file_row.get("file_url") or "—",
+            ]
+            for col, value in enumerate(values, start=1):
+                cell = ws_unmatched.cell(row=row_idx, column=col, value=value)
+                cell.font = normal_font
+                cell.border = border
+                cell.alignment = center if col in (1, 3) else right
+            row_idx += 1
+
+        for col_i, width in {1: 7, 2: 42, 3: 24, 4: 44, 5: 58}.items():
+            ws_unmatched.column_dimensions[get_column_letter(col_i)].width = width
+
+    return wb
+
+
+@admin_only_view
+def admin_weekly_letter_status_view(request: HttpRequest) -> HttpResponse:
+    week_no = _safe_int(
+        request.GET.get("week") or _get_default_week_no(),
+        default=_get_default_week_no(),
+    )
+
+    week_obj = _resolve_week_or_404(week_no, allow_inactive=True)
+    filter_status = _cell_str(request.GET.get("letter_status") or "all")
+
+    if filter_status not in ("all", "ready", "exported", "missing", "not_ready", "unchecked"):
+        filter_status = "all"
+
+    context = _weekly_letter_status_context(
+        week_obj=week_obj,
+        filter_status=filter_status,
+    )
+
+    context.update(
+        {
+            "week": week_obj.week_no,
+            "week_obj": week_obj,
+            "week_choices": _build_week_choices(active_only=False),
+            "filter_status": filter_status,
+        }
+    )
+
+    return render(
+        request,
+        "visits/admin_weekly_letter_status.html",
+        context,
+    )
+
+
+@admin_only_view
+def admin_weekly_letter_status_export_excel_view(request: HttpRequest) -> HttpResponse:
+    week_no = _safe_int(
+        request.GET.get("week") or _get_default_week_no(),
+        default=_get_default_week_no(),
+    )
+
+    week_obj = _resolve_week_or_404(week_no, allow_inactive=True)
+    filter_status = _cell_str(request.GET.get("letter_status") or "all")
+
+    if filter_status not in ("all", "ready", "exported", "missing", "not_ready", "unchecked"):
+        filter_status = "all"
+
+    context = _weekly_letter_status_context(
+        week_obj=week_obj,
+        filter_status=filter_status,
+    )
+
+    wb = _build_weekly_letter_status_workbook(
+        week_obj=week_obj,
+        rows=context["letter_rows"],
+        filter_status=filter_status,
+        unmatched_files=context.get("drive_unmatched_files") or [],
+    )
+
+    filename = f"weekly-letter-status-week-{week_obj.week_no}.xlsx"
+    return _excel_response(wb, filename)
+
+
+
+# =============================================================================
+# Read-only management portal
+# =============================================================================
+DEPARTMENT_GROUPS = {
+    "مدير القسم",
+    "مدير قسم",
+    "department_manager",
+    "readonly_department_manager",
+}
+
+UNIT_GROUP_PREFIXES = (
+    "مدير وحدة:",
+    "مدير وحدة -",
+    "مدير وحدة ",
+    "unit_manager:",
+    "readonly_unit:",
+)
+
+
+@dataclass(frozen=True)
+class ReadOnlyScope:
+    allowed: bool
+    role: str
+    role_label: str
+    all_scope: bool
+    sector_ids: tuple[int, ...]
+
+
+def _user_group_names(user) -> set[str]:
+    if not getattr(user, "is_authenticated", False):
+        return set()
+    return set(user.groups.values_list("name", flat=True))
+
+
+def _parse_sector_from_group_name(group_name: str, sectors_by_name: dict[str, int]) -> int | None:
+    raw = (group_name or "").strip()
+    if not raw:
+        return None
+
+    for prefix in UNIT_GROUP_PREFIXES:
+        if raw.startswith(prefix):
+            value = raw[len(prefix):].strip()
+            if not value:
+                return None
+            if value.isdigit():
+                return int(value)
+            return sectors_by_name.get(value)
+
+    return None
+
+
+def get_readonly_scope_for_user(user) -> ReadOnlyScope:
+    """
+    صلاحيات الاطلاع دون أي صلاحيات تنفيذية.
+
+    طرق الإسناد عبر مجموعات Django:
+    - مدير القسم / department_manager: اطلاع على جميع الخطط والإسنادات.
+    - مدير وحدة:<sector_id> أو unit_manager:<sector_id>: اطلاع على قطاعات محددة.
+    - يمكن أيضًا استخدام اسم القطاع بدل رقمه: مدير وحدة - أبها.
+    """
+    if not getattr(user, "is_authenticated", False):
+        return ReadOnlyScope(False, "none", "غير مصرح", False, ())
+
+    # مدير النظام الحالي يستطيع دخول بوابة الاطلاع أيضًا.
+    if getattr(user, "is_superuser", False):
+        return ReadOnlyScope(True, "department", "مدير النظام", True, ())
+
+    groups = _user_group_names(user)
+
+    if groups & DEPARTMENT_GROUPS:
+        return ReadOnlyScope(True, "department", "مدير القسم", True, ())
+
+    sectors_by_name = {
+        (s.name or "").strip(): s.id
+        for s in Sector.objects.filter(is_active=True)
+        if (s.name or "").strip()
+    }
+
+    sector_ids: set[int] = set()
+    for group_name in groups:
+        sid = _parse_sector_from_group_name(group_name, sectors_by_name)
+        if sid:
+            sector_ids.add(sid)
+
+    if sector_ids:
+        return ReadOnlyScope(True, "unit", "مدير وحدة", False, tuple(sorted(sector_ids)))
+
+    return ReadOnlyScope(False, "none", "غير مصرح", False, ())
+
+
+def _readonly_access_required(view_func):
+    @wraps(view_func)
+    def _wrapped(request: HttpRequest, *args, **kwargs):
+        if not request.user.is_authenticated:
+            login_url = f"{reverse('visits:readonly_login')}?next={request.get_full_path()}"
+            return redirect(login_url)
+
+        scope = get_readonly_scope_for_user(request.user)
+        if not scope.allowed:
+            messages.error(request, "لا تملك صلاحية الدخول إلى بوابة الاطلاع.")
+            return redirect("visits:readonly_login")
+
+        # منع تداخل جلسة المشرف مع بوابة الاطلاع.
+        # بوابة الاطلاع تعتمد على مستخدم Django، بينما بوابة المشرف تعتمد على visits_sup_id.
+        if request.session.get(SESSION_SUP_ID):
+            request.session.pop(SESSION_SUP_ID, None)
+            request.session.modified = True
+
+        request.readonly_scope = scope  # type: ignore[attr-defined]
+        return view_func(request, *args, **kwargs)
+
+    return _wrapped
+
+
+def _allowed_supervisor_ids(scope: ReadOnlyScope) -> set[int]:
+    if scope.all_scope:
+        return set(Supervisor.objects.filter(is_active=True).values_list("id", flat=True))
+
+    if not scope.sector_ids:
+        return set()
+
+    by_assignment = set(
+        Assignment.objects.filter(
+            is_active=True,
+            school__is_active=True,
+            school__sector_id__in=scope.sector_ids,
+            supervisor__is_active=True,
+        ).values_list("supervisor_id", flat=True).distinct()
+    )
+
+    by_supervisor_sector = set(
+        Supervisor.objects.filter(
+            is_active=True,
+            sector_id__in=scope.sector_ids,
+        ).values_list("id", flat=True)
+    )
+
+    return by_assignment | by_supervisor_sector
+
+
+def _scope_sectors_qs(scope: ReadOnlyScope):
+    qs = Sector.objects.filter(is_active=True).order_by("name")
+    if scope.all_scope:
+        return qs
+    return qs.filter(id__in=scope.sector_ids)
+
+
+def _readonly_scope_sector_names(scope: ReadOnlyScope) -> list[str]:
+    if scope.all_scope:
+        return []
+    return list(
+        Sector.objects.filter(id__in=scope.sector_ids, is_active=True)
+        .order_by("name")
+        .values_list("name", flat=True)
+    )
+
+
+def _plan_sector_names_for_scope(plan: Plan, scope: ReadOnlyScope) -> str:
+    """
+    يعرض القطاعات المرتبطة بالمشرف داخل نطاق الاطلاع.
+    لا يستخدم للصلاحية الأمنية، بل كقيمة عرض فقط داخل الجداول.
+    """
+    qs = (
+        Assignment.objects.filter(
+            supervisor=plan.supervisor,
+            is_active=True,
+            school__is_active=True,
+            school__sector__isnull=False,
+        )
+        .select_related("school__sector")
+        .values_list("school__sector__name", flat=True)
+        .distinct()
+        .order_by("school__sector__name")
+    )
+
+    if not scope.all_scope:
+        qs = qs.filter(school__sector_id__in=scope.sector_ids)
+
+    names = [name for name in qs if name]
+
+    if not names:
+        sector = getattr(plan.supervisor, "sector", None)
+        sector_name = getattr(sector, "name", "") if sector else ""
+        if sector_name:
+            names = [sector_name]
+
+    return "، ".join(names) if names else "—"
+
+
+def _plans_qs_for_scope(scope: ReadOnlyScope, *, week_obj: PlanWeek | None = None):
+    qs = (
+        Plan.objects.select_related("supervisor", "week")
+        .prefetch_related("days", "days__school")
+        .order_by("supervisor__full_name", "week__week_no")
+    )
+
+    if week_obj is not None:
+        qs = qs.filter(week=week_obj)
+
+    if scope.all_scope:
+        return qs
+
+    allowed = _allowed_supervisor_ids(scope)
+    if not allowed:
+        return qs.none()
+
+    return qs.filter(supervisor_id__in=allowed)
+
+
+def _assignments_qs_for_scope(scope: ReadOnlyScope):
+    qs = (
+        Assignment.objects.select_related("supervisor", "school", "school__sector")
+        .order_by("school__sector__name", "school__name", "supervisor__full_name")
+    )
+
+    if scope.all_scope:
+        return qs
+
+    if not scope.sector_ids:
+        return qs.none()
+
+    return qs.filter(school__sector_id__in=scope.sector_ids)
+
+
+def _plan_row(plan: Plan) -> dict[str, Any]:
+    filled = _plan_filled_count(plan)
+    return {
+        "plan": plan,
+        "filled": filled,
+        "status_label": _status_label(plan),
+        "status_code": _status_code(plan),
+        "is_full": filled == len(WEEKDAYS),
+    }
+
+
+def readonly_login_view(request: HttpRequest) -> HttpResponse:
+    if request.user.is_authenticated:
+        scope = get_readonly_scope_for_user(request.user)
+        if scope.allowed:
+            if request.session.get(SESSION_SUP_ID):
+                request.session.pop(SESSION_SUP_ID, None)
+                request.session.modified = True
+            return redirect("visits:readonly_dashboard")
+
+    next_url = _cell_str(request.GET.get("next") or request.POST.get("next") or "")
+
+    if request.method == "POST":
+        username = _cell_str(request.POST.get("username"))
+        password = request.POST.get("password") or ""
+
+        if not username or not password:
+            messages.error(request, "فضلاً أدخل اسم المستخدم وكلمة المرور.")
+            return render(request, "visits/readonly_login.html", {"next": next_url})
+
+        user = authenticate(request, username=username, password=password)
+        if not user:
+            messages.error(request, "بيانات الدخول غير صحيحة.")
+            return render(request, "visits/readonly_login.html", {"next": next_url})
+
+        scope = get_readonly_scope_for_user(user)
+        if not scope.allowed:
+            messages.error(request, "هذا الحساب لا يملك صلاحية الاطلاع.")
+            return render(request, "visits/readonly_login.html", {"next": next_url})
+
+        login(request, user)
+
+        # عند دخول بوابة الاطلاع نتأكد من إزالة أي جلسة مشرف سابقة
+        # حتى لا يظهر هيدر أو روابط بوابة المشرف بالخطأ.
+        request.session.pop(SESSION_SUP_ID, None)
+        request.session.modified = True
+
+        messages.success(request, "تم تسجيل الدخول إلى بوابة الاطلاع بنجاح.")
+
+        if next_url and url_has_allowed_host_and_scheme(
+            next_url,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            return redirect(next_url)
+
+        return redirect("visits:readonly_dashboard")
+
+    return render(request, "visits/readonly_login.html", {"next": next_url})
+
+
+def readonly_logout_view(request: HttpRequest) -> HttpResponse:
+    logout(request)
+    messages.info(request, "تم تسجيل الخروج من بوابة الاطلاع.")
+    return redirect("visits:readonly_login")
+
+
+@_readonly_access_required
+def readonly_dashboard_view(request: HttpRequest) -> HttpResponse:
+    scope: ReadOnlyScope = request.readonly_scope  # type: ignore[attr-defined]
+    week_no = _safe_int(request.GET.get("week") or _get_default_week_no(), default=_get_default_week_no())
+    week_obj = _resolve_week_or_404(week_no, allow_inactive=True)
+
+    plans_qs = _plans_qs_for_scope(scope, week_obj=week_obj)
+    assignment_qs = _assignments_qs_for_scope(scope).filter(is_active=True, school__is_active=True)
+
+    plan_ids = list(plans_qs.values_list("id", flat=True))
+    plan_rows = []
+    for p in plans_qs[:6]:
+        row = _plan_row(p)
+        row["sector_names"] = _plan_sector_names_for_scope(p, scope)
+        plan_rows.append(row)
+
+    total_plans = len(plan_ids)
+    approved_count = plans_qs.filter(status=Plan.STATUS_APPROVED).count()
+    unlock_count = plans_qs.filter(status=Plan.STATUS_UNLOCK_REQUESTED).count()
+    draft_count = max(total_plans - approved_count - unlock_count, 0)
+    full_count = sum(1 for p in _plans_qs_for_scope(scope, week_obj=week_obj) if _plan_filled_count(p) == len(WEEKDAYS))
+
+    context = {
+        "scope": scope,
+        "week": week_obj.week_no,
+        "week_obj": week_obj,
+        "week_choices": _build_week_choices(active_only=False),
+        "kpi_total_plans": total_plans,
+        "kpi_approved": approved_count,
+        "kpi_draft": draft_count,
+        "kpi_unlock": unlock_count,
+        "kpi_full": full_count,
+        "kpi_assignments": assignment_qs.count(),
+        "kpi_schools": assignment_qs.values("school_id").distinct().count(),
+        "kpi_supervisors": len(_allowed_supervisor_ids(scope)),
+        "latest_plans": plan_rows,
+        "sectors": _scope_sectors_qs(scope),
+        "scope_sector_names": _readonly_scope_sector_names(scope),
+    }
+    return render(request, "visits/readonly_dashboard.html", context)
+
+
+@_readonly_access_required
+def readonly_plans_view(request: HttpRequest) -> HttpResponse:
+    scope: ReadOnlyScope = request.readonly_scope  # type: ignore[attr-defined]
+    week_no = _safe_int(request.GET.get("week") or _get_default_week_no(), default=_get_default_week_no())
+    week_obj = _resolve_week_or_404(week_no, allow_inactive=True)
+
+    q = _cell_str(request.GET.get("q"))
+    status = _cell_str(request.GET.get("status") or "all")
+    sector_id = _safe_int(request.GET.get("sector") or 0, default=0)
+
+    qs = _plans_qs_for_scope(scope, week_obj=week_obj)
+
+    if q:
+        qs = qs.filter(
+            Q(supervisor__full_name__icontains=q)
+            | Q(supervisor__national_id__icontains=q)
+            | Q(days__school__name__icontains=q)
+        ).distinct()
+
+    if status in ("approved", "draft", "unlock"):
+        mapping = {
+            "approved": Plan.STATUS_APPROVED,
+            "draft": Plan.STATUS_DRAFT,
+            "unlock": Plan.STATUS_UNLOCK_REQUESTED,
+        }
+        qs = qs.filter(status=mapping[status])
+    elif status == "not_full":
+        # تتم فلترة غير المكتملة بعد بناء الصفوف لأن اكتمال الخطة يعتمد على الأيام.
+        pass
+
+    if sector_id:
+        if not scope.all_scope and sector_id not in scope.sector_ids:
+            qs = qs.none()
+        else:
+            qs = qs.filter(
+                Q(supervisor__sector_id=sector_id)
+                | Q(supervisor__assignments__school__sector_id=sector_id, supervisor__assignments__is_active=True)
+            ).distinct()
+
+    rows = []
+    for p in qs:
+        row = _plan_row(p)
+        row["sector_names"] = _plan_sector_names_for_scope(p, scope)
+        rows.append(row)
+    if status == "not_full":
+        rows = [r for r in rows if not r["is_full"]]
+
+    paginator = Paginator(rows, _safe_int(request.GET.get("ps") or 25, default=25))
+    page_obj = paginator.get_page(_safe_int(request.GET.get("page") or 1, default=1))
+
+    return render(
+        request,
+        "visits/readonly_plans.html",
+        {
+            "scope": scope,
+            "week": week_obj.week_no,
+            "week_obj": week_obj,
+            "week_choices": _build_week_choices(active_only=False),
+            "rows": page_obj.object_list,
+            "page_obj": page_obj,
+            "q": q,
+            "status": status,
+            "sector_id": sector_id,
+            "sectors": _scope_sectors_qs(scope),
+            "scope_sector_names": _readonly_scope_sector_names(scope),
+        },
+    )
+
+
+@_readonly_access_required
+def readonly_plan_detail_view(request: HttpRequest, plan_id: int) -> HttpResponse:
+    scope: ReadOnlyScope = request.readonly_scope  # type: ignore[attr-defined]
+    qs = _plans_qs_for_scope(scope)
+    plan = get_object_or_404(qs, id=plan_id)
+    row = _plan_row(plan)
+
+    day_map = {d.weekday: d for d in plan.days.all()}
+    days = []
+    for wd, wd_name in WEEKDAYS:
+        days.append({"weekday": wd, "weekday_name": wd_name, "day": day_map.get(wd)})
+
+    assignments = Assignment.objects.filter(
+        supervisor=plan.supervisor,
+        is_active=True,
+        school__is_active=True,
+    ).select_related("school", "school__sector").order_by("school__name")
+
+    if not scope.all_scope:
+        assignments = assignments.filter(school__sector_id__in=scope.sector_ids)
+
+    return render(
+        request,
+        "visits/readonly_plan_detail.html",
+        {
+            "scope": scope,
+            "plan": plan,
+            "row": row,
+            "days": days,
+            "assignments": assignments,
+            "scope_sector_names": _readonly_scope_sector_names(scope),
+        },
+    )
+
+
+@_readonly_access_required
+def readonly_assignments_view(request: HttpRequest) -> HttpResponse:
+    scope: ReadOnlyScope = request.readonly_scope  # type: ignore[attr-defined]
+    q = _cell_str(request.GET.get("q"))
+    sector_id = _safe_int(request.GET.get("sector") or 0, default=0)
+    gender = _cell_str(request.GET.get("gender") or "")
+    active = _cell_str(request.GET.get("active") or "1")
+
+    qs = _assignments_qs_for_scope(scope)
+
+    if active == "1":
+        qs = qs.filter(is_active=True, school__is_active=True)
+    elif active == "0":
+        qs = qs.filter(Q(is_active=False) | Q(school__is_active=False))
+
+    if q:
+        qs = qs.filter(
+            Q(supervisor__full_name__icontains=q)
+            | Q(supervisor__national_id__icontains=q)
+            | Q(school__name__icontains=q)
+            | Q(school__stat_code__icontains=q)
+        )
+
+    if sector_id:
+        if not scope.all_scope and sector_id not in scope.sector_ids:
+            qs = qs.none()
+        else:
+            qs = qs.filter(school__sector_id=sector_id)
+
+    if gender in ("boys", "girls"):
+        qs = qs.filter(school__gender=gender)
+
+    paginator = Paginator(qs, _safe_int(request.GET.get("ps") or 30, default=30))
+    page_obj = paginator.get_page(_safe_int(request.GET.get("page") or 1, default=1))
+
+    return render(
+        request,
+        "visits/readonly_assignments.html",
+        {
+            "scope": scope,
+            "rows": page_obj.object_list,
+            "page_obj": page_obj,
+            "q": q,
+            "sector_id": sector_id,
+            "gender": gender,
+            "active": active,
+            "sectors": _scope_sectors_qs(scope),
+            "scope_sector_names": _readonly_scope_sector_names(scope),
+        },
+    )
+
+# =============================================================================
+# Admin - read-only viewer users management
+# =============================================================================
+def _readonly_access_groups():
+    from django.contrib.auth.models import Group
+
+    return Group.objects.filter(
+        Q(name__in=DEPARTMENT_GROUPS)
+        | Q(name__startswith="مدير وحدة:")
+        | Q(name__startswith="مدير وحدة -")
+        | Q(name__startswith="unit_manager:")
+        | Q(name__startswith="readonly_unit:")
+    ).order_by("name")
+
+
+def _clear_readonly_access_groups(user) -> None:
+    readonly_groups = _readonly_access_groups()
+    if readonly_groups.exists():
+        user.groups.remove(*list(readonly_groups))
+
+
+def _apply_readonly_access_groups(user, *, role: str, sector_ids: list[int]) -> None:
+    from django.contrib.auth.models import Group
+
+    _clear_readonly_access_groups(user)
+
+    if role == "department":
+        group, _ = Group.objects.get_or_create(name="مدير القسم")
+        user.groups.add(group)
+        return
+
+    if role == "unit":
+        for sector_id in sector_ids:
+            group, _ = Group.objects.get_or_create(name=f"مدير وحدة:{sector_id}")
+            user.groups.add(group)
+
+
+def _readonly_role_meta_for_user(user) -> dict[str, Any]:
+    groups = _user_group_names(user)
+
+    if groups & DEPARTMENT_GROUPS:
+        return {
+            "role": "department",
+            "role_label": "مدير القسم",
+            "sector_ids": [],
+            "sector_names": ["جميع القطاعات"],
+            "scope_label": "جميع الخطط والإسنادات",
+        }
+
+    sectors_by_name = {
+        (s.name or "").strip(): s.id
+        for s in Sector.objects.filter(is_active=True)
+        if (s.name or "").strip()
+    }
+    sectors_by_id = {s.id: s for s in Sector.objects.all()}
+
+    sector_ids: list[int] = []
+    for group_name in groups:
+        sid = _parse_sector_from_group_name(group_name, sectors_by_name)
+        if sid and sid not in sector_ids:
+            sector_ids.append(sid)
+
+    if sector_ids:
+        names = []
+        for sid in sector_ids:
+            sector = sectors_by_id.get(sid)
+            names.append(getattr(sector, "name", "") or f"قطاع {sid}")
+        return {
+            "role": "unit",
+            "role_label": "مدير وحدة",
+            "sector_ids": sector_ids,
+            "sector_names": names,
+            "scope_label": "، ".join(names),
+        }
+
+    return {
+        "role": "none",
+        "role_label": "بدون صلاحية اطلاع",
+        "sector_ids": [],
+        "sector_names": [],
+        "scope_label": "—",
+    }
+
+
+def _readonly_users_queryset():
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    group_ids = list(_readonly_access_groups().values_list("id", flat=True))
+    if not group_ids:
+        return User.objects.none()
+
+    return (
+        User.objects
+        .filter(groups__id__in=group_ids)
+        .distinct()
+        .prefetch_related("groups")
+        .order_by("first_name", "last_name", "username")
+    )
+
+
+def _viewer_user_display_name(user) -> str:
+    full = f"{getattr(user, 'first_name', '')} {getattr(user, 'last_name', '')}".strip()
+    return full or getattr(user, "username", "")
+
+
+def _parse_sector_ids_from_request(request: HttpRequest) -> list[int]:
+    sector_ids: list[int] = []
+    for value in request.POST.getlist("sectors"):
+        sid = _safe_int(value, default=0)
+        if sid and sid not in sector_ids:
+            sector_ids.append(sid)
+    return sector_ids
+
+
+def _validate_viewer_user_form(request: HttpRequest, *, existing_user=None) -> tuple[dict[str, Any], list[str]]:
+    username = _cell_str(request.POST.get("username"))
+    first_name = _cell_str(request.POST.get("first_name"))
+    last_name = _cell_str(request.POST.get("last_name"))
+    email = _cell_str(request.POST.get("email"))
+    role = _cell_str(request.POST.get("role") or "department")
+    is_active = _cell_str(request.POST.get("is_active") or "") in ("1", "on", "true", "yes")
+    password = request.POST.get("password") or ""
+    password2 = request.POST.get("password2") or ""
+    sector_ids = _parse_sector_ids_from_request(request)
+
+    errors: list[str] = []
+
+    if not username:
+        errors.append("اسم المستخدم مطلوب.")
+
+    if role not in ("department", "unit"):
+        errors.append("نوع الصلاحية غير صحيح.")
+
+    if role == "unit" and not sector_ids:
+        errors.append("مدير الوحدة يجب أن يرتبط بقطاع واحد على الأقل.")
+
+    valid_sector_ids = set(Sector.objects.filter(id__in=sector_ids).values_list("id", flat=True))
+    for sid in sector_ids:
+        if sid not in valid_sector_ids:
+            errors.append(f"القطاع رقم {sid} غير موجود.")
+
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+
+    if username:
+        qs = User.objects.filter(username=username)
+        if existing_user is not None:
+            qs = qs.exclude(id=existing_user.id)
+        if qs.exists():
+            errors.append("اسم المستخدم مستخدم مسبقًا.")
+
+    if existing_user is None:
+        if not password:
+            errors.append("كلمة المرور مطلوبة عند إنشاء الحساب.")
+    if password or password2:
+        if password != password2:
+            errors.append("كلمتا المرور غير متطابقتين.")
+        elif len(password) < 8:
+            errors.append("كلمة المرور يجب ألا تقل عن 8 أحرف.")
+
+    data = {
+        "username": username,
+        "first_name": first_name,
+        "last_name": last_name,
+        "email": email,
+        "role": role,
+        "is_active": is_active,
+        "password": password,
+        "sector_ids": sector_ids,
+    }
+    return data, errors
+
+
+@admin_only_view
+def admin_viewer_users_view(request: HttpRequest) -> HttpResponse:
+    q = _cell_str(request.GET.get("q"))
+    role = _cell_str(request.GET.get("role") or "all")
+    active = _cell_str(request.GET.get("active") or "all")
+
+    qs = _readonly_users_queryset()
+
+    if q:
+        qs = qs.filter(
+            Q(username__icontains=q)
+            | Q(first_name__icontains=q)
+            | Q(last_name__icontains=q)
+            | Q(email__icontains=q)
+        )
+
+    if active == "active":
+        qs = qs.filter(is_active=True)
+    elif active == "inactive":
+        qs = qs.filter(is_active=False)
+
+    rows = []
+    for user in qs:
+        meta = _readonly_role_meta_for_user(user)
+        if role in ("department", "unit") and meta["role"] != role:
+            continue
+        rows.append({"user": user, "meta": meta, "display_name": _viewer_user_display_name(user)})
+
+    paginator = Paginator(rows, _safe_int(request.GET.get("ps") or 20, default=20))
+    page_obj = paginator.get_page(_safe_int(request.GET.get("page") or 1, default=1))
+
+    context = {
+        "rows": page_obj.object_list,
+        "page_obj": page_obj,
+        "q": q,
+        "role": role,
+        "active": active,
+        "total_count": len(rows),
+        "active_count": sum(1 for row in rows if row["user"].is_active),
+        "department_count": sum(1 for row in rows if row["meta"]["role"] == "department"),
+        "unit_count": sum(1 for row in rows if row["meta"]["role"] == "unit"),
+    }
+    return render(request, "visits/admin_viewer_users.html", context)
+
+
+@admin_only_view
+def admin_viewer_user_create_view(request: HttpRequest) -> HttpResponse:
+    sectors = Sector.objects.filter(is_active=True).order_by("name")
+
+    initial = {
+        "username": "",
+        "first_name": "",
+        "last_name": "",
+        "email": "",
+        "role": "department",
+        "is_active": True,
+        "sector_ids": [],
+    }
+
+    if request.method == "POST":
+        data, errors = _validate_viewer_user_form(request, existing_user=None)
+        initial.update(data)
+
+        if not errors:
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            user = User.objects.create(
+                username=data["username"],
+                first_name=data["first_name"],
+                last_name=data["last_name"],
+                email=data["email"],
+                is_active=data["is_active"],
+                is_staff=False,
+                is_superuser=False,
+            )
+            user.set_password(data["password"])
+            user.save()
+            _apply_readonly_access_groups(user, role=data["role"], sector_ids=data["sector_ids"])
+            messages.success(request, "تم إنشاء حساب الاطلاع بنجاح.")
+            return redirect("visits:admin_viewer_users")
+
+        for error in errors:
+            messages.error(request, error)
+
+    return render(
+        request,
+        "visits/admin_viewer_user_form.html",
+        {
+            "mode": "create",
+            "form_data": initial,
+            "sectors": sectors,
+            "target_user": None,
+        },
+    )
+
+
+@admin_only_view
+def admin_viewer_user_edit_view(request: HttpRequest, user_id: int) -> HttpResponse:
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    target_user = get_object_or_404(User.objects.prefetch_related("groups"), id=user_id)
+
+    if target_user.is_staff or target_user.is_superuser:
+        messages.error(request, "لا يمكن تعديل مستخدم إداري من شاشة صلاحيات الاطلاع.")
+        return redirect("visits:admin_viewer_users")
+
+    meta = _readonly_role_meta_for_user(target_user)
+    if meta["role"] == "none":
+        messages.error(request, "هذا الحساب لا يملك صلاحية اطلاع.")
+        return redirect("visits:admin_viewer_users")
+
+    sectors = Sector.objects.filter(is_active=True).order_by("name")
+    initial = {
+        "username": target_user.username,
+        "first_name": target_user.first_name,
+        "last_name": target_user.last_name,
+        "email": target_user.email,
+        "role": meta["role"],
+        "is_active": target_user.is_active,
+        "sector_ids": meta["sector_ids"],
+    }
+
+    if request.method == "POST":
+        data, errors = _validate_viewer_user_form(request, existing_user=target_user)
+        initial.update(data)
+
+        if not errors:
+            target_user.username = data["username"]
+            target_user.first_name = data["first_name"]
+            target_user.last_name = data["last_name"]
+            target_user.email = data["email"]
+            target_user.is_active = data["is_active"]
+            target_user.is_staff = False
+            target_user.is_superuser = False
+            if data["password"]:
+                target_user.set_password(data["password"])
+            target_user.save()
+            _apply_readonly_access_groups(target_user, role=data["role"], sector_ids=data["sector_ids"])
+            messages.success(request, "تم تحديث حساب الاطلاع بنجاح.")
+            return redirect("visits:admin_viewer_users")
+
+        for error in errors:
+            messages.error(request, error)
+
+    return render(
+        request,
+        "visits/admin_viewer_user_form.html",
+        {
+            "mode": "edit",
+            "form_data": initial,
+            "sectors": sectors,
+            "target_user": target_user,
+        },
+    )
+
+
+@admin_only_view
+@require_POST
+def admin_viewer_user_toggle_view(request: HttpRequest, user_id: int) -> HttpResponse:
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    target_user = get_object_or_404(User, id=user_id)
+
+    if target_user.is_staff or target_user.is_superuser:
+        messages.error(request, "لا يمكن تعطيل حساب إداري من شاشة صلاحيات الاطلاع.")
+        return redirect("visits:admin_viewer_users")
+
+    meta = _readonly_role_meta_for_user(target_user)
+    if meta["role"] == "none":
+        messages.error(request, "هذا الحساب لا يملك صلاحية اطلاع.")
+        return redirect("visits:admin_viewer_users")
+
+    target_user.is_active = not target_user.is_active
+    target_user.save(update_fields=["is_active"])
+    messages.success(request, "تم تحديث حالة حساب الاطلاع.")
+    return redirect("visits:admin_viewer_users")
+
+
+@admin_only_view
+def admin_viewer_user_password_view(request: HttpRequest, user_id: int) -> HttpResponse:
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    target_user = get_object_or_404(User, id=user_id)
+
+    if target_user.is_staff or target_user.is_superuser:
+        messages.error(request, "لا يمكن تغيير كلمة مرور مستخدم إداري من هذه الشاشة.")
+        return redirect("visits:admin_viewer_users")
+
+    meta = _readonly_role_meta_for_user(target_user)
+    if meta["role"] == "none":
+        messages.error(request, "هذا الحساب لا يملك صلاحية اطلاع.")
+        return redirect("visits:admin_viewer_users")
+
+    if request.method == "POST":
+        password = request.POST.get("password") or ""
+        password2 = request.POST.get("password2") or ""
+
+        if not password:
+            messages.error(request, "كلمة المرور الجديدة مطلوبة.")
+        elif password != password2:
+            messages.error(request, "كلمتا المرور غير متطابقتين.")
+        elif len(password) < 8:
+            messages.error(request, "كلمة المرور يجب ألا تقل عن 8 أحرف.")
+        else:
+            target_user.set_password(password)
+            target_user.save(update_fields=["password"])
+            messages.success(request, "تم تغيير كلمة المرور بنجاح.")
+            return redirect("visits:admin_viewer_users")
+
+    return render(
+        request,
+        "visits/admin_viewer_user_password.html",
+        {
+            "target_user": target_user,
+            "meta": meta,
+            "display_name": _viewer_user_display_name(target_user),
+        },
+    )
+
+
+
+# =============================================================================
+# Read-only management portal refinements
+# ضع هذا الجزء في آخر visits/views.py ليحل محل دوال بوابة الاطلاع السابقة إن وجدت.
+# =============================================================================
+from django.contrib.auth import authenticate as _ro_authenticate, login as _ro_login, logout as _ro_logout
+from django.contrib.auth.models import Group
+from django.core.paginator import Paginator as _RoPaginator
+from django.db.models import Q as _RoQ
+from django.shortcuts import redirect as _ro_redirect, render as _ro_render, get_object_or_404 as _ro_get_object_or_404
+from django.contrib import messages as _ro_messages
+from django.views.decorators.http import require_POST as _ro_require_POST
+
+try:
+    from .models import Assignment as _RoAssignment, Plan as _RoPlan, PlanDay as _RoPlanDay, PlanWeek as _RoPlanWeek, Sector as _RoSector, School as _RoSchool, Supervisor as _RoSupervisor
+except Exception:  # عند وجود الأسماء مستوردة مسبقًا في views.py
+    _RoAssignment = Assignment
+    _RoPlan = Plan
+    _RoPlanDay = PlanDay
+    _RoPlanWeek = PlanWeek
+    _RoSector = Sector
+    _RoSchool = School
+    _RoSupervisor = Supervisor
+
+RO_DEPARTMENT_GROUP_NAMES = {"مدير القسم", "مدير قسم", "readonly_department", "readonly_department_manager", "department_manager"}
+RO_UNIT_GROUP_PREFIXES = ("مدير وحدة:", "مدير وحدة -", "مدير وحدة ", "readonly_unit:", "unit_manager:")
+RO_SUP_SESSION_KEY = globals().get("SESSION_SUP_ID", "visits_sup_id")
+
+
+def _ro_digits(value: object) -> str:
+    return "".join(ch for ch in str(value or "") if ch.isdigit())
+
+
+def _ro_safe_int(value: object, default: int = 0) -> int:
+    try:
+        return int(str(value).strip())
+    except Exception:
+        return default
+
+
+def _ro_active_weeks():
+    return _RoPlanWeek.objects.filter(is_break=False).order_by("week_no")
+
+
+def _ro_all_weeks():
+    return _RoPlanWeek.objects.all().order_by("week_no")
+
+
+def _ro_default_week_no() -> int:
+    week = _ro_active_weeks().first() or _ro_all_weeks().first()
+    return int(getattr(week, "week_no", 1) or 1)
+
+
+def _ro_week_choices():
+    out = []
+    for week in _ro_all_weeks():
+        label = f"الأسبوع {week.week_no}"
+        if getattr(week, "title", ""):
+            label += f" — {week.title}"
+        if getattr(week, "is_break", False):
+            label += " (إجازة)"
+        out.append((week.week_no, label))
+    return out
+
+
+def _ro_plan_status_label(plan) -> str:
+    status = getattr(plan, "status", "") or ""
+    if status == getattr(_RoPlan, "STATUS_APPROVED", "approved"):
+        return "معتمدة"
+    if status == getattr(_RoPlan, "STATUS_UNLOCK_REQUESTED", "unlock_requested"):
+        return "طلب فك اعتماد بانتظار الإدارة"
+    return "مسودة"
+
+
+def _ro_plan_status_code(plan) -> str:
+    status = getattr(plan, "status", "") or ""
+    if status == getattr(_RoPlan, "STATUS_APPROVED", "approved"):
+        return "approved"
+    if status == getattr(_RoPlan, "STATUS_UNLOCK_REQUESTED", "unlock_requested"):
+        return "unlock"
+    return "draft"
+
+
+def _ro_day_is_filled(day) -> bool:
+    if not day:
+        return False
+    if getattr(day, "school_id", None):
+        return True
+    return getattr(day, "visit_type", "") == getattr(_RoPlanDay, "VISIT_NONE", "none")
+
+
+def _ro_plan_filled_count(plan) -> int:
+    days = list(getattr(plan, "days").all()) if hasattr(plan, "days") else []
+    day_map = {getattr(day, "weekday", None): day for day in days}
+    return sum(1 for weekday in range(5) if _ro_day_is_filled(day_map.get(weekday)))
+
+
+def _ro_last_saved(plan):
+    for attr in ("updated_at", "saved_at", "modified_at", "created_at"):
+        value = getattr(plan, attr, None)
+        if value:
+            return value
+    return None
+
+
+def _ro_group_names(user) -> set[str]:
+    try:
+        return set(user.groups.values_list("name", flat=True))
+    except Exception:
+        return set()
+
+
+def _ro_is_department_manager(user) -> bool:
+    if getattr(user, "is_staff", False):
+        return True
+    groups = _ro_group_names(user)
+    return bool(groups & RO_DEPARTMENT_GROUP_NAMES)
+
+
+def _ro_unit_sector_ids(user) -> list[int]:
+    sector_ids: set[int] = set()
+    for group_name in _ro_group_names(user):
+        for prefix in RO_UNIT_GROUP_PREFIXES:
+            if group_name.startswith(prefix):
+                raw = group_name.split(":", 1)[1]
+                sid = _ro_safe_int(raw, 0)
+                if sid:
+                    sector_ids.add(sid)
+    return sorted(sector_ids)
+
+
+def _ro_can_view(user) -> bool:
+    return bool(
+        user
+        and user.is_authenticated
+        and getattr(user, "is_active", False)
+        and (_ro_is_department_manager(user) or bool(_ro_unit_sector_ids(user)))
+    )
+
+
+def _ro_access_profile(user) -> dict:
+    if _ro_is_department_manager(user):
+        sectors = list(_RoSector.objects.filter(is_active=True).order_by("name"))
+        return {
+            "role_code": "department",
+            "role_label": "مدير القسم" if not getattr(user, "is_staff", False) else "مدير النظام",
+            "scope_label": "جميع القطاعات",
+            "allowed_sector_ids": None,
+            "allowed_sectors": sectors,
+            "is_department": True,
+        }
+
+    sector_ids = _ro_unit_sector_ids(user)
+    sectors = list(_RoSector.objects.filter(id__in=sector_ids, is_active=True).order_by("name"))
+    return {
+        "role_code": "unit",
+        "role_label": "مدير وحدة",
+        "scope_label": "، ".join(s.name for s in sectors) if sectors else "لم يحدد نطاق الاطلاع",
+        "allowed_sector_ids": sector_ids,
+        "allowed_sectors": sectors,
+        "is_department": False,
+    }
+
+
+def _ro_require_viewer(view_func):
+    def _wrapped(request, *args, **kwargs):
+        if not _ro_can_view(getattr(request, "user", None)):
+            _ro_messages.warning(request, "يرجى تسجيل الدخول إلى بوابة الاطلاع.")
+            return _ro_redirect("visits:viewer_login")
+        # منع تداخل جلسة المشرف مع بوابة الاطلاع
+        request.session.pop(RO_SUP_SESSION_KEY, None)
+        return view_func(request, *args, **kwargs)
+    return _wrapped
+
+
+def _ro_scoped_schools_qs(profile: dict):
+    qs = _RoSchool.objects.filter(is_active=True).select_related("sector")
+    allowed = profile.get("allowed_sector_ids")
+    if allowed is not None:
+        qs = qs.filter(sector_id__in=allowed)
+    return qs
+
+
+def _ro_scoped_assignments_qs(profile: dict):
+    qs = (
+        _RoAssignment.objects
+        .filter(is_active=True, school__is_active=True)
+        .select_related("supervisor", "school", "school__sector")
+        .order_by("school__sector__name", "school__name", "supervisor__full_name")
+    )
+    allowed = profile.get("allowed_sector_ids")
+    if allowed is not None:
+        qs = qs.filter(school__sector_id__in=allowed)
+    return qs
+
+
+def _ro_scoped_supervisor_ids(profile: dict) -> list[int]:
+    return list(
+        _ro_scoped_assignments_qs(profile)
+        .values_list("supervisor_id", flat=True)
+        .distinct()
+    )
+
+
+def _ro_supervisor_sector_map(supervisor_ids: list[int], profile: dict) -> dict[int, str]:
+    """يعرض قطاعات المشرف من الإسنادات النشطة، وليس من الخطة فقط."""
+    if not supervisor_ids:
+        return {}
+
+    qs = (
+        _RoAssignment.objects
+        .filter(is_active=True, supervisor_id__in=supervisor_ids, school__is_active=True)
+        .select_related("school__sector")
+        .order_by("school__sector__name")
+    )
+    allowed = profile.get("allowed_sector_ids")
+    if allowed is not None:
+        qs = qs.filter(school__sector_id__in=allowed)
+
+    tmp: dict[int, list[str]] = {}
+    for assignment in qs:
+        sector_name = getattr(getattr(getattr(assignment, "school", None), "sector", None), "name", "") or "—"
+        tmp.setdefault(assignment.supervisor_id, [])
+        if sector_name not in tmp[assignment.supervisor_id]:
+            tmp[assignment.supervisor_id].append(sector_name)
+
+    return {sid: "، ".join(names) for sid, names in tmp.items()}
+
+
+def _ro_plan_rows(plans, profile: dict) -> list[dict]:
+    plans = list(plans)
+    supervisor_ids = [p.supervisor_id for p in plans]
+    sector_map = _ro_supervisor_sector_map(supervisor_ids, profile)
+    rows = []
+    for plan in plans:
+        filled = _ro_plan_filled_count(plan)
+        rows.append({
+            "plan": plan,
+            "supervisor": plan.supervisor,
+            "sector_names": sector_map.get(plan.supervisor_id, "—"),
+            "status_label": _ro_plan_status_label(plan),
+            "status_code": _ro_plan_status_code(plan),
+            "filled": filled,
+            "filled_label": f"{filled}/5",
+            "is_full": filled == 5,
+            "last_saved": _ro_last_saved(plan),
+        })
+    return rows
+
+
+def _ro_common_context(request, *, page_title: str = "بوابة الاطلاع") -> dict:
+    profile = _ro_access_profile(request.user)
+    return {
+        "viewer_profile": profile,
+        "viewer_role_label": profile["role_label"],
+        "viewer_scope_label": profile["scope_label"],
+        "viewer_allowed_sectors": profile["allowed_sectors"],
+        "viewer_page_title": page_title,
+    }
+
+
+def readonly_login_view(request):
+    # إزالة أي جلسة مشرف عند دخول بوابة الاطلاع
+    request.session.pop(RO_SUP_SESSION_KEY, None)
+
+    if request.user.is_authenticated and _ro_can_view(request.user):
+        return _ro_redirect("visits:viewer_dashboard")
+
+    if request.method == "POST":
+        username = (request.POST.get("username") or "").strip()
+        password = request.POST.get("password") or ""
+        user = _ro_authenticate(request, username=username, password=password)
+        if user and _ro_can_view(user):
+            _ro_login(request, user)
+            request.session.pop(RO_SUP_SESSION_KEY, None)
+            _ro_messages.success(request, "تم تسجيل الدخول إلى بوابة الاطلاع.")
+            return _ro_redirect("visits:viewer_dashboard")
+        _ro_messages.error(request, "بيانات الدخول غير صحيحة أو أن الحساب لا يملك صلاحية اطلاع.")
+
+    return _ro_render(request, "visits/readonly_login.html")
+
+
+def readonly_logout_view(request):
+    _ro_logout(request)
+    request.session.pop(RO_SUP_SESSION_KEY, None)
+    _ro_messages.success(request, "تم تسجيل الخروج من بوابة الاطلاع.")
+    return _ro_redirect("visits:viewer_login")
+
+
+@_ro_require_viewer
+def readonly_dashboard_view(request):
+    profile = _ro_access_profile(request.user)
+    week_no = _ro_safe_int(request.GET.get("week") or _ro_default_week_no(), _ro_default_week_no())
+    week_obj = _ro_get_object_or_404(_RoPlanWeek, week_no=week_no)
+
+    supervisor_ids = _ro_scoped_supervisor_ids(profile)
+    plans = (
+        _RoPlan.objects
+        .filter(week=week_obj, supervisor_id__in=supervisor_ids)
+        .select_related("supervisor", "week")
+        .prefetch_related("days")
+        .order_by("supervisor__full_name")
+    )
+
+    plan_rows = _ro_plan_rows(plans[:8], profile)
+    assignments = _ro_scoped_assignments_qs(profile)
+    schools_qs = _ro_scoped_schools_qs(profile)
+
+    context = _ro_common_context(request, page_title="لوحة الاطلاع")
+    context.update({
+        "week": week_no,
+        "week_obj": week_obj,
+        "week_choices": _ro_week_choices(),
+        "plans_count": plans.count(),
+        "approved_count": plans.filter(status=getattr(_RoPlan, "STATUS_APPROVED", "approved")).count(),
+        "draft_count": plans.filter(status=getattr(_RoPlan, "STATUS_DRAFT", "draft")).count(),
+        "unlock_count": plans.filter(status=getattr(_RoPlan, "STATUS_UNLOCK_REQUESTED", "unlock_requested")).count(),
+        "supervisors_count": len(supervisor_ids),
+        "schools_count": schools_qs.count(),
+        "assignments_count": assignments.count(),
+        "rows": plan_rows,
+    })
+    return _ro_render(request, "visits/readonly_dashboard.html", context)
+
+
+@_ro_require_viewer
+def readonly_plans_view(request):
+    profile = _ro_access_profile(request.user)
+    week_no = _ro_safe_int(request.GET.get("week") or _ro_default_week_no(), _ro_default_week_no())
+    status = (request.GET.get("status") or "all").strip()
+    q = (request.GET.get("q") or "").strip()
+    sector_id = _ro_safe_int(request.GET.get("sector") or 0, 0)
+
+    week_obj = _ro_get_object_or_404(_RoPlanWeek, week_no=week_no)
+
+    allowed = profile.get("allowed_sector_ids")
+    effective_allowed = allowed
+    if sector_id:
+        if allowed is None or sector_id in allowed:
+            effective_allowed = [sector_id]
+        else:
+            effective_allowed = []
+
+    scoped_profile = dict(profile)
+    scoped_profile["allowed_sector_ids"] = effective_allowed
+    supervisor_ids = _ro_scoped_supervisor_ids(scoped_profile)
+
+    plans_qs = (
+        _RoPlan.objects
+        .filter(week=week_obj, supervisor_id__in=supervisor_ids)
+        .select_related("supervisor", "week")
+        .prefetch_related("days")
+        .order_by("supervisor__full_name")
+    )
+
+    if q:
+        plans_qs = plans_qs.filter(
+            _RoQ(supervisor__full_name__icontains=q)
+            | _RoQ(supervisor__national_id__icontains=q)
+        )
+
+    approved_status = getattr(_RoPlan, "STATUS_APPROVED", "approved")
+    draft_status = getattr(_RoPlan, "STATUS_DRAFT", "draft")
+    unlock_status = getattr(_RoPlan, "STATUS_UNLOCK_REQUESTED", "unlock_requested")
+
+    plans_list_for_counts = list(plans_qs)
+    approved_count = sum(1 for p in plans_list_for_counts if p.status == approved_status)
+    draft_count = sum(1 for p in plans_list_for_counts if p.status == draft_status)
+    unlock_count = sum(1 for p in plans_list_for_counts if p.status == unlock_status)
+    not_full_count = sum(1 for p in plans_list_for_counts if _ro_plan_filled_count(p) < 5)
+
+    if status == "approved":
+        plans_filtered = [p for p in plans_list_for_counts if p.status == approved_status]
+    elif status == "draft":
+        plans_filtered = [p for p in plans_list_for_counts if p.status == draft_status]
+    elif status == "unlock":
+        plans_filtered = [p for p in plans_list_for_counts if p.status == unlock_status]
+    elif status == "not_full":
+        plans_filtered = [p for p in plans_list_for_counts if _ro_plan_filled_count(p) < 5]
+    else:
+        plans_filtered = plans_list_for_counts
+
+    paginator = _RoPaginator(plans_filtered, 20)
+    page_obj = paginator.get_page(request.GET.get("page") or 1)
+    rows = _ro_plan_rows(page_obj.object_list, profile)
+
+    context = _ro_common_context(request, page_title="خطط الزيارات")
+    context.update({
+        "week": week_no,
+        "week_obj": week_obj,
+        "week_choices": _ro_week_choices(),
+        "status": status,
+        "q": q,
+        "sector_id": sector_id,
+        "sector_choices": profile["allowed_sectors"],
+        "rows": rows,
+        "page_obj": page_obj,
+        "plans_count": len(plans_filtered),
+        "approved_count": approved_count,
+        "draft_count": draft_count,
+        "unlock_count": unlock_count,
+        "not_full_count": not_full_count,
+    })
+    return _ro_render(request, "visits/readonly_plans.html", context)
+
+@_ro_require_viewer
+def readonly_plan_detail_view(request, plan_id: int):
+    profile = _ro_access_profile(request.user)
+    supervisor_ids = _ro_scoped_supervisor_ids(profile)
+    plan = _ro_get_object_or_404(
+        _RoPlan.objects.select_related("supervisor", "week").prefetch_related("days", "days__school"),
+        id=plan_id,
+        supervisor_id__in=supervisor_ids,
+    )
+
+    sector_map = _ro_supervisor_sector_map([plan.supervisor_id], profile)
+    filled = _ro_plan_filled_count(plan)
+    day_map = {day.weekday: day for day in plan.days.all()}
+
+    weekday_names = [(0, "الأحد"), (1, "الإثنين"), (2, "الثلاثاء"), (3, "الأربعاء"), (4, "الخميس")]
+    day_rows = []
+    for wd, wd_name in weekday_names:
+        day = day_map.get(wd)
+        visit_label = "—"
+        school_or_reason = "—"
+        note = ""
+        if day:
+            try:
+                visit_label = day.get_visit_type_display()
+            except Exception:
+                visit_label = getattr(day, "visit_type", "") or "—"
+
+            if getattr(day, "school_id", None) and getattr(day, "school", None):
+                school_or_reason = day.school.name
+            elif getattr(day, "no_visit_reason", None):
+                try:
+                    school_or_reason = day.get_no_visit_reason_display()
+                except Exception:
+                    school_or_reason = getattr(day, "no_visit_reason", "") or "—"
+            note = getattr(day, "note", "") or ""
+
+        day_rows.append({
+            "weekday": wd_name,
+            "day": day,
+            "visit_label": visit_label,
+            "school_or_reason": school_or_reason,
+            "note": note,
+        })
+
+    context = _ro_common_context(request, page_title="تفاصيل الخطة")
+    context.update({
+        "plan": plan,
+        "sector_names": sector_map.get(plan.supervisor_id, "—"),
+        "status_label": _ro_plan_status_label(plan),
+        "status_code": _ro_plan_status_code(plan),
+        "filled": filled,
+        "filled_label": f"{filled}/5",
+        "is_full": filled == 5,
+        "last_saved": _ro_last_saved(plan),
+        "day_rows": day_rows,
+    })
+    return _ro_render(request, "visits/readonly_plan_detail.html", context)
+
+
+@_ro_require_viewer
+def readonly_assignments_view(request):
+    profile = _ro_access_profile(request.user)
+    q = (request.GET.get("q") or "").strip()
+    sector_id = _ro_safe_int(request.GET.get("sector") or 0, 0)
+
+    allowed = profile.get("allowed_sector_ids")
+    scoped_profile = dict(profile)
+    if sector_id:
+        if allowed is None or sector_id in allowed:
+            scoped_profile["allowed_sector_ids"] = [sector_id]
+        else:
+            scoped_profile["allowed_sector_ids"] = []
+
+    assignments = _ro_scoped_assignments_qs(scoped_profile)
+    if q:
+        assignments = assignments.filter(
+            _RoQ(supervisor__full_name__icontains=q)
+            | _RoQ(supervisor__national_id__icontains=q)
+            | _RoQ(school__name__icontains=q)
+            | _RoQ(school__stat_code__icontains=q)
+        )
+
+    paginator = _RoPaginator(assignments, 25)
+    page_obj = paginator.get_page(request.GET.get("page") or 1)
+
+    context = _ro_common_context(request, page_title="الإسنادات")
+    context.update({
+        "q": q,
+        "sector_id": sector_id,
+        "sector_choices": profile["allowed_sectors"],
+        "page_obj": page_obj,
+        "rows": page_obj.object_list,
+        "assignments_count": assignments.count(),
+        "schools_count": assignments.values("school_id").distinct().count(),
+        "supervisors_count": assignments.values("supervisor_id").distinct().count(),
+    })
+    return _ro_render(request, "visits/readonly_assignments.html", context)

@@ -1,0 +1,51 @@
+{% extends "visits/readonly_base.html" %}
+{% block title %}خطط الزيارات{% endblock %}
+{% block page_title %}خطط الزيارات{% endblock %}
+{% block page_subtitle %}استعراض خطط الزيارات حسب الأسبوع والحالة ونطاق الصلاحية، دون صلاحيات تعديل أو اعتماد.{% endblock %}
+{% block content %}
+<form class="ro-card ro-filter ro-filter-grid" method="get">
+  <div class="ro-field"><label>الأسبوع</label><select class="ro-select" name="week">{% for w,label in week_choices %}<option value="{{ w }}" {% if week == w %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="ro-field"><label>الحالة</label><select class="ro-select" name="status"><option value="all" {% if status == 'all' %}selected{% endif %}>الكل</option><option value="approved" {% if status == 'approved' %}selected{% endif %}>معتمدة</option><option value="draft" {% if status == 'draft' %}selected{% endif %}>مسودة</option><option value="unlock" {% if status == 'unlock' %}selected{% endif %}>طلب فك اعتماد</option><option value="not_full" {% if status == 'not_full' %}selected{% endif %}>غير مكتملة</option></select></div>
+  <div class="ro-field"><label>القطاع</label><select class="ro-select" name="sector"><option value="0">حسب الصلاحية</option>{% for sector in sector_choices %}<option value="{{ sector.id }}" {% if sector_id == sector.id %}selected{% endif %}>{{ sector.name }}</option>{% endfor %}</select></div>
+  <div class="ro-field"><label>بحث</label><input class="ro-input" name="q" value="{{ q }}" placeholder="اسم المشرف أو الهوية"></div>
+  <button class="ro-btn primary" type="submit">تطبيق</button>
+</form>
+
+<div class="ro-stats ro-stats-5">
+  <div class="ro-stat"><div><div class="label">خطط الأسبوع</div><div class="sub">حسب الفلاتر</div></div><div class="value">{{ plans_count }}</div></div>
+  <div class="ro-stat"><div><div class="label">معتمدة</div><div class="sub">للاطلاع فقط</div></div><div class="value">{{ approved_count }}</div></div>
+  <div class="ro-stat"><div><div class="label">مسودة</div><div class="sub">غير معتمدة</div></div><div class="value">{{ draft_count }}</div></div>
+  <div class="ro-stat"><div><div class="label">طلبات فك اعتماد</div><div class="sub">بانتظار إجراء إداري</div></div><div class="value">{{ unlock_count }}</div></div>
+  <div class="ro-stat"><div><div class="label">غير مكتملة</div><div class="sub">أقل من 5 أيام</div></div><div class="value">{{ not_full_count|default:0 }}</div></div>
+</div>
+
+<div class="ro-card">
+  <div class="ro-card-head">
+    <div>
+      <h2 class="ro-card-title">سجل الخطط</h2>
+      <div class="ro-note">القطاع يعرض من الإسنادات النشطة للمشرف، وليس من المدرسة المختارة في الخطة فقط.</div>
+    </div>
+  </div>
+  <div class="ro-table-wrap">
+    <table class="ro-table">
+      <thead><tr><th>المشرف</th><th>القطاع</th><th>الأسبوع</th><th>حالة الخطة</th><th>اكتمال الخطة</th><th>آخر حفظ</th><th>عرض</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td><span class="ro-name">{{ r.supervisor.full_name }}</span><span class="ro-sub">{{ r.supervisor.national_id }}</span></td>
+          <td><span class="ro-badge">{{ r.sector_names }}</span></td>
+          <td>الأسبوع {{ r.plan.week.week_no }}</td>
+          <td><span class="ro-badge {{ r.status_code }} {% if r.status_code == 'unlock' %}ro-status-split{% endif %}">{% if r.status_code == "unlock" %}<span>فك اعتماد</span><small>بانتظار الإدارة</small>{% else %}{{ r.status_label }}{% endif %}</span></td>
+          <td><span class="ro-badge {% if r.is_full %}full{% else %}partial{% endif %}">{{ r.filled_label }}</span></td>
+          <td>{% if r.last_saved %}{{ r.last_saved|date:"Y-m-d H:i" }}{% else %}—{% endif %}</td>
+          <td><a class="ro-btn" href="{% url 'visits:viewer_plan_detail' r.plan.id %}">تفاصيل</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="7" class="ro-empty">لا توجد نتائج مطابقة للفلاتر الحالية.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="ro-pager"><span>صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}</span><span>المعروض {{ page_obj.object_list|length }} من {{ page_obj.paginator.count }}</span></div>
+</div>
+{% endblock %}

@@ -1,0 +1,402 @@
+{% extends "visits/base.html" %}
+
+{% block title %}{% if mode == 'create' %}إضافة حساب اطلاع{% else %}تعديل حساب اطلاع{% endif %}{% endblock %}
+{% block header_title %}{% if mode == 'create' %}إضافة حساب اطلاع{% else %}تعديل حساب اطلاع{% endif %}{% endblock %}
+{% block header_subtitle %}إدارة حساب مخوّل بالاطلاع فقط، مع تحديد الدور ونطاق القطاعات دون منحه صلاحيات تنفيذية.{% endblock %}
+
+
+
+{% block hero %}
+  <div class="hero admin-viewer-hero-clean">
+    <div>
+      <h1>{% if mode == 'create' %}إضافة حساب اطلاع{% else %}تعديل حساب اطلاع{% endif %}</h1>
+      <p>إدارة حساب مخوّل بالاطلاع فقط، مع تحديد الدور ونطاق القطاعات دون منحه صلاحيات تنفيذية.</p>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+
+  .admin-viewer-hero-clean{
+    align-items:flex-start;
+  }
+
+  .admin-viewer-hero-clean > div{
+    max-width:760px;
+  }
+  .viewer-form-page{
+    display:grid;
+    gap:12px;
+    direction:rtl;
+    max-width:1120px;
+    margin:0 auto;
+  }
+
+  .viewer-form-card{
+    background:#fff;
+    border:1px solid var(--vp-line);
+    border-radius:20px;
+    box-shadow:var(--vp-shadow-soft);
+    padding:14px;
+  }
+
+  .viewer-form-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    padding-bottom:10px;
+    border-bottom:1px solid var(--vp-line-2);
+    margin-bottom:10px;
+  }
+
+  .viewer-form-head h2{
+    margin:0;
+    color:var(--vp-primary);
+    font-size:15px;
+    font-weight:var(--fw-title, 600);
+    line-height:1.5;
+  }
+
+  .viewer-form-head p{
+    margin:3px 0 0;
+    color:var(--vp-text-soft);
+    font-size:12px;
+    line-height:1.8;
+  }
+
+  .viewer-form-note{
+    margin:0 0 12px;
+    padding:9px 12px;
+    border-radius:14px;
+    border:1px solid var(--vp-info-border);
+    background:var(--vp-info-bg);
+    color:var(--vp-info-text);
+    font-size:12px;
+    line-height:1.8;
+    font-weight:var(--fw-normal, 400);
+  }
+
+  .viewer-form-section{
+    display:grid;
+    gap:10px;
+    padding:10px 0 12px;
+    border-bottom:1px solid var(--vp-line-2);
+  }
+
+  .viewer-form-section:last-of-type{
+    border-bottom:0;
+    padding-bottom:0;
+  }
+
+  .viewer-form-section-title{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .viewer-form-section-title h3{
+    margin:0;
+    color:var(--vp-primary);
+    font-size:13px;
+    font-weight:var(--fw-title, 600);
+    line-height:1.5;
+  }
+
+  .viewer-form-section-title p{
+    margin:0;
+    color:var(--vp-text-soft);
+    font-size:11.4px;
+    line-height:1.75;
+  }
+
+  .viewer-form-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+  }
+
+  .viewer-form-grid.three{
+    grid-template-columns:1fr 1fr .65fr;
+  }
+
+  .viewer-form-field{
+    display:grid;
+    gap:5px;
+    min-width:0;
+  }
+
+  .viewer-form-field.full{
+    grid-column:1/-1;
+  }
+
+  .viewer-form-field label{
+    color:var(--vp-text-soft);
+    font-size:11.5px;
+    font-weight:var(--fw-mid, 500);
+    line-height:1.5;
+  }
+
+  .viewer-form-input,
+  .viewer-form-select{
+    width:100%;
+    height:38px;
+    border-radius:12px;
+    border:1px solid var(--vp-line);
+    background:#fff;
+    padding:0 11px;
+    font-family:inherit;
+    font-size:12.3px;
+    color:var(--vp-text);
+    outline:none;
+  }
+
+  .viewer-form-input:focus,
+  .viewer-form-select:focus{
+    border-color:var(--vp-primary-soft-border);
+    box-shadow:0 0 0 3px rgba(31,75,58,.06);
+  }
+
+  .viewer-form-help{
+    color:var(--vp-text-faint);
+    font-size:10.8px;
+    line-height:1.7;
+    font-weight:var(--fw-normal, 400);
+  }
+
+  .viewer-form-active{
+    height:38px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    border-radius:12px;
+    border:1px solid var(--vp-line);
+    background:#fff;
+    padding:0 11px;
+    color:var(--vp-text);
+    font-size:12px;
+  }
+
+  .viewer-sector-box{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:7px;
+    padding:9px;
+    border:1px solid var(--vp-line);
+    border-radius:14px;
+    background:#fff;
+  }
+
+  .viewer-sector-item{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    min-height:34px;
+    border:1px solid var(--vp-line-2);
+    border-radius:11px;
+    background:#fbfcfb;
+    padding:0 9px;
+    color:var(--vp-text);
+    font-size:11.7px;
+    line-height:1.5;
+  }
+
+  .viewer-sector-item input,
+  .viewer-form-active input{
+    accent-color:var(--vp-primary);
+  }
+
+  .viewer-form-actions{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:8px;
+    flex-wrap:wrap;
+    padding-top:14px;
+  }
+
+  .viewer-form-btn{
+    appearance:none;
+    min-height:36px;
+    padding:0 14px;
+    border-radius:999px;
+    border:1px solid var(--vp-line-strong);
+    background:#fff;
+    color:var(--vp-text);
+    font-family:inherit;
+    font-size:12.3px;
+    font-weight:var(--fw-mid, 500);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+
+  .viewer-form-btn.primary{
+    background:var(--vp-primary);
+    border-color:var(--vp-primary);
+    color:#fff;
+  }
+
+  @media(max-width:900px){
+    .viewer-form-grid,
+    .viewer-form-grid.three{
+      grid-template-columns:1fr;
+    }
+
+    .viewer-sector-box{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+  }
+
+  @media(max-width:560px){
+    .viewer-sector-box{
+      grid-template-columns:1fr;
+    }
+
+    .viewer-form-actions{
+      display:grid;
+      grid-template-columns:1fr;
+    }
+
+    .viewer-form-btn{
+      width:100%;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="viewer-form-page">
+  <form method="post" class="viewer-form-card">
+    {% csrf_token %}
+
+    <div class="viewer-form-head">
+      <div>
+        <h2>{% if mode == 'create' %}إضافة حساب اطلاع{% else %}تعديل حساب اطلاع{% endif %}</h2>
+        <p>اسم الشخص المخوّل يظهر أعلى بوابة الاطلاع، أما أسماء المشرفين أصحاب الخطط فتظهر داخل صفحات الخطط فقط.</p>
+      </div>
+    </div>
+
+    <div class="viewer-form-note">
+      هذا الحساب مخصص للاطلاع فقط، ولا يمنح صاحبه صلاحيات تعديل أو اعتماد أو دخول صفحات الإدارة التنفيذية.
+    </div>
+
+    <div class="viewer-form-section">
+      <div class="viewer-form-section-title">
+        <h3>بيانات الدخول</h3>
+        <p>تستخدم هذه البيانات للدخول من صفحة بوابة الاطلاع.</p>
+      </div>
+
+      <div class="viewer-form-grid">
+        <div class="viewer-form-field">
+          <label>اسم المستخدم</label>
+          <input class="viewer-form-input" name="username" value="{{ form_data.username }}" required>
+        </div>
+
+        <div class="viewer-form-field">
+          <label>البريد الإلكتروني</label>
+          <input class="viewer-form-input" type="email" name="email" value="{{ form_data.email }}">
+        </div>
+
+        <div class="viewer-form-field">
+          <label>كلمة المرور {% if mode == 'edit' %}<span class="viewer-form-help">اختياري</span>{% endif %}</label>
+          <input class="viewer-form-input" type="password" name="password" {% if mode == 'create' %}required{% endif %}>
+        </div>
+
+        <div class="viewer-form-field">
+          <label>تأكيد كلمة المرور</label>
+          <input class="viewer-form-input" type="password" name="password2" {% if mode == 'create' %}required{% endif %}>
+        </div>
+      </div>
+    </div>
+
+    <div class="viewer-form-section">
+      <div class="viewer-form-section-title">
+        <h3>بيانات الظهور</h3>
+        <p>الاسم الأول والأخير هما الاسم الظاهر أعلى بوابة الاطلاع للشخص المخوّل.</p>
+      </div>
+
+      <div class="viewer-form-grid">
+        <div class="viewer-form-field">
+          <label>الاسم الأول</label>
+          <input class="viewer-form-input" name="first_name" value="{{ form_data.first_name }}">
+        </div>
+
+        <div class="viewer-form-field">
+          <label>الاسم الأخير</label>
+          <input class="viewer-form-input" name="last_name" value="{{ form_data.last_name }}">
+        </div>
+      </div>
+    </div>
+
+    <div class="viewer-form-section">
+      <div class="viewer-form-section-title">
+        <h3>الصلاحية ونطاق الاطلاع</h3>
+        <p>مدير القسم يرى جميع القطاعات، ومدير الوحدة يرى القطاعات المحددة فقط.</p>
+      </div>
+
+      <div class="viewer-form-grid three">
+        <div class="viewer-form-field">
+          <label>نوع الصلاحية</label>
+          <select class="viewer-form-select" name="role" id="viewerRole">
+            <option value="department" {% if form_data.role == 'department' %}selected{% endif %}>مدير القسم — جميع القطاعات</option>
+            <option value="unit" {% if form_data.role == 'unit' %}selected{% endif %}>مدير وحدة — قطاعات محددة</option>
+          </select>
+        </div>
+
+        <div class="viewer-form-field">
+          <label>حالة الحساب</label>
+          <label class="viewer-form-active">
+            <input type="checkbox" name="is_active" value="1" {% if form_data.is_active %}checked{% endif %}>
+            مفعل
+          </label>
+        </div>
+
+        <div class="viewer-form-field full" id="sectorsBox">
+          <label>القطاعات لمدير الوحدة</label>
+          <div class="viewer-sector-box">
+            {% for s in sectors %}
+              <label class="viewer-sector-item">
+                <input type="checkbox" name="sectors" value="{{ s.id }}" {% if s.id in form_data.sector_ids %}checked{% endif %}>
+                {{ s.name }}
+              </label>
+            {% empty %}
+              <div class="viewer-form-help">لا توجد قطاعات نشطة.</div>
+            {% endfor %}
+          </div>
+          <div class="viewer-form-help">إذا كان الدور مدير القسم فلن يتم استخدام اختيار القطاعات.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="viewer-form-actions">
+      <a class="viewer-form-btn" href="{% url 'visits:admin_viewer_users' %}">رجوع</a>
+      <button class="viewer-form-btn primary" type="submit">حفظ الحساب</button>
+    </div>
+  </form>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function(){
+  const role = document.getElementById('viewerRole');
+  const box = document.getElementById('sectorsBox');
+  function sync(){
+    if(!role || !box) return;
+    box.style.opacity = role.value === 'unit' ? '1' : '.55';
+  }
+  if(role){
+    role.addEventListener('change', sync);
+    sync();
+  }
+})();
+</script>
+{% endblock %}

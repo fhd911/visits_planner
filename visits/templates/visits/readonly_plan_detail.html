@@ -1,0 +1,91 @@
+{% extends "visits/readonly_base.html" %}
+
+{% block title %}تفاصيل الخطة{% endblock %}
+{% block page_title %}تفاصيل الخطة{% endblock %}
+{% block page_subtitle %}عرض خطة المشرف للقراءة فقط، دون صلاحيات تعديل أو اعتماد أو إرسال تنبيهات.{% endblock %}
+
+{% block content %}
+<section class="ro-detail-page">
+
+  <div class="ro-detail-guard">
+    <span class="ro-detail-guard-main">الصلاحية: اطلاع فقط</span>
+    <span>هذه الصفحة مخصصة للعرض، ولا تتيح تعديل الخطة أو اعتمادها أو إعادة إرسالها.</span>
+  </div>
+
+  <div class="ro-card ro-detail-summary-card">
+    <div class="ro-detail-topline">
+      <div class="ro-detail-person">
+        <div class="ro-detail-avatar">{{ plan.supervisor.full_name|slice:":1" }}</div>
+        <div class="ro-detail-person-text">
+          <h2>{{ plan.supervisor.full_name }}</h2>
+          <div class="ro-detail-meta">
+            <span>الهوية: <b>{{ plan.supervisor.national_id }}</b></span>
+            <span>الأسبوع: <b>{{ plan.week.week_no }}</b></span>
+            <span>القطاع: <b>{{ sector_names }}</b></span>
+          </div>
+        </div>
+      </div>
+
+      <a class="ro-btn soft ro-detail-back" href="{% url 'visits:viewer_plans' %}?week={{ plan.week.week_no }}">
+        العودة للخطط
+      </a>
+    </div>
+
+    <div class="ro-detail-metrics">
+      <div class="ro-detail-metric">
+        <div class="label">حالة الخطة</div>
+        <div class="value">
+          {% if status_code == "unlock" %}
+            <span class="ro-badge warn ro-status-split">فك اعتماد<small>بانتظار الإدارة</small></span>
+          {% else %}
+            <span class="ro-badge {% if status_code == 'approved' %}ok{% elif status_code == 'draft' %}draft{% else %}warn{% endif %}">{{ status_label }}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="ro-detail-metric">
+        <div class="label">اكتمال الخطة</div>
+        <div class="value"><span class="ro-badge {% if is_full %}ok{% else %}warn{% endif %}">{{ filled_label }}</span></div>
+      </div>
+
+      <div class="ro-detail-metric ro-detail-last-saved">
+        <div class="label">آخر حفظ</div>
+        <div class="value">{% if last_saved %}{{ last_saved|date:"Y-m-d H:i" }}{% else %}—{% endif %}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ro-card ro-detail-days-card">
+    <div class="ro-card-head ro-detail-section-head">
+      <div>
+        <h2 class="ro-card-title">أيام الخطة</h2>
+        <div class="ro-note">عرض مختصر لأيام الأسبوع ونوع الزيارة والمدرسة أو سبب عدم الزيارة.</div>
+      </div>
+    </div>
+
+    <div class="ro-table-wrap ro-detail-table-wrap">
+      <table class="ro-table ro-detail-table">
+        <thead>
+          <tr>
+            <th>اليوم</th>
+            <th>نوع الزيارة</th>
+            <th>المدرسة / سبب اليوم</th>
+            <th>ملاحظة</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for d in day_rows %}
+            <tr>
+              <td class="ro-day-name">{{ d.weekday }}</td>
+              <td><span class="ro-badge">{{ d.visit_label }}</span></td>
+              <td class="ro-school-cell">{{ d.school_or_reason }}</td>
+              <td class="ro-note-cell">{{ d.note|default:"—" }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</section>
+{% endblock %}

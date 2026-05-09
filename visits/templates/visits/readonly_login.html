@@ -1,0 +1,14 @@
+{% extends "visits/readonly_base.html" %}
+{% block title %}دخول بوابة الاطلاع{% endblock %}
+{% block page_title %}بوابة الاطلاع{% endblock %}
+{% block page_subtitle %}دخول مدير القسم ومديري الوحدات للاطلاع على الخطط والإسنادات فقط.{% endblock %}
+{% block content %}
+<div class="ro-card ro-login-card">
+  <form method="post" class="ro-login-form">
+    {% csrf_token %}
+    <div class="ro-field"><label>اسم المستخدم</label><input class="ro-input" name="username" autocomplete="username" required></div>
+    <div class="ro-field"><label>كلمة المرور</label><input class="ro-input" type="password" name="password" autocomplete="current-password" required></div>
+    <button class="ro-btn primary" type="submit">دخول</button>
+  </form>
+</div>
+{% endblock %}

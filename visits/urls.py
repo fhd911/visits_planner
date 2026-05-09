@@ -119,6 +119,24 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
 
     # =========================================================
+    # بوابة الاطلاع فقط - مدير القسم ومديرو الوحدات
+    # =========================================================
+    path("viewer-login/", views.readonly_login_view, name="viewer_login"),
+    path("viewer-logout/", views.readonly_logout_view, name="viewer_logout"),
+    path("viewer/", views.readonly_dashboard_view, name="viewer_dashboard"),
+    path("viewer/plans/", views.readonly_plans_view, name="viewer_plans"),
+    path("viewer/plans/<int:plan_id>/", views.readonly_plan_detail_view, name="viewer_plan_detail"),
+    path("viewer/assignments/", views.readonly_assignments_view, name="viewer_assignments"),
+
+    # أسماء توافقية قديمة لبوابة الاطلاع
+    path("viewer-login/", views.readonly_login_view, name="readonly_login"),
+    path("viewer-logout/", views.readonly_logout_view, name="readonly_logout"),
+    path("viewer/", views.readonly_dashboard_view, name="readonly_dashboard"),
+    path("viewer/plans/", views.readonly_plans_view, name="readonly_plans"),
+    path("viewer/plans/<int:plan_id>/", views.readonly_plan_detail_view, name="readonly_plan_detail"),
+    path("viewer/assignments/", views.readonly_assignments_view, name="readonly_assignments"),
+
+    # =========================================================
     # بوابة المشرف
     # =========================================================
     path("dashboard/", views.supervisor_dashboard_view, name="supervisor_dashboard"),
@@ -401,6 +419,18 @@ urlpatterns = [
     path("manager/weekly-letter-links/<int:pk>/edit/", views.weekly_letter_link_edit_view, name="weekly_letter_link_edit"),
     path("manager/weekly-letter-links/<int:pk>/delete/", views.weekly_letter_link_delete_view, name="weekly_letter_link_delete"),
     path("manager/weekly-letters-drive/<int:week_number>/", views.weekly_letters_drive_view, name="weekly_letters_drive"),
+    path("manager/weekly-letter-status/", views.admin_weekly_letter_status_view, name="admin_weekly_letter_status"),
+    path("manager/weekly-letter-status/export.xlsx", views.admin_weekly_letter_status_export_excel_view, name="admin_weekly_letter_status_export_excel"),
+
+
+    # =========================================================
+    # الإدارة - صلاحيات الاطلاع
+    # =========================================================
+    path("manager/viewer-users/", views.admin_viewer_users_view, name="admin_viewer_users"),
+    path("manager/viewer-users/add/", views.admin_viewer_user_create_view, name="admin_viewer_user_create"),
+    path("manager/viewer-users/<int:user_id>/edit/", views.admin_viewer_user_edit_view, name="admin_viewer_user_edit"),
+    path("manager/viewer-users/<int:user_id>/toggle/", views.admin_viewer_user_toggle_view, name="admin_viewer_user_toggle"),
+    path("manager/viewer-users/<int:user_id>/password/", views.admin_viewer_user_password_view, name="admin_viewer_user_password"),
 
     # =========================================================
     # الإدارة - الاستيراد

@@ -1,4 +1,4 @@
-{% load static %}
+{% load static admin_badges %}
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
@@ -952,6 +952,99 @@
       }
     }
 
+
+    /* تنبيه طلبات فك الاعتماد في الهيدر */
+    .nav a.has-alert,
+    .nav-trigger.has-alert{
+      border-color:rgba(234,214,180,.36);
+      background:rgba(252,248,242,.14);
+    }
+
+    .nav-badge{
+      min-width:20px;
+      height:20px;
+      padding:0 6px;
+      border-radius:999px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      background:#b42318;
+      color:#fff;
+      font-size:10.4px;
+      font-weight:700;
+      line-height:1;
+      margin-inline-start:4px;
+      box-shadow:0 0 0 2px rgba(255,255,255,.16);
+    }
+
+    .topbar-alert{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      padding:9px 12px;
+      border-radius:16px;
+      border:1px solid rgba(234,214,180,.35);
+      background:linear-gradient(180deg, rgba(252,248,242,.16), rgba(255,255,255,.08));
+      color:#fff;
+      font-size:12.3px;
+      font-weight:var(--fw-mid);
+      line-height:1.8;
+    }
+
+    .topbar-alert strong{
+      color:#fff;
+      font-weight:var(--fw-title);
+    }
+
+    .topbar-alert .alert-main{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      min-width:0;
+    }
+
+    .topbar-alert .alert-icon{
+      width:25px;
+      height:25px;
+      border-radius:999px;
+      display:inline-grid;
+      place-items:center;
+      background:rgba(255,255,255,.13);
+      border:1px solid rgba(255,255,255,.16);
+      flex:0 0 auto;
+      font-size:12px;
+    }
+
+    .topbar-alert .alert-link{
+      min-height:30px;
+      padding:0 12px;
+      border-radius:999px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      background:#fff;
+      color:var(--vp-primary);
+      border:1px solid rgba(255,255,255,.78);
+      font-size:11.5px;
+      font-weight:var(--fw-strong);
+      white-space:nowrap;
+      box-shadow:0 6px 14px rgba(22,36,29,.10);
+    }
+
+    @media (max-width: 768px){
+      .topbar-alert{
+        padding:8px 10px;
+        font-size:11.5px;
+      }
+
+      .topbar-alert .alert-link{
+        width:100%;
+      }
+    }
+
+
   </style>
 
   <link rel="stylesheet" href="{% static 'visits/css/mobile.css' %}?v=20260509-4">
@@ -992,6 +1085,10 @@
       </div>
     </div>
 
+    {% if request.user.is_staff %}
+      {% pending_unlock_requests_count as pending_unlock_count %}
+    {% endif %}
+
     <div class="topbar-navrow">
       <nav class="nav">
         {% if request.session.visits_sup_id %}
@@ -1022,8 +1119,11 @@
           </a>
 
           <a href="{% url 'visits:admin_control_followups' %}"
-             class="{% if url_name == 'admin_control_followups' or url_name == 'admin_control_followups_export_excel' or url_name == 'admin_control_followup_notify' or url_name == 'admin_control_followup_update' %}active{% endif %}">
+             class="{% if url_name == 'admin_control_followups' or url_name == 'admin_control_followups_export_excel' or url_name == 'admin_control_followup_notify' or url_name == 'admin_control_followup_update' %}active {% endif %}{% if pending_unlock_count %}has-alert{% endif %}">
             مركز القرارات
+            {% if pending_unlock_count %}
+              <span class="nav-badge" title="طلبات فك اعتماد بانتظار القرار">{{ pending_unlock_count }}</span>
+            {% endif %}
           </a>
 
           <a href="{% url 'visits:admin_reports' %}"
@@ -1079,6 +1179,16 @@
         {% endif %}
       </div>
     </div>
+
+    {% if request.user.is_staff and pending_unlock_count %}
+      <div class="topbar-alert unlock-alert" role="status" aria-live="polite">
+        <div class="alert-main">
+          <span class="alert-icon">🔓</span>
+          <span>يوجد <strong>{{ pending_unlock_count }}</strong> طلب فك اعتماد بانتظار القرار الإداري.</span>
+        </div>
+        <a class="alert-link" href="{% url 'visits:admin_dashboard' %}?status=unlock">عرض طلبات فك الاعتماد</a>
+      </div>
+    {% endif %}
 
   </div>
 </header>

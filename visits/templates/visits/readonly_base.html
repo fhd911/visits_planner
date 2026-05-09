@@ -1,0 +1,74 @@
+{% load static %}
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}بوابة الاطلاع{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  {% include "visits/readonly_base_style.html" %}
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+{% with url_name=request.resolver_match.url_name %}
+<header class="ro-topbar">
+  <div class="ro-inner">
+    <div class="ro-brand">
+      <div class="ro-logo">ط</div>
+      <div>
+        <div class="ro-title">نظام زيارات المشرفين</div>
+        <div class="ro-subtitle">بوابة الاطلاع — قسم الإدارة المدرسية — تعليم عسير</div>
+      </div>
+    </div>
+
+    <div class="ro-pills">
+      <span class="ro-pill ro-viewer-user-pill" title="الشخص المخوّل بدخول بوابة الاطلاع"><span class="dot"></span>{% firstof request.user.get_full_name request.user.username %}</span>
+      <span class="ro-pill"><span class="dot"></span>{{ viewer_scope_label|default:"نطاق الاطلاع" }}</span>
+      <span class="ro-pill"><span class="dot"></span>اليوم: {% now "d-m-Y" %}</span>
+    </div>
+
+    <nav class="ro-nav">
+      <a href="{% url 'visits:viewer_dashboard' %}" class="{% if url_name == 'viewer_dashboard' %}active{% endif %}">لوحة الاطلاع</a>
+      <a href="{% url 'visits:viewer_plans' %}" class="{% if url_name == 'viewer_plans' or url_name == 'viewer_plan_detail' %}active{% endif %}">خطط الزيارات</a>
+      <a href="{% url 'visits:viewer_assignments' %}" class="{% if url_name == 'viewer_assignments' %}active{% endif %}">الإسنادات</a>
+      <a href="{% url 'visits:viewer_logout' %}">خروج</a>
+    </nav>
+  </div>
+</header>
+{% endwith %}
+
+<main class="ro-page">
+  <section class="ro-shell">
+    <div class="ro-hero">
+      <div>
+        <h1>{% block page_title %}{{ viewer_page_title|default:"بوابة الاطلاع" }}{% endblock %}</h1>
+        <p>{% block page_subtitle %}استعراض الخطط والإسنادات حسب نطاق الصلاحية، دون صلاحيات تعديل أو اعتماد أو حذف.{% endblock %}</p>
+      </div>
+      <div class="ro-role-card">
+        <span>الدور: <b>{{ viewer_role_label|default:"—" }}</b></span>
+        <span>نطاق الاطلاع: <b>{{ viewer_scope_label|default:"—" }}</b></span>
+        <span class="readonly-mark">الصلاحية: اطلاع فقط</span>
+      </div>
+    </div>
+
+    {% if messages %}
+      <div class="ro-messages">
+        {% for message in messages %}
+          <div class="ro-message {{ message.tags|default:'info' }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </section>
+</main>
+
+<footer class="ro-footer">
+  <div>© منصة خطة الزيارات — جميع الحقوق محفوظة</div>
+  <div>الإصدار: 2026</div>
+</footer>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

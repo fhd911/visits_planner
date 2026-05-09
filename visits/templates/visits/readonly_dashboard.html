@@ -1,0 +1,53 @@
+{% extends "visits/readonly_base.html" %}
+{% block title %}لوحة الاطلاع{% endblock %}
+{% block page_title %}لوحة الاطلاع{% endblock %}
+{% block page_subtitle %}عرض مختصر للخطط والإسنادات ضمن نطاق الصلاحية دون صلاحيات تعديل أو اعتماد.{% endblock %}
+{% block content %}
+<form class="ro-card ro-filter ro-filter-dashboard" method="get">
+  <div class="ro-field">
+    <label>الأسبوع</label>
+    <select class="ro-select" name="week">
+      {% for w,label in week_choices %}<option value="{{ w }}" {% if week == w %}selected{% endif %}>{{ label }}</option>{% endfor %}
+    </select>
+  </div>
+  <button class="ro-btn primary" type="submit">تطبيق</button>
+</form>
+
+<div class="ro-stats ro-stats-6">
+  <div class="ro-stat"><div><div class="label">خطط الأسبوع</div><div class="sub">حسب نطاق الاطلاع</div></div><div class="value">{{ plans_count }}</div></div>
+  <div class="ro-stat"><div><div class="label">معتمدة</div><div class="sub">للاطلاع فقط</div></div><div class="value">{{ approved_count }}</div></div>
+  <div class="ro-stat"><div><div class="label">مسودة</div><div class="sub">غير معتمدة</div></div><div class="value">{{ draft_count }}</div></div>
+  <div class="ro-stat"><div><div class="label">طلبات فك اعتماد</div><div class="sub">معلومة فقط</div></div><div class="value">{{ unlock_count }}</div></div>
+  <div class="ro-stat"><div><div class="label">المشرفون ضمن النطاق</div><div class="sub">لديهم إسناد نشط</div></div><div class="value">{{ supervisors_count }}</div></div>
+  <div class="ro-stat"><div><div class="label">المدارس المسندة</div><div class="sub">مدارس نشطة</div></div><div class="value">{{ schools_count }}</div></div>
+</div>
+
+<div class="ro-card">
+  <div class="ro-card-head">
+    <div>
+      <h2 class="ro-card-title">آخر خطط الأسبوع</h2>
+      <div class="ro-note">عرض مختصر لأحدث الخطط ضمن نطاق الصلاحية.</div>
+    </div>
+    <a class="ro-btn soft" href="{% url 'visits:viewer_plans' %}?week={{ week }}">عرض الكل</a>
+  </div>
+  <div class="ro-table-wrap">
+    <table class="ro-table">
+      <thead><tr><th>المشرف</th><th>القطاع</th><th>حالة الخطة</th><th>اكتمال الخطة</th><th>آخر حفظ</th><th>عرض</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td><span class="ro-name">{{ r.supervisor.full_name }}</span><span class="ro-sub">{{ r.supervisor.national_id }}</span></td>
+          <td><span class="ro-badge">{{ r.sector_names }}</span></td>
+          <td><span class="ro-badge {{ r.status_code }} {% if r.status_code == 'unlock' %}ro-status-split{% endif %}">{% if r.status_code == "unlock" %}<span>فك اعتماد</span><small>بانتظار الإدارة</small>{% else %}{{ r.status_label }}{% endif %}</span></td>
+          <td><span class="ro-badge {% if r.is_full %}full{% else %}partial{% endif %}">{{ r.filled_label }}</span></td>
+          <td>{% if r.last_saved %}{{ r.last_saved|date:"Y-m-d H:i" }}{% else %}—{% endif %}</td>
+          <td><a class="ro-btn" href="{% url 'visits:viewer_plan_detail' r.plan.id %}">تفاصيل</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="6" class="ro-empty">لا توجد خطط ضمن هذا الأسبوع.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

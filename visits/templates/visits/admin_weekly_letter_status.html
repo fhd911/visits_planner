@@ -1,0 +1,815 @@
+{% extends "visits/base.html" %}
+
+{% block title %}حالة خطابات التكليف{% endblock %}
+
+{% block header_title %}حالة خطابات التكليف{% endblock %}
+
+{% block header_subtitle %}
+متابعة حالة خطابات التكليف للمشرفين النشطين الذين لديهم إسناد نشط، مع مطابقة ملفات PDF الموجودة في مجلد خطابات الأسبوع برقم الهوية.
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  .letter-page {
+    display: grid;
+    gap: 14px;
+  }
+
+  .letter-card {
+    background: #fff;
+    border: 1px solid var(--vp-line);
+    border-radius: 20px;
+    box-shadow: var(--vp-shadow-soft);
+    padding: 14px;
+  }
+
+  .letter-toolbar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: end;
+  }
+
+  .letter-filters {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: end;
+  }
+
+  .letter-field {
+    display: grid;
+    gap: 6px;
+    min-width: 190px;
+  }
+
+  .letter-field label {
+    font-size: 12px;
+    color: var(--vp-text-soft);
+    font-weight: 600;
+  }
+
+  .letter-field select {
+    height: 40px;
+    border-radius: 12px;
+    border: 1px solid var(--vp-line);
+    background: #fff;
+    padding: 0 12px;
+    font-family: inherit;
+    font-size: 13px;
+  }
+
+  .letter-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .letter-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid var(--vp-line);
+    background: #fff;
+    color: var(--vp-text);
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .letter-btn.primary {
+    background: var(--vp-primary);
+    border-color: var(--vp-primary);
+    color: #fff;
+  }
+
+  .letter-btn.warn {
+    background: var(--vp-warn-bg);
+    border-color: var(--vp-warn-border);
+    color: var(--vp-warn-text);
+  }
+
+  .letter-btn.soft {
+    background: var(--vp-primary-soft);
+    border-color: var(--vp-primary-soft-border);
+    color: var(--vp-primary);
+  }
+
+  .letter-stats {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .stat-box {
+    background: linear-gradient(180deg, #fff, #fbfcfb);
+    border: 1px solid var(--vp-line);
+    border-radius: 18px;
+    padding: 13px;
+    display: grid;
+    gap: 6px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--vp-text-soft);
+    font-weight: 600;
+  }
+
+  .stat-value {
+    font-size: 24px;
+    color: var(--vp-primary);
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .stat-note {
+    font-size: 11.5px;
+    color: var(--vp-text-faint);
+    line-height: 1.8;
+  }
+
+  .letter-alert {
+    border: 1px solid var(--vp-warn-border);
+    background: var(--vp-warn-bg);
+    color: var(--vp-warn-text);
+    border-radius: 16px;
+    padding: 12px 14px;
+    font-size: 13px;
+    line-height: 1.9;
+  }
+
+  .letter-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--vp-line);
+    border-radius: 18px;
+    background: #fff;
+  }
+
+  .letter-table {
+    width: 100%;
+    min-width: 1100px;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .letter-table th {
+    background: #f8fbfa;
+    color: var(--vp-text);
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--vp-line);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .letter-table td {
+    padding: 10px 10px;
+    border-bottom: 1px solid #edf2ee;
+    font-size: 12px;
+    font-weight: 400;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .letter-table tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .name-cell {
+    text-align: right !important;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.7;
+    color: var(--vp-text);
+  }
+
+  .file-cell,
+  .note-cell {
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 26px;
+    padding: 0 9px;
+    border-radius: 999px;
+    border: 1px solid var(--vp-line);
+    background: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .badge.exported,
+  .badge.ready,
+  .badge.approved {
+    background: var(--vp-ok-bg);
+    border-color: var(--vp-ok-border);
+    color: var(--vp-ok-text);
+  }
+
+  .badge.missing,
+  .badge.unlock {
+    background: var(--vp-warn-bg);
+    border-color: var(--vp-warn-border);
+    color: var(--vp-warn-text);
+  }
+
+  .badge.not_ready,
+  .badge.no-plan,
+  .badge.unchecked {
+    background: #f8faf9;
+    border-color: var(--vp-line);
+    color: var(--vp-text-soft);
+  }
+
+  .badge.draft {
+    background: var(--vp-primary-soft);
+    border-color: var(--vp-primary-soft-border);
+    color: var(--vp-primary);
+  }
+
+  .empty-state {
+    padding: 24px;
+    text-align: center;
+    color: var(--vp-text-soft);
+    font-size: 13px;
+  }
+
+  @media (max-width: 1150px) {
+    .letter-stats {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+
+
+  .drive-quality-card {
+    display: grid;
+    gap: 12px;
+  }
+
+  .drive-quality-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .drive-quality-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--vp-text);
+    line-height: 1.7;
+  }
+
+  .drive-quality-note {
+    color: var(--vp-text-soft);
+    font-size: 11.7px;
+    line-height: 1.8;
+  }
+
+  .drive-quality-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .drive-quality-item {
+    border: 1px solid var(--vp-line);
+    background: linear-gradient(180deg, #fff, #fbfcfb);
+    border-radius: 16px;
+    padding: 12px;
+    display: grid;
+    gap: 5px;
+  }
+
+  .drive-quality-label {
+    color: var(--vp-text-soft);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+
+  .drive-quality-value {
+    color: var(--vp-primary);
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+
+  .unmatched-table {
+    width: 100%;
+    min-width: 820px;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .unmatched-table th,
+  .unmatched-table td {
+    padding: 10px;
+    border-bottom: 1px solid #edf2ee;
+    font-size: 12px;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .unmatched-table th {
+    background: #f8fbfa;
+    font-weight: 700;
+  }
+
+  .unmatched-table .file-name-cell,
+  .unmatched-table .reason-cell {
+    text-align: right;
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+
+  @media (max-width: 768px) {
+    .letter-toolbar {
+      grid-template-columns: 1fr;
+    }
+
+    .letter-filters {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .letter-field {
+      min-width: 0;
+    }
+
+    .letter-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+
+    .letter-btn {
+      width: 100%;
+    }
+
+    .letter-stats {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .drive-quality-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .stat-value {
+      font-size: 20px;
+    }
+  }
+
+  @media (max-width: 460px) {
+    .letter-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .drive-quality-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* تخفيف حجم ووزن أسماء المشرفين في جدول حالة الخطابات */
+  .letter-table .name-cell {
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    line-height: 1.7 !important;
+  }
+
+  .letter-table td {
+    font-size: 12px !important;
+  }
+
+  .letter-table .badge {
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    min-height: 26px !important;
+    padding: 0 9px !important;
+  }
+
+
+
+  .drive-quality-card {
+    display: grid;
+    gap: 12px;
+  }
+
+  .drive-quality-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .drive-quality-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--vp-text);
+    line-height: 1.7;
+  }
+
+  .drive-quality-note {
+    color: var(--vp-text-soft);
+    font-size: 11.7px;
+    line-height: 1.8;
+  }
+
+  .drive-quality-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .drive-quality-item {
+    border: 1px solid var(--vp-line);
+    background: linear-gradient(180deg, #fff, #fbfcfb);
+    border-radius: 16px;
+    padding: 12px;
+    display: grid;
+    gap: 5px;
+  }
+
+  .drive-quality-label {
+    color: var(--vp-text-soft);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+
+  .drive-quality-value {
+    color: var(--vp-primary);
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+
+  .unmatched-table {
+    width: 100%;
+    min-width: 820px;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  .unmatched-table th,
+  .unmatched-table td {
+    padding: 10px;
+    border-bottom: 1px solid #edf2ee;
+    font-size: 12px;
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  .unmatched-table th {
+    background: #f8fbfa;
+    font-weight: 700;
+  }
+
+  .unmatched-table .file-name-cell,
+  .unmatched-table .reason-cell {
+    text-align: right;
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+
+  @media (max-width: 768px) {
+    .letter-table .name-cell {
+      font-size: 11.7px !important;
+      font-weight: 500 !important;
+      white-space: normal !important;
+    }
+
+    .letter-table td {
+      font-size: 11.7px !important;
+    }
+
+    .letter-table th {
+      font-size: 11.7px !important;
+    }
+  }
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="letter-page">
+
+  <div class="letter-card">
+    <form method="get" class="letter-toolbar">
+      <div class="letter-filters">
+        <div class="letter-field">
+          <label for="week">الأسبوع</label>
+          <select name="week" id="week">
+            {% for w,label in week_choices %}
+              <option value="{{ w }}" {% if w == week %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="letter-field">
+          <label for="letter_status">حالة الخطاب</label>
+          <select name="letter_status" id="letter_status">
+            <option value="all" {% if filter_status == "all" %}selected{% endif %}>الكل</option>
+            <option value="ready" {% if filter_status == "ready" %}selected{% endif %}>لديهم خطة مكتملة</option>
+            <option value="exported" {% if filter_status == "exported" %}selected{% endif %}>تم التصدير</option>
+            <option value="missing" {% if filter_status == "missing" %}selected{% endif %}>لم يتم التصدير</option>
+            <option value="not_ready" {% if filter_status == "not_ready" %}selected{% endif %}>خطة غير مكتملة/غير موجودة</option>
+            <option value="unchecked" {% if filter_status == "unchecked" %}selected{% endif %}>غير مفحوص</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="letter-actions">
+        <button type="submit" class="letter-btn primary">تطبيق الفلتر</button>
+
+        <a class="letter-btn"
+           href="{% url 'visits:admin_weekly_letter_status_export_excel' %}?week={{ week }}&letter_status={{ filter_status }}">
+          تصدير Excel
+        </a>
+
+        {% if letter_can_inspect_drive %}
+          <a class="letter-btn {% if drive_unmatched_pdf_count %}warn{% else %}soft{% endif %}" href="#unmatchedFiles">
+            ملفات غير مطابقة: {{ drive_unmatched_pdf_count|default:0 }}
+          </a>
+        {% endif %}
+
+        {% if letter_link and letter_link.drive_url %}
+          <a class="letter-btn" href="{{ letter_link.drive_url }}" target="_blank" rel="noopener">
+            فتح مجلد الخطابات
+          </a>
+        {% endif %}
+
+        <a class="letter-btn" href="{% url 'visits:weekly_letter_links_list' %}">
+          إدارة روابط الخطابات
+        </a>
+
+        <a class="letter-btn" href="{% url 'visits:admin_dashboard' %}?week={{ week }}">
+          العودة للوحة الإدارة
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <div class="letter-stats">
+    <div class="stat-box">
+      <div class="stat-label">إجمالي المشرفين المعنيين</div>
+      <div class="stat-value">{{ letter_all_rows_count|default:0 }}</div>
+      <div class="stat-note">{{ letter_source_label }}</div>
+    </div>
+
+    <div class="stat-box">
+      <div class="stat-label">تم تصدير الخطاب</div>
+      <div class="stat-value">{{ letter_exported_count|default:0 }}</div>
+      <div class="stat-note">تم العثور على ملف PDF برقم الهوية</div>
+    </div>
+
+    <div class="stat-box">
+      <div class="stat-label">لم يتم التصدير</div>
+      <div class="stat-value">{{ letter_missing_count|default:0 }}</div>
+      <div class="stat-note">لا يوجد ملف PDF مطابق برقم الهوية</div>
+    </div>
+
+    <div class="stat-box">
+      <div class="stat-label">نسبة الإنجاز</div>
+      <div class="stat-value">
+        {% if letter_exported_percent_available %}
+          {{ letter_exported_percent|default:0 }}%
+        {% else %}
+          —
+        {% endif %}
+      </div>
+      <div class="stat-note">من إجمالي المشرفين المفحوصين</div>
+    </div>
+
+    <div class="stat-box">
+      <div class="stat-label">لديهم خطة مكتملة</div>
+      <div class="stat-value">{{ letter_ready_count|default:0 }}</div>
+      <div class="stat-note">مؤشر مساعد لا يؤثر على حالة الخطاب</div>
+    </div>
+
+    <div class="stat-box">
+      <div class="stat-label">خطة غير مكتملة/غير موجودة</div>
+      <div class="stat-value">{{ letter_not_ready_count|default:0 }}</div>
+      <div class="stat-note">مؤشر مساعد فقط</div>
+    </div>
+  </div>
+
+  {% if letter_can_inspect_drive %}
+    <div class="letter-card drive-quality-card" id="driveQuality">
+      <div class="drive-quality-head">
+        <div>
+          <h3 class="drive-quality-title">جودة مطابقة ملفات Google Drive</h3>
+          <div class="drive-quality-note">
+            يوضح هذا القسم هل ملفات PDF الموجودة في مجلد الأسبوع تحمل أرقام هوية تطابق المشرفين المعنيين في التقرير.
+          </div>
+        </div>
+
+        {% if drive_unmatched_pdf_count %}
+          <a class="letter-btn warn" href="#unmatchedFiles">مراجعة الملفات غير المطابقة</a>
+        {% endif %}
+      </div>
+
+      <div class="drive-quality-grid">
+        <div class="drive-quality-item">
+          <div class="drive-quality-label">كل ملفات المجلد</div>
+          <div class="drive-quality-value">{{ drive_files_count|default:0 }}</div>
+          <div class="stat-note">قبل استبعاد غير PDF</div>
+        </div>
+
+        <div class="drive-quality-item">
+          <div class="drive-quality-label">ملفات PDF</div>
+          <div class="drive-quality-value">{{ drive_pdf_count|default:0 }}</div>
+          <div class="stat-note">الملفات القابلة للمطابقة</div>
+        </div>
+
+        <div class="drive-quality-item">
+          <div class="drive-quality-label">PDF مطابق لمشرف</div>
+          <div class="drive-quality-value">{{ drive_matched_pdf_count|default:0 }}</div>
+          <div class="stat-note">قد تشمل ملفات مكررة لنفس المشرف</div>
+        </div>
+
+        <div class="drive-quality-item">
+          <div class="drive-quality-label">PDF غير مطابق</div>
+          <div class="drive-quality-value">{{ drive_unmatched_pdf_count|default:0 }}</div>
+          <div class="stat-note">تحتاج مراجعة الاسم أو رقم الهوية</div>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if letter_drive_error %}
+    <div class="letter-alert">
+      لا يمكن فحص حالة خطابات التكليف لهذا الأسبوع بدقة: {{ letter_drive_error }}
+      <br>
+      يرجى إضافة أو تفعيل رابط مجلد خطابات الأسبوع من صفحة روابط الخطابات، ثم إعادة فتح التقرير.
+    </div>
+  {% endif %}
+
+  <div class="letter-card">
+    <div class="letter-table-wrap">
+      <table class="letter-table">
+        <thead>
+          <tr>
+            <th>م</th>
+            <th>اسم المشرف</th>
+            <th>السجل المدني</th>
+            <th>حالة الخطة</th>
+            <th>اكتمال الخطة</th>
+            <th>مؤشر الخطة</th>
+            <th>حالة الخطاب</th>
+            <th>سبب الحالة</th>
+            <th>اسم ملف الخطاب</th>
+            <th>رابط الخطاب</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for row in letter_rows %}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td class="name-cell">{{ row.supervisor_name }}</td>
+              <td>{{ row.national_id }}</td>
+
+              <td>
+                <span class="badge {{ row.plan_status_code }}">
+                  {{ row.plan_status_label }}
+                </span>
+              </td>
+
+              <td>
+                {% if row.is_full %}
+                  <span class="badge exported">مكتملة</span>
+                {% else %}
+                  <span class="badge missing">{{ row.filled_count }}/5</span>
+                {% endif %}
+              </td>
+
+              <td>
+                <span class="badge {{ row.readiness_code }}">
+                  {{ row.readiness_label }}
+                </span>
+              </td>
+
+              <td>
+                <span class="badge {{ row.letter_status_code }}">
+                  {{ row.letter_status_label }}
+                </span>
+              </td>
+
+              <td class="note-cell" title="{{ row.letter_status_note }}">
+                {{ row.letter_status_note|default:"—" }}
+              </td>
+
+              <td class="file-cell" title="{{ row.letter_file_name }}">
+                {% if row.letter_file_name %}
+                  {{ row.letter_file_name }}
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+
+              <td>
+                {% if row.letter_file_url %}
+                  <a class="letter-btn" href="{{ row.letter_file_url }}" target="_blank" rel="noopener">
+                    فتح الخطاب
+                  </a>
+                {% else %}
+                  —
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="10">
+                <div class="empty-state">
+                  لا توجد نتائج مطابقة للفلتر الحالي.
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+
+
+  {% if letter_can_inspect_drive %}
+    <div class="letter-card" id="unmatchedFiles">
+      <div class="drive-quality-head" style="margin-bottom:10px;">
+        <div>
+          <h3 class="drive-quality-title">ملفات PDF غير مطابقة</h3>
+          <div class="drive-quality-note">
+            هذه الملفات موجودة في مجلد خطابات الأسبوع، لكنها لم تُربط بأي مشرف معني؛ إما لعدم وجود رقم هوية في اسم الملف أو لأن الرقم لا يطابق سجلات المشرفين النشطين ذوي الإسناد.
+          </div>
+        </div>
+        <span class="badge {% if drive_unmatched_pdf_count %}missing{% else %}exported{% endif %}">
+          العدد: {{ drive_unmatched_pdf_count|default:0 }}
+        </span>
+      </div>
+
+      <div class="letter-table-wrap">
+        <table class="unmatched-table">
+          <thead>
+            <tr>
+              <th>م</th>
+              <th>اسم الملف</th>
+              <th>الأرقام المستخرجة</th>
+              <th>سبب عدم المطابقة</th>
+              <th>رابط الملف</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for file in drive_unmatched_files %}
+              <tr>
+                <td>{{ forloop.counter }}</td>
+                <td class="file-name-cell" title="{{ file.file_name }}">{{ file.file_name }}</td>
+                <td>{{ file.extracted_label|default:"—" }}</td>
+                <td class="reason-cell" title="{{ file.reason }}">{{ file.reason }}</td>
+                <td>
+                  {% if file.file_url %}
+                    <a class="letter-btn" href="{{ file.file_url }}" target="_blank" rel="noopener">فتح الملف</a>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5">
+                  <div class="empty-state">لا توجد ملفات PDF غير مطابقة في مجلد هذا الأسبوع.</div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

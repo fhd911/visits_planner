@@ -967,6 +967,44 @@
     color:var(--v2-text-2);
   }
 
+  .unlock-reason-field{
+    margin-top:12px;
+    display:grid;
+    gap:7px;
+  }
+
+  .unlock-reason-field label{
+    font-size:12px;
+    color:var(--v2-muted);
+    font-weight:var(--fw-mid);
+  }
+
+  .unlock-reason-field textarea{
+    width:100%;
+    min-height:84px;
+    resize:vertical;
+    border-radius:13px;
+    border:1px solid var(--v2-line);
+    background:#fff;
+    padding:10px 11px;
+    font-family:"Cairo", Arial;
+    font-size:12.6px;
+    line-height:1.8;
+    color:var(--v2-text);
+    outline:none;
+  }
+
+  .unlock-reason-field textarea:focus{
+    border-color:#8fae9f;
+    box-shadow:0 0 0 3px rgba(47, 98, 80, .08);
+  }
+
+  .unlock-reason-help{
+    font-size:11.2px;
+    color:var(--v2-muted);
+    line-height:1.7;
+  }
+
   .modal-actions,
   .mm-actions{
     padding:12px 15px 14px;
@@ -2399,6 +2437,182 @@
     }
   }
 
+
+
+  /* =========================================================
+     تحسين نافذة طلب فك الاعتماد
+     ========================================================= */
+  .modal-card.unlock-card{
+    width:min(500px, 100%);
+    border-radius:22px;
+    overflow:hidden;
+    box-shadow:0 26px 70px rgba(22,36,29,.18);
+    border-color:#d7e2dc;
+  }
+
+  .unlock-card .modal-head{
+    padding:13px 16px;
+    background:linear-gradient(180deg, #fbfdfc, #f6faf8);
+  }
+
+  .unlock-title-wrap{
+    display:grid;
+    gap:4px;
+    min-width:0;
+  }
+
+  .unlock-card .modal-title{
+    font-size:15px;
+    line-height:1.45;
+    color:var(--vp-primary, #1f4b3a);
+    font-weight:var(--fw-title);
+  }
+
+  .unlock-status-badge{
+    width:max-content;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    min-height:24px;
+    padding:0 9px;
+    border-radius:999px;
+    border:1px solid var(--v2-warn-bd);
+    background:#fffaf3;
+    color:var(--v2-warn-tx);
+    font-size:10.8px;
+    font-weight:var(--fw-mid);
+  }
+
+  .unlock-status-badge::before{
+    content:"";
+    width:7px;
+    height:7px;
+    border-radius:999px;
+    background:#b7791f;
+    box-shadow:0 0 0 3px rgba(183,121,31,.10);
+  }
+
+  .unlock-card .modal-body{
+    padding:14px 16px 10px;
+    display:grid;
+    gap:10px;
+  }
+
+  .unlock-intro{
+    margin:0;
+    padding:11px 12px;
+    border-radius:15px;
+    background:#fbfcfb;
+    border:1px solid var(--v2-line);
+    color:var(--v2-text);
+    font-size:12.8px;
+    line-height:1.9;
+  }
+
+  .unlock-intro b{
+    color:var(--vp-primary, #1f4b3a);
+    font-weight:var(--fw-strong);
+  }
+
+  .unlock-card .modal-note{
+    margin:0;
+    padding:10px 12px;
+    border-radius:14px;
+    font-size:11.8px;
+    line-height:1.8;
+  }
+
+  .unlock-reason-field{
+    margin-top:0 !important;
+    display:grid;
+    gap:8px;
+  }
+
+  .unlock-reason-field label{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    font-size:12.2px !important;
+    color:var(--v2-text) !important;
+    font-weight:var(--fw-strong) !important;
+  }
+
+  .unlock-reason-required{
+    color:var(--v2-muted);
+    font-size:10.8px;
+    font-weight:var(--fw-normal);
+  }
+
+  .unlock-reason-field textarea{
+    min-height:96px !important;
+    border-radius:16px !important;
+    border:1px solid #cfdcd5 !important;
+    background:linear-gradient(180deg, #fff, #fbfcfb) !important;
+    padding:12px 13px !important;
+    font-size:12.8px !important;
+    line-height:1.9 !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.8);
+  }
+
+  .unlock-reason-field textarea:focus{
+    border-color:#7fa28f !important;
+    background:#fff !important;
+    box-shadow:0 0 0 4px rgba(31,75,58,.09) !important;
+  }
+
+  .unlock-reason-help{
+    font-size:11.1px !important;
+    color:var(--v2-muted) !important;
+    line-height:1.7 !important;
+  }
+
+  .unlock-card .modal-actions{
+    padding:12px 16px 15px;
+    background:#fbfcfb;
+    justify-content:space-between;
+  }
+
+  .unlock-card .modal-actions .btn{
+    min-width:128px;
+    height:39px;
+    border-radius:999px;
+  }
+
+  .unlock-card .modal-actions .btn-approve{
+    background:var(--vp-primary);
+    border-color:var(--vp-primary);
+    color:#fff;
+  }
+
+  .unlock-card .modal-actions .btn-approve:hover{
+    background:var(--vp-primary-2);
+    border-color:var(--vp-primary-2);
+  }
+
+  @media (max-width: 520px){
+    .modal-card.unlock-card{
+      width:100%;
+      border-radius:18px;
+    }
+
+    .unlock-card .modal-head,
+    .unlock-card .modal-body,
+    .unlock-card .modal-actions{
+      padding-inline:13px;
+    }
+
+    .unlock-card .modal-actions{
+      display:grid;
+      grid-template-columns:1fr;
+    }
+
+    .unlock-card .modal-actions .btn{
+      width:100%;
+      min-width:0;
+    }
+  }
+
 </style>
 {% endblock %}
 
@@ -2716,6 +2930,7 @@
         <form method="post" action="{% url 'visits:request_unlock' %}" id="unlockForm" style="display:none;">
           {% csrf_token %}
           <input type="hidden" name="plan" value="{{ plan.id }}">
+          <input type="hidden" name="reason" id="unlockReasonHidden" value="طلب المشرف فك اعتماد الخطة لإجراء تعديل على بيانات الخطة الأسبوعية.">
         </form>
       {% endif %}
     </div>
@@ -2741,25 +2956,38 @@
 </div>
 
 {% if plan.status == plan.STATUS_APPROVED %}
-  <div class="modal-backdrop" id="unlockModal" role="dialog" aria-modal="true" aria-labelledby="unlockTitle" aria-hidden="true">
-    <div class="modal-card">
+  <div class="modal-backdrop" id="unlockModal" role="dialog" aria-modal="true" aria-labelledby="unlockTitle" aria-describedby="unlockDesc" aria-hidden="true">
+    <div class="modal-card unlock-card">
       <div class="modal-head">
-        <h3 class="modal-title" id="unlockTitle">تأكيد طلب فك الاعتماد</h3>
+        <div class="unlock-title-wrap">
+          <h3 class="modal-title" id="unlockTitle">طلب فك اعتماد الخطة</h3>
+          <span class="unlock-status-badge">بانتظار موافقة الإدارة</span>
+        </div>
         <button type="button" class="xbtn" id="unlockCloseX" aria-label="إغلاق">×</button>
       </div>
 
       <div class="modal-body">
-        <p>
+        <p class="unlock-intro" id="unlockDesc">
           أنت على وشك إرسال <b>طلب فك اعتماد</b> للخطة المعتمدة للأسبوع رقم <b>{{ week }}</b>.
         </p>
+
+        <div class="unlock-reason-field">
+          <label for="unlockReasonInput">
+            <span>سبب الطلب</span>
+            <span class="unlock-reason-required">يمكن تعديله قبل الإرسال</span>
+          </label>
+          <textarea id="unlockReasonInput" maxlength="500" placeholder="اكتب سبب الطلب باختصار…">طلب المشرف فك اعتماد الخطة لإجراء تعديل على بيانات الخطة الأسبوعية.</textarea>
+          <div class="unlock-reason-help">سيظهر هذا السبب لدى الإدارة عند مراجعة طلب فك الاعتماد.</div>
+        </div>
+
         <div class="modal-note">
-          بعد الإرسال لن تتمكن من تعديل الخطة حتى تعتمد الإدارة فك الاعتماد.
+          بعد الإرسال لن تتمكن من تعديل الخطة حتى توافق الإدارة على فك الاعتماد.
         </div>
       </div>
 
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" id="unlockCancelBtn">إلغاء</button>
-        <button type="button" class="btn btn-danger" id="unlockConfirmBtn">تأكيد الإرسال</button>
+        <button type="button" class="btn btn-approve" id="unlockConfirmBtn">إرسال الطلب</button>
       </div>
     </div>
   </div>
@@ -3169,6 +3397,8 @@
     const cancelBtn = document.getElementById("unlockCancelBtn");
     const confirmBtn = document.getElementById("unlockConfirmBtn");
     const unlockForm = document.getElementById("unlockForm");
+    const unlockReasonInput = document.getElementById("unlockReasonInput");
+    const unlockReasonHidden = document.getElementById("unlockReasonHidden");
 
     let lastFocusEl = null;
 
@@ -3178,7 +3408,8 @@
       modal.classList.add("show");
       modal.setAttribute("aria-hidden", "false");
       document.body.style.overflow = "hidden";
-      if(confirmBtn) confirmBtn.focus();
+      if(unlockReasonInput) unlockReasonInput.focus();
+      else if(confirmBtn) confirmBtn.focus();
     }
 
     function closeModal(){
@@ -3189,7 +3420,7 @@
       if(lastFocusEl && typeof lastFocusEl.focus === "function") lastFocusEl.focus();
       if(confirmBtn){
         confirmBtn.disabled = false;
-        confirmBtn.textContent = "تأكيد الإرسال";
+        confirmBtn.textContent = "إرسال الطلب";
       }
     }
 
@@ -3213,8 +3444,16 @@
     if(confirmBtn){
       confirmBtn.addEventListener("click", function(){
         if(!unlockForm) return;
+
+        const fallbackReason = "طلب المشرف فك اعتماد الخطة لإجراء تعديل على بيانات الخطة الأسبوعية.";
+        const typedReason = unlockReasonInput ? unlockReasonInput.value.trim() : "";
+
+        if(unlockReasonHidden){
+          unlockReasonHidden.value = typedReason || fallbackReason;
+        }
+
         confirmBtn.disabled = true;
-        confirmBtn.textContent = "جارٍ الإرسال...";
+        confirmBtn.textContent = "جارٍ إرسال الطلب...";
         unlockForm.submit();
       });
     }
