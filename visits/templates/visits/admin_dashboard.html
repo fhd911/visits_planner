@@ -942,12 +942,6 @@
     color:var(--warn);
   }
 
-  .admin-page .pill.unlocked{
-    background:var(--blue-bg);
-    border-color:var(--blue-br);
-    color:var(--blue);
-  }
-
   .admin-page .count{
     display:inline-flex;
     align-items:center;
@@ -1683,6 +1677,28 @@
 
           <div class="summary-item">
             <div class="s-right">
+              <div class="summary-badge">🏫</div>
+              <div>
+                <div class="name">الزيارات الحضورية لجميع الأسابيع</div>
+                <div class="num">{{ global_visit_in_total|default:"0" }}</div>
+              </div>
+            </div>
+            <div class="name">نسبة {{ global_visit_in_percent|default:"0" }}%</div>
+          </div>
+
+          <div class="summary-item">
+            <div class="s-right">
+              <div class="summary-badge">💻</div>
+              <div>
+                <div class="name">الزيارات عن بُعد لجميع الأسابيع</div>
+                <div class="num">{{ global_visit_remote_total|default:"0" }}</div>
+              </div>
+            </div>
+            <div class="name">نسبة {{ global_visit_remote_percent|default:"0" }}%</div>
+          </div>
+
+          <div class="summary-item">
+            <div class="s-right">
               <div class="summary-badge">📅</div>
               <div>
                 <div class="name">إجمالي الأيام بدون زيارة</div>
@@ -1738,7 +1754,6 @@
             <option value="approved" {% if status == "approved" %}selected{% endif %}>المعتمدة</option>
             <option value="draft" {% if status == "draft" %}selected{% endif %}>المسودات</option>
             <option value="unlock" {% if status == "unlock" %}selected{% endif %}>طلبات فك اعتماد</option>
-            <option value="unlocked" {% if status == "unlocked" %}selected{% endif %}>مفكوكة للتعديل</option>
             <option value="not_full" {% if status == "not_full" %}selected{% endif %}>غير مكتملة</option>
           </select>
         </div>
@@ -1816,8 +1831,6 @@
                         <span class="pill approved" id="pill-{{ p.id }}">معتمدة</span>
                       {% elif p.status == p.STATUS_UNLOCK_REQUESTED %}
                         <span class="pill unlock" id="pill-{{ p.id }}">طلب فك اعتماد</span>
-                      {% elif p.status == p.STATUS_UNLOCKED %}
-                        <span class="pill unlocked" id="pill-{{ p.id }}">مفكوكة للتعديل</span>
                       {% else %}
                         <span class="pill draft" id="pill-{{ p.id }}">مسودة</span>
                       {% endif %}
@@ -2240,7 +2253,7 @@
 
     if(pill){
       pill.textContent = data.status_label || "—";
-      pill.classList.remove("approved", "draft", "unlock", "unlocked");
+      pill.classList.remove("approved", "draft", "unlock");
       pill.classList.add(data.status_css || "draft");
     }
 
@@ -2273,7 +2286,6 @@
     const isApproved = (statusCode === "approved") || (statusCss === "approved");
     const isDraft = (statusCode === "draft") || (statusCss === "draft");
     const isUnlock = (statusCode === "unlock") || (statusCss === "unlock");
-    const isUnlocked = (statusCode === "unlocked") || (statusCss === "unlocked");
 
     if(approveBtn){
       approveBtn.disabled = isApproved ? true : !(filledNow === 5);
@@ -2368,17 +2380,6 @@
       if(!modalResult.ok) return;
       payload.note = modalResult.note || "";
       payload.title = "تنبيه إداري";
-    }
-
-    if(action === "unlock-approve"){
-      const modalResult = await openModal({
-        title: "قبول فك اعتماد الخطة",
-        text: "يمكنك كتابة ملاحظة إدارية للمشرف، وستتحول الخطة إلى حالة: مفكوكة للتعديل.",
-        submitText: "قبول وفتح للتعديل"
-      });
-
-      if(!modalResult.ok) return;
-      payload.note = modalResult.note || "";
     }
 
     if(action === "unlock-reject"){

@@ -1,0 +1,1172 @@
+/* =========================================================
+   Mobile Responsive Layer
+   Path: visits/static/visits/css/mobile.css
+   Purpose: تحسين تجربة الدخول والاستخدام من الجوال
+   ========================================================= */
+
+/* عناصر عامة للتحكم بين سطح المكتب والجوال */
+.mobile-only {
+  display: none !important;
+}
+
+.desktop-only {
+  display: initial;
+}
+
+/* منع التمدد الأفقي */
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* تحسين اللمس */
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* الجداول داخل حاوية قابلة للسحب */
+.table-wrap,
+.table-responsive,
+.responsive-table,
+.data-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* =========================================================
+   Tablet / Mobile
+   ========================================================= */
+@media (max-width: 768px) {
+
+  :root {
+    --vp-radius-xl: 20px;
+    --vp-radius-lg: 17px;
+    --vp-radius-md: 14px;
+    --toast-top: 92px;
+  }
+
+  body {
+    font-size: 14px;
+    background:
+      radial-gradient(520px 260px at 50% 0%, rgba(31,75,58,.06), transparent 60%),
+      linear-gradient(180deg, #f7f8f7, #f3f5f4);
+  }
+
+  .desktop-only {
+    display: none !important;
+  }
+
+  .mobile-only {
+    display: block !important;
+  }
+
+  /* =======================================================
+     Topbar
+     ======================================================= */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 90;
+  }
+
+  .topbar .inner {
+    padding: 9px 10px !important;
+    gap: 8px !important;
+  }
+
+  .topbar-main {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    justify-items: stretch !important;
+    gap: 8px !important;
+  }
+
+  .brand {
+    width: 100%;
+    justify-content: flex-start !important;
+    gap: 9px !important;
+  }
+
+  .brand .logo {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 12px !important;
+    font-size: 15px !important;
+  }
+
+  .brand .meta {
+    min-width: 0;
+  }
+
+  .brand .title {
+    font-size: 14px !important;
+    white-space: normal !important;
+    line-height: 1.5;
+  }
+
+  .brand .sub {
+    font-size: 11.3px !important;
+    white-space: normal !important;
+    line-height: 1.6;
+  }
+
+  .topbar-meta {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px !important;
+  }
+
+  .top-pill {
+    width: 100%;
+    min-height: 31px !important;
+    justify-content: center;
+    padding: 0 8px !important;
+    font-size: 11.2px !important;
+  }
+
+  .topbar-navrow {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 8px !important;
+  }
+
+  .nav {
+    width: 100%;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    gap: 7px !important;
+    padding: 2px 1px 5px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .nav a,
+  .nav-trigger {
+    flex: 0 0 auto;
+    min-height: 34px !important;
+    padding: 0 12px !important;
+    font-size: 11.8px !important;
+    border-radius: 999px !important;
+  }
+
+  .nav-menu {
+    position: fixed !important;
+    top: auto !important;
+    left: 10px !important;
+    right: 10px !important;
+    inset-inline-start: 10px !important;
+    inset-inline-end: 10px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    z-index: 120 !important;
+  }
+
+  .topbar-tools {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 7px !important;
+  }
+
+  .topbar-tools a,
+  .topbar-tools button {
+    width: 100%;
+    min-height: 36px !important;
+    font-size: 12px !important;
+  }
+
+  /* =======================================================
+     Page layout
+     ======================================================= */
+  .page {
+    width: 100%;
+    margin: 10px auto 0 !important;
+    padding: 0 9px 18px !important;
+  }
+
+  .shell {
+    padding: 10px !important;
+    border-radius: 18px !important;
+    box-shadow: 0 6px 16px rgba(22,36,29,.035) !important;
+  }
+
+  .hero {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 10px !important;
+    padding: 13px !important;
+    border-radius: 16px !important;
+  }
+
+  .hero h1 {
+    font-size: 15px !important;
+    line-height: 1.7 !important;
+  }
+
+  .hero p {
+    font-size: 12px !important;
+    line-height: 1.9 !important;
+  }
+
+  .hero-meta {
+    width: 100%;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px !important;
+  }
+
+  .pill {
+    width: 100%;
+    justify-content: center;
+    padding: 7px 8px !important;
+    font-size: 11.3px !important;
+    white-space: normal !important;
+    text-align: center;
+  }
+
+  /* =======================================================
+     Page actions
+     ======================================================= */
+  .page-actions {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 8px !important;
+    padding: 10px !important;
+    border-radius: 16px !important;
+  }
+
+  .page-actions a,
+  .page-actions button {
+    width: 100%;
+    min-height: 42px !important;
+    font-size: 12.6px !important;
+  }
+
+  /* شريط إجراءات ثابت أسفل الجوال */
+  .mobile-bottom-actions,
+  .sticky-actions,
+  .form-sticky-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 80;
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 10px;
+    margin: 12px -10px -10px;
+    background: rgba(255,255,255,.97);
+    border-top: 1px solid var(--vp-line, #dde5e0);
+    backdrop-filter: blur(10px);
+  }
+
+  .mobile-bottom-actions button,
+  .mobile-bottom-actions a,
+  .sticky-actions button,
+  .sticky-actions a,
+  .form-sticky-actions button,
+  .form-sticky-actions a {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 999px;
+  }
+
+  /* =======================================================
+     Forms
+     ======================================================= */
+  form {
+    max-width: 100%;
+  }
+
+  input,
+  select,
+  textarea {
+    width: 100%;
+    min-height: 44px;
+    font-size: 14px;
+    border-radius: 13px;
+  }
+
+  textarea {
+    min-height: 90px;
+  }
+
+  label {
+    font-size: 12.5px;
+    line-height: 1.8;
+  }
+
+  .form-grid,
+  .filters-grid,
+  .search-grid,
+  .control-grid,
+  .stats-grid,
+  .cards-grid,
+  .dashboard-grid,
+  .actions-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .form-row,
+  .filter-row {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* =======================================================
+     Cards
+     ======================================================= */
+  .card,
+  .panel,
+  .box,
+  .stat-card,
+  .dashboard-card,
+  .info-card,
+  .plan-card,
+  .day-card {
+    border-radius: 16px !important;
+    padding: 12px !important;
+  }
+
+  .card h2,
+  .panel h2,
+  .box h2 {
+    font-size: 15px !important;
+  }
+
+  .card p,
+  .panel p,
+  .box p {
+    font-size: 12.5px !important;
+    line-height: 1.9 !important;
+  }
+
+  /* =======================================================
+     Tables
+     ======================================================= */
+  table {
+    min-width: 720px;
+    font-size: 12px;
+  }
+
+  th,
+  td {
+    padding: 9px 8px !important;
+    white-space: nowrap;
+  }
+
+  .table-wrap::after,
+  .table-responsive::after,
+  .responsive-table::after,
+  .data-table-wrap::after {
+    content: "اسحب الجدول أفقيًا لعرض بقية البيانات";
+    display: block;
+    padding: 8px 2px 0;
+    color: var(--vp-text-faint, #8d9a92);
+    font-size: 11.5px;
+    text-align: center;
+  }
+
+  /* تحويل بعض القوائم إلى بطاقات عند وجود هذه الكلاسات */
+  .mobile-card-list {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .mobile-card {
+    background: #fff;
+    border: 1px solid var(--vp-line, #dde5e0);
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 5px 14px rgba(22,36,29,.035);
+  }
+
+  .mobile-card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--vp-primary, #1f4b3a);
+    margin: 0 0 6px;
+    line-height: 1.7;
+  }
+
+  .mobile-card-meta {
+    display: grid;
+    gap: 5px;
+    font-size: 12px;
+    color: var(--vp-text-soft, #67776d);
+    line-height: 1.8;
+  }
+
+  .mobile-card-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+    margin-top: 10px;
+  }
+
+  .mobile-card-actions a,
+  .mobile-card-actions button {
+    min-height: 38px;
+    border-radius: 999px;
+  }
+
+  /* =======================================================
+     Login page helpers
+     ======================================================= */
+  .login-page,
+  .login-shell,
+  .auth-shell {
+    min-height: auto !important;
+    padding: 10px !important;
+  }
+
+  .login-card,
+  .auth-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 18px !important;
+    padding: 16px !important;
+  }
+
+  .login-card h1,
+  .auth-card h1 {
+    font-size: 18px !important;
+    line-height: 1.7 !important;
+  }
+
+  .login-card p,
+  .auth-card p {
+    font-size: 12.8px !important;
+    line-height: 1.9 !important;
+  }
+
+  .login-card button,
+  .auth-card button,
+  .login-card .btn,
+  .auth-card .btn {
+    width: 100%;
+    min-height: 45px;
+  }
+
+  /* =======================================================
+     Plan page helpers
+     ======================================================= */
+  .plan-days,
+  .plan-days-grid,
+  .week-days-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .plan-day-card,
+  .day-card {
+    background: #fff;
+    border: 1px solid var(--vp-line, #dde5e0);
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 5px 14px rgba(22,36,29,.035);
+  }
+
+  .plan-day-card .day-title,
+  .day-card .day-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--vp-primary, #1f4b3a);
+    margin-bottom: 8px;
+  }
+
+  .plan-day-card select,
+  .plan-day-card input,
+  .plan-day-card textarea,
+  .day-card select,
+  .day-card input,
+  .day-card textarea {
+    margin-top: 6px;
+  }
+
+  /* =======================================================
+     Messages
+     ======================================================= */
+  .msgs {
+    top: var(--toast-top, 92px) !important;
+    inset-inline-start: 9px !important;
+    inset-inline-end: 9px !important;
+    width: auto !important;
+  }
+
+  .msg {
+    font-size: 12.2px !important;
+    border-radius: 14px !important;
+    padding: 10px 40px 10px 12px !important;
+  }
+
+  /* =======================================================
+     Footer
+     ======================================================= */
+  footer {
+    margin: 12px auto 18px !important;
+    padding: 0 9px !important;
+  }
+
+  .foot {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    text-align: center;
+    gap: 5px !important;
+    padding: 10px !important;
+    border-radius: 15px !important;
+    font-size: 11.5px !important;
+  }
+}
+
+/* =========================================================
+   Small phones
+   ========================================================= */
+@media (max-width: 480px) {
+
+  .topbar-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .brand .title {
+    font-size: 13.5px !important;
+  }
+
+  .brand .sub {
+    font-size: 11px !important;
+  }
+
+  .top-pill {
+    min-height: 30px !important;
+  }
+
+  .nav a,
+  .nav-trigger {
+    min-height: 33px !important;
+    padding: 0 10px !important;
+    font-size: 11.5px !important;
+  }
+
+  .page {
+    padding-inline: 7px !important;
+  }
+
+  .shell {
+    padding: 9px !important;
+    border-radius: 16px !important;
+  }
+
+  .hero {
+    padding: 12px !important;
+  }
+
+  .hero h1 {
+    font-size: 14.5px !important;
+  }
+
+  .hero p {
+    font-size: 11.8px !important;
+  }
+
+  .page-actions a,
+  .page-actions button {
+    min-height: 41px !important;
+  }
+
+  .mobile-card-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .mobile-bottom-actions,
+  .sticky-actions,
+  .form-sticky-actions {
+    grid-template-columns: 1fr;
+  }
+
+  table {
+    min-width: 680px;
+  }
+}
+
+/* =========================================================
+   Very small phones
+   ========================================================= */
+@media (max-width: 360px) {
+
+  .brand .logo {
+    width: 34px !important;
+    height: 34px !important;
+  }
+
+  .brand .title {
+    font-size: 12.8px !important;
+  }
+
+  .brand .sub {
+    font-size: 10.5px !important;
+  }
+
+  .nav a,
+  .nav-trigger {
+    font-size: 11px !important;
+    padding: 0 9px !important;
+  }
+
+  .hero h1 {
+    font-size: 14px !important;
+  }
+
+  .pill,
+  .top-pill {
+    font-size: 10.8px !important;
+  }
+}
+/* =========================================================
+   إصلاح صفحة خطة الأسبوع للجوال
+   يوضع في آخر ملف mobile.css حتى يتغلب على قواعد الجداول العامة
+   ========================================================= */
+@media (max-width: 768px) {
+
+  /*
+    ضبط حاويات صفحة الخطة:
+    هذه الأسماء تغطي أكثر من تسمية محتملة للقالب الحالي.
+  */
+  .plan-page,
+  .plan-form,
+  .weekly-plan,
+  .week-plan,
+  .plan-content,
+  .plan-wrapper,
+  .plan-table,
+  .days-table,
+  .visit-plan-table,
+  .weekly-plan-table,
+  .plan-days-table,
+  .plan-grid,
+  .week-days,
+  .week-days-grid {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+
+  /*
+    منع أي عنصر داخل الخطة من التمدد خارج الشاشة.
+  */
+  .plan-page *,
+  .plan-form *,
+  .weekly-plan *,
+  .week-plan *,
+  .plan-content *,
+  .plan-wrapper *,
+  .plan-table *,
+  .days-table *,
+  .visit-plan-table *,
+  .weekly-plan-table *,
+  .plan-days-table * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /*
+    في صفحة الخطة نلغي قاعدة:
+    table { min-width: 720px; }
+    لأنها سبب القص في الجوال.
+  */
+  .plan-page table,
+  .plan-form table,
+  .weekly-plan table,
+  .week-plan table,
+  .plan-content table,
+  .plan-wrapper table,
+  .plan-table table,
+  .days-table table,
+  .visit-plan-table table,
+  .weekly-plan-table table,
+  .plan-days-table table,
+  table.plan-table,
+  table.days-table,
+  table.visit-plan-table,
+  table.weekly-plan-table,
+  table.plan-days-table {
+    min-width: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: separate !important;
+    border-spacing: 0 10px !important;
+    font-size: 12px !important;
+  }
+
+  /*
+    تحويل جدول الخطة إلى بطاقات.
+  */
+  .plan-page thead,
+  .plan-form thead,
+  .weekly-plan thead,
+  .week-plan thead,
+  .plan-content thead,
+  .plan-wrapper thead,
+  .plan-table thead,
+  .days-table thead,
+  .visit-plan-table thead,
+  .weekly-plan-table thead,
+  .plan-days-table thead,
+  table.plan-table thead,
+  table.days-table thead,
+  table.visit-plan-table thead,
+  table.weekly-plan-table thead,
+  table.plan-days-table thead {
+    display: none !important;
+  }
+
+  .plan-page tbody,
+  .plan-form tbody,
+  .weekly-plan tbody,
+  .week-plan tbody,
+  .plan-content tbody,
+  .plan-wrapper tbody,
+  .plan-table tbody,
+  .days-table tbody,
+  .visit-plan-table tbody,
+  .weekly-plan-table tbody,
+  .plan-days-table tbody,
+  table.plan-table tbody,
+  table.days-table tbody,
+  table.visit-plan-table tbody,
+  table.weekly-plan-table tbody,
+  table.plan-days-table tbody {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+
+  .plan-page tr,
+  .plan-form tr,
+  .weekly-plan tr,
+  .week-plan tr,
+  .plan-content tr,
+  .plan-wrapper tr,
+  .plan-table tr,
+  .days-table tr,
+  .visit-plan-table tr,
+  .weekly-plan-table tr,
+  .plan-days-table tr,
+  table.plan-table tr,
+  table.days-table tr,
+  table.visit-plan-table tr,
+  table.weekly-plan-table tr,
+  table.plan-days-table tr {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #fff !important;
+    border: 1px solid var(--vp-line, #dde5e0) !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    box-shadow: 0 5px 14px rgba(22,36,29,.035) !important;
+  }
+
+  .plan-page td,
+  .plan-form td,
+  .weekly-plan td,
+  .week-plan td,
+  .plan-content td,
+  .plan-wrapper td,
+  .plan-table td,
+  .days-table td,
+  .visit-plan-table td,
+  .weekly-plan-table td,
+  .plan-days-table td,
+  table.plan-table td,
+  table.days-table td,
+  table.visit-plan-table td,
+  table.weekly-plan-table td,
+  table.plan-days-table td {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 10px 12px !important;
+    white-space: normal !important;
+    border: 0 !important;
+    border-bottom: 1px solid #edf1ee !important;
+    text-align: right !important;
+    overflow: visible !important;
+  }
+
+  .plan-page td:last-child,
+  .plan-form td:last-child,
+  .weekly-plan td:last-child,
+  .week-plan td:last-child,
+  .plan-content td:last-child,
+  .plan-wrapper td:last-child,
+  .plan-table td:last-child,
+  .days-table td:last-child,
+  .visit-plan-table td:last-child,
+  .weekly-plan-table td:last-child,
+  .plan-days-table td:last-child,
+  table.plan-table td:last-child,
+  table.days-table td:last-child,
+  table.visit-plan-table td:last-child,
+  table.weekly-plan-table td:last-child,
+  table.plan-days-table td:last-child {
+    border-bottom: 0 !important;
+  }
+
+  /*
+    أول خلية غالبًا تحتوي اليوم والتاريخ؛ نجعلها عنوان البطاقة.
+  */
+  .plan-page td:first-child,
+  .plan-form td:first-child,
+  .weekly-plan td:first-child,
+  .week-plan td:first-child,
+  .plan-content td:first-child,
+  .plan-wrapper td:first-child,
+  .plan-table td:first-child,
+  .days-table td:first-child,
+  .visit-plan-table td:first-child,
+  .weekly-plan-table td:first-child,
+  .plan-days-table td:first-child,
+  table.plan-table td:first-child,
+  table.days-table td:first-child,
+  table.visit-plan-table td:first-child,
+  table.weekly-plan-table td:first-child,
+  table.plan-days-table td:first-child {
+    background: #f8fbfa !important;
+    color: var(--vp-primary, #1f4b3a) !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+  }
+
+  /*
+    إصلاح الحقول المقصوصة داخل صفوف الخطة.
+  */
+  .plan-page input,
+  .plan-page select,
+  .plan-page textarea,
+  .plan-form input,
+  .plan-form select,
+  .plan-form textarea,
+  .weekly-plan input,
+  .weekly-plan select,
+  .weekly-plan textarea,
+  .week-plan input,
+  .week-plan select,
+  .week-plan textarea,
+  .plan-content input,
+  .plan-content select,
+  .plan-content textarea,
+  .plan-wrapper input,
+  .plan-wrapper select,
+  .plan-wrapper textarea,
+  .plan-table input,
+  .plan-table select,
+  .plan-table textarea,
+  .days-table input,
+  .days-table select,
+  .days-table textarea,
+  .visit-plan-table input,
+  .visit-plan-table select,
+  .visit-plan-table textarea,
+  .weekly-plan-table input,
+  .weekly-plan-table select,
+  .weekly-plan-table textarea,
+  .plan-days-table input,
+  .plan-days-table select,
+  .plan-days-table textarea {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto;
+    min-height: 42px !important;
+    box-sizing: border-box !important;
+  }
+
+  .plan-page textarea,
+  .plan-form textarea,
+  .weekly-plan textarea,
+  .week-plan textarea,
+  .plan-content textarea,
+  .plan-wrapper textarea,
+  .plan-table textarea,
+  .days-table textarea,
+  .visit-plan-table textarea,
+  .weekly-plan-table textarea,
+  .plan-days-table textarea {
+    min-height: 84px !important;
+  }
+
+  /*
+    إذا كان داخل الخلية صف أفقي مثل: السبب + ملاحظة،
+    نحوله إلى عمودي في الجوال.
+  */
+  .plan-page .row,
+  .plan-page .inline-row,
+  .plan-page .day-row,
+  .plan-page .reason-row,
+  .plan-page .visit-row,
+  .plan-form .row,
+  .plan-form .inline-row,
+  .plan-form .day-row,
+  .plan-form .reason-row,
+  .plan-form .visit-row,
+  .weekly-plan .row,
+  .weekly-plan .inline-row,
+  .weekly-plan .day-row,
+  .weekly-plan .reason-row,
+  .weekly-plan .visit-row,
+  .plan-table .row,
+  .plan-table .inline-row,
+  .plan-table .day-row,
+  .plan-table .reason-row,
+  .plan-table .visit-row,
+  .days-table .row,
+  .days-table .inline-row,
+  .days-table .day-row,
+  .days-table .reason-row,
+  .days-table .visit-row {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  /*
+    إلغاء السحب الأفقي في صفحة الخطة تحديدًا
+    بعد تحويل الجدول إلى بطاقات.
+  */
+  .plan-page .table-wrap,
+  .plan-page .table-responsive,
+  .plan-page .responsive-table,
+  .plan-page .data-table-wrap,
+  .plan-form .table-wrap,
+  .plan-form .table-responsive,
+  .plan-form .responsive-table,
+  .plan-form .data-table-wrap,
+  .weekly-plan .table-wrap,
+  .weekly-plan .table-responsive,
+  .weekly-plan .responsive-table,
+  .weekly-plan .data-table-wrap,
+  .plan-content .table-wrap,
+  .plan-content .table-responsive,
+  .plan-content .responsive-table,
+  .plan-content .data-table-wrap,
+  .plan-wrapper .table-wrap,
+  .plan-wrapper .table-responsive,
+  .plan-wrapper .responsive-table,
+  .plan-wrapper .data-table-wrap {
+    overflow-x: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .plan-page .table-wrap::after,
+  .plan-page .table-responsive::after,
+  .plan-page .responsive-table::after,
+  .plan-page .data-table-wrap::after,
+  .plan-form .table-wrap::after,
+  .plan-form .table-responsive::after,
+  .plan-form .responsive-table::after,
+  .plan-form .data-table-wrap::after,
+  .weekly-plan .table-wrap::after,
+  .weekly-plan .table-responsive::after,
+  .weekly-plan .responsive-table::after,
+  .weekly-plan .data-table-wrap::after,
+  .plan-content .table-wrap::after,
+  .plan-content .table-responsive::after,
+  .plan-content .responsive-table::after,
+  .plan-content .data-table-wrap::after,
+  .plan-wrapper .table-wrap::after,
+  .plan-wrapper .table-responsive::after,
+  .plan-wrapper .responsive-table::after,
+  .plan-wrapper .data-table-wrap::after {
+    display: none !important;
+    content: "" !important;
+  }
+
+  /*
+    بطاقة البريد والتنبيهات في صفحة الخطة.
+  */
+  .email-panel,
+  .email-box,
+  .notifications-box,
+  .plan-email-card,
+  .email-settings-card,
+  .supervisor-email-card {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .email-panel a,
+  .email-panel button,
+  .email-box a,
+  .email-box button,
+  .notifications-box a,
+  .notifications-box button,
+  .plan-email-card a,
+  .plan-email-card button,
+  .email-settings-card a,
+  .email-settings-card button,
+  .supervisor-email-card a,
+  .supervisor-email-card button {
+    width: 100% !important;
+    min-height: 40px !important;
+  }
+
+  /*
+    تقليل الفراغ الكبير أسفل عنوان خطة الأسبوع في الجوال.
+  */
+  .plan-page .hero,
+  .plan-form .hero,
+  .weekly-plan .hero,
+  .week-plan .hero,
+  .plan-content .hero,
+  .plan-wrapper .hero {
+    min-height: auto !important;
+  }
+}
+
+/* =========================================================
+   إصلاح ظهور اختيار الأسبوع في صفحة خطة الأسبوع للجوال
+   Version: 20260509-4
+   ========================================================= */
+@media (max-width: 768px) {
+
+  /* إجبار منطقة أدوات أعلى الخطة على الظهور */
+  .plan-toolbar,
+  .plan-header,
+  .plan-head,
+  .week-toolbar,
+  .week-selector,
+  .week-filter,
+  .plan-filter,
+  .plan-actions,
+  .supervisor-plan-toolbar,
+  .supervisor-plan-header {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 10px !important;
+    overflow: visible !important;
+    position: static !important;
+    transform: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  /* أي نموذج يحتوي اختيار الأسبوع */
+  form:has(select[name="week"]),
+  form:has(select[id*="week"]),
+  form:has(select[name*="week"]),
+  form:has(select[name="week_no"]),
+  form:has(select[id*="week_no"]) {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 8px !important;
+    margin: 10px 0 !important;
+    padding: 10px !important;
+    background: #fff !important;
+    border: 1px solid var(--vp-line, #dde5e0) !important;
+    border-radius: 16px !important;
+    overflow: visible !important;
+  }
+
+  /* إظهار اختيار الأسبوع نفسه */
+  select[name="week"],
+  select[id*="week"],
+  select[name*="week"],
+  select[name="week_no"],
+  select[id*="week_no"] {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    padding: 0 14px !important;
+    border-radius: 14px !important;
+    background-color: #fff !important;
+    color: var(--vp-text, #1f2c25) !important;
+    border: 1px solid var(--vp-line-strong, #d4ddd8) !important;
+    font-size: 13px !important;
+    position: static !important;
+    transform: none !important;
+  }
+
+  /* إظهار النص الخاص بالاختيار */
+  label[for*="week"],
+  .week-label,
+  .select-week-label {
+    display: block !important;
+    width: 100% !important;
+    font-size: 12px !important;
+    color: var(--vp-text-soft, #67776d) !important;
+    text-align: center !important;
+    margin-bottom: 4px !important;
+  }
+
+  /* منع قص الجزء العلوي من بطاقة الخطة */
+  .page,
+  .shell,
+  .hero,
+  .card,
+  .panel,
+  .plan-card,
+  .plan-page,
+  .plan-container,
+  .weekly-plan,
+  .week-plan,
+  .plan-form,
+  .plan-content,
+  .plan-wrapper {
+    overflow: visible !important;
+  }
+
+  /* لو كان الاختيار داخل صف علوي عام */
+  .hero + form,
+  .page-actions form,
+  .hero-meta form,
+  .topbar-tools form {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* معالجة أي عنصر تم إخفاؤه في الجوال */
+  .desktop-week-selector,
+  .desktop-week-filter,
+  .week-select-desktop {
+    display: block !important;
+  }
+}

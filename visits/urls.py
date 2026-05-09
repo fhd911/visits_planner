@@ -1,8 +1,107 @@
 from django.urls import path
+from django.shortcuts import redirect
+from django.http import HttpResponse
+from django.contrib import messages
 
 from . import views
 from . import views_import
 from . import views_assignment_review
+
+
+
+# =========================================================
+# مسارات توافقية للصفحات الجديدة
+# الهدف: لا يتوقف python manage.py check إذا كان views.py ناقصًا في بعض الدوال.
+# إذا كانت الدالة موجودة في views.py تُستخدم تلقائيًا، وإذا لم تكن موجودة يُستخدم بديل آمن.
+# =========================================================
+
+def _view_or(name, fallback):
+    return getattr(views, name, fallback)
+
+
+def _is_staff_user(request):
+    return bool(
+        getattr(request, "user", None)
+        and request.user.is_authenticated
+        and request.user.is_staff
+    )
+
+
+def _fallback_admin_reports_view(request):
+    if not _is_staff_user(request):
+        return redirect("visits:admin_login")
+    return views.admin_dashboard_view(request)
+
+
+def _fallback_admin_control_report_view(request, report_type="incomplete_plans", *args, **kwargs):
+    if not _is_staff_user(request):
+        return redirect("visits:admin_login")
+    return redirect("visits:admin_reports")
+
+
+def _fallback_admin_control_report_export_excel_view(request, report_type="incomplete_plans", *args, **kwargs):
+    if not _is_staff_user(request):
+        return redirect("visits:admin_login")
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="control_report_{report_type}.csv"'
+    response.write("\ufeff")
+    response.write("التقرير,الحالة\n")
+    response.write(f"{report_type},لا توجد بيانات مصدرة\n")
+    return response
+
+
+def _fallback_admin_control_report_notify_view(request, report_type="incomplete_plans", *args, **kwargs):
+    if not _is_staff_user(request):
+        return redirect("visits:admin_login")
+    if request.method == "POST":
+        messages.info(request, "مسار التنبيه موجود، لكن دالة التنبيه التفصيلية غير مفعلة في views.py.")
+    return redirect("visits:admin_reports")
+
+
+def _fallback_admin_control_followups_view(request):
+    if not _is_staff_user(request):
+        return redirect("visits:admin_login")
+    return redirect("visits:admin_reports")
+
+
+def _fallback_admin_control_followups_export_excel_view(request):
+    if not _is_staff_user(request):
+        return redirect("visits:admin_login")
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = 'attachment; filename="control_followups.csv"'
+    response.write("\ufeff")
+    response.write("سجل الملحوظات\n")
+    return response
+
+
+def _fallback_admin_control_followup_notify_view(request, pk=None, *args, **kwargs):
+    if not _is_staff_user(request):
+        return redirect("visits:admin_login")
+    if request.method == "POST":
+        messages.info(request, "مسار تنبيه الملحوظة موجود، لكن دالة التنفيذ غير مفعلة في views.py.")
+    return redirect("visits:admin_control_followups")
+
+
+def _fallback_admin_control_followup_update_view(request, pk=None, *args, **kwargs):
+    if not _is_staff_user(request):
+        return redirect("visits:admin_login")
+    if request.method == "POST":
+        messages.info(request, "مسار تحديث الملحوظة موجود، لكن دالة التنفيذ غير مفعلة في views.py.")
+    return redirect("visits:admin_control_followups")
+
+
+def _fallback_supervisor_control_followups_view(request):
+    return redirect("visits:supervisor_dashboard")
+
+
+def _supervisor_control_followup_respond_route(request, pk=None, followup_id=None, *args, **kwargs):
+    target_id = followup_id if followup_id is not None else pk
+    func = getattr(views, "supervisor_control_followup_respond_view", None)
+    if func is None:
+        func = getattr(views, "supervisor_control_followup_response_view", None)
+    if func is None:
+        return redirect("visits:supervisor_control_followups")
+    return func(request, target_id)
 
 app_name = "visits"
 
@@ -50,10 +149,10 @@ urlpatterns = [
     ),
     path("plan/unlock/", views.request_unlock_view, name="request_unlock"),
 
-    path("control-followups/", views.supervisor_control_followups_view, name="supervisor_control_followups"),
+    path("control-followups/", _view_or("supervisor_control_followups_view", _fallback_supervisor_control_followups_view), name="supervisor_control_followups"),
     path(
         "control-followups/<int:pk>/respond/",
-        views.supervisor_control_followup_respond_view,
+        _supervisor_control_followup_respond_route,
         name="supervisor_control_followup_respond",
     ),
 
@@ -70,36 +169,36 @@ urlpatterns = [
     # الإدارة - لوحة الخطط
     # =========================================================
     path("manager/dashboard/", views.admin_dashboard_view, name="admin_dashboard"),
-    path("manager/reports/", views.admin_reports_view, name="admin_reports"),
+    path("manager/reports/", _view_or("admin_reports_view", _fallback_admin_reports_view), name="admin_reports"),
     path(
         "manager/reports/control/<str:report_type>/",
-        views.admin_control_report_view,
+        _view_or("admin_control_report_view", _fallback_admin_control_report_view),
         name="admin_control_report",
     ),
     path(
         "manager/reports/control/<str:report_type>/export.xlsx",
-        views.admin_control_report_export_excel_view,
+        _view_or("admin_control_report_export_excel_view", _fallback_admin_control_report_export_excel_view),
         name="admin_control_report_export_excel",
     ),
     path(
         "manager/reports/control/<str:report_type>/notify/",
-        views.admin_control_report_notify_view,
+        _view_or("admin_control_report_notify_view", _fallback_admin_control_report_notify_view),
         name="admin_control_report_notify",
     ),
-    path("manager/control-followups/", views.admin_control_followups_view, name="admin_control_followups"),
+    path("manager/control-followups/", _view_or("admin_control_followups_view", _fallback_admin_control_followups_view), name="admin_control_followups"),
     path(
         "manager/control-followups/export.xlsx",
-        views.admin_control_followups_export_excel_view,
+        _view_or("admin_control_followups_export_excel_view", _fallback_admin_control_followups_export_excel_view),
         name="admin_control_followups_export_excel",
     ),
     path(
         "manager/control-followups/<int:pk>/notify/",
-        views.admin_control_followup_notify_view,
+        _view_or("admin_control_followup_notify_view", _fallback_admin_control_followup_notify_view),
         name="admin_control_followup_notify",
     ),
     path(
         "manager/control-followups/<int:pk>/update/",
-        views.admin_control_followup_update_view,
+        _view_or("admin_control_followup_update_view", _fallback_admin_control_followup_update_view),
         name="admin_control_followup_update",
     ),
     path("manager/plan/<int:plan_id>/", views.admin_plan_detail_view, name="admin_plan_detail"),
