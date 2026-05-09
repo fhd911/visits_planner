@@ -7860,3 +7860,173 @@ def readonly_assignments_view(request):
         "supervisors_count": assignments.values("supervisor_id").distinct().count(),
     })
     return _ro_render(request, "visits/readonly_assignments.html", context)
+
+# =============================================================================
+# Read-only portal sector display fix
+# يعالج ظهور القطاع في بوابة الاطلاع بالاعتماد أولًا على قطاع المشرف،
+# ثم قطاع المدرسة من الإسناد عند الحاجة.
+# =============================================================================
+def _ro_sector_name_from_obj(obj) -> str:
+    try:
+        name = getattr(getattr(obj, "sector", None), "name", "") or ""
+        return str(name).strip()
+    except Exception:
+        return ""
+
+
+def _ro_unique_sector_names(names) -> list[str]:
+    out: list[str] = []
+    for name in names:
+        name = str(name or "").strip()
+        if not name or name == "—":
+            continue
+        if name not in out:
+            out.append(name)
+    return out
+
+
+def _ro_allowed_sector_ids(profile: dict):
+    allowed = profile.get("allowed_sector_ids")
+    if allowed is None:
+        return None
+    return [int(x) for x in allowed if str(x).isdigit()]
+
+
+def _ro_scoped_schools_qs(profile: dict):
+    """
+    المدارس ضمن نطاق الاطلاع.
+    لمدير الوحدة نعتمد على الإسنادات التي تقع ضمن قطاع المشرف أو قطاع المدرسة،
+    لأن بعض المدارس قد لا يكون قطاعها مكتملًا بينما قطاع المشرف موجود في صفحة المشرفين.
+    """
+    qs = _RoSchool.objects.filter(is_active=True).select_related("sector")
+    allowed = _ro_allowed_sector_ids(profile)
+    if allowed is None:
+        return qs.order_by("name")
+
+    school_ids = (
+        _RoAssignment.objects
+        .filter(is_active=True, school__is_active=True)
+        .filter(
+            _RoQ(supervisor__sector_id__in=allowed)
+            | _RoQ(school__sector_id__in=allowed)
+        )
+        .values_list("school_id", flat=True)
+        .distinct()
+    )
+    return qs.filter(id__in=school_ids).order_by("name")
+
+
+def _ro_scoped_assignments_qs(profile: dict):
+    """
+    إسنادات بوابة الاطلاع.
+    عند تحديد نطاق قطاعي يتم اعتبار الإسناد ضمن النطاق إذا كان:
+    - قطاع المشرف ضمن النطاق، أو
+    - قطاع المدرسة ضمن النطاق.
+    هذا يمنع ظهور القطاع فارغًا عندما يكون موجودًا في بطاقة المشرف فقط.
+    """
+    qs = (
+        _RoAssignment.objects
+        .filter(is_active=True, school__is_active=True)
+        .select_related("supervisor", "supervisor__sector", "school", "school__sector")
+        .order_by("supervisor__sector__name", "school__sector__name", "school__name", "supervisor__full_name")
+    )
+    allowed = _ro_allowed_sector_ids(profile)
+    if allowed is not None:
+        qs = qs.filter(
+            _RoQ(supervisor__sector_id__in=allowed)
+            | _RoQ(school__sector_id__in=allowed)
+        )
+    return qs
+
+
+def _ro_scoped_supervisor_ids(profile: dict) -> list[int]:
+    """
+    المشرفون ضمن نطاق الاطلاع.
+    مدير القسم يرى جميع المشرفين النشطين.
+    مدير الوحدة يرى المشرفين المرتبطين بقطاعه مباشرة أو عبر إسناد مدرسة داخل قطاعه.
+    """
+    allowed = _ro_allowed_sector_ids(profile)
+
+    if allowed is None:
+        return list(
+            _RoSupervisor.objects
+            .filter(is_active=True)
+            .values_list("id", flat=True)
+            .distinct()
+        )
+
+    by_supervisor_sector = set(
+        _RoSupervisor.objects
+        .filter(is_active=True, sector_id__in=allowed)
+        .values_list("id", flat=True)
+    )
+
+    by_assignment_school_sector = set(
+        _RoAssignment.objects
+        .filter(is_active=True, school__is_active=True, school__sector_id__in=allowed)
+        .values_list("supervisor_id", flat=True)
+        .distinct()
+    )
+
+    return sorted(by_supervisor_sector | by_assignment_school_sector)
+
+
+def _ro_supervisor_sector_map(supervisor_ids: list[int], profile: dict) -> dict[int, str]:
+    """
+    يعرض قطاع المشرف في بوابة الاطلاع.
+    الأولوية:
+    1) القطاع المسجل في صفحة المشرفين Supervisor.sector
+    2) قطاعات المدارس المسندة له Assignment.school.sector
+    """
+    if not supervisor_ids:
+        return {}
+
+    allowed = _ro_allowed_sector_ids(profile)
+    result: dict[int, list[str]] = {int(sid): [] for sid in supervisor_ids}
+
+    supervisors_qs = (
+        _RoSupervisor.objects
+        .filter(id__in=supervisor_ids)
+        .select_related("sector")
+    )
+    if allowed is not None:
+        supervisors_qs = supervisors_qs.filter(
+            _RoQ(sector_id__in=allowed)
+            | _RoQ(assignments__school__sector_id__in=allowed, assignments__is_active=True)
+        ).distinct()
+
+    for supervisor in supervisors_qs:
+        sid = int(supervisor.id)
+        name = _ro_sector_name_from_obj(supervisor)
+        if name:
+            result.setdefault(sid, [])
+            result[sid].append(name)
+
+    assignments_qs = (
+        _RoAssignment.objects
+        .filter(is_active=True, supervisor_id__in=supervisor_ids, school__is_active=True)
+        .select_related("supervisor__sector", "school__sector")
+    )
+    if allowed is not None:
+        assignments_qs = assignments_qs.filter(
+            _RoQ(supervisor__sector_id__in=allowed)
+            | _RoQ(school__sector_id__in=allowed)
+        )
+
+    for assignment in assignments_qs:
+        sid = int(assignment.supervisor_id)
+        result.setdefault(sid, [])
+
+        sup_sector = _ro_sector_name_from_obj(getattr(assignment, "supervisor", None))
+        school_sector = _ro_sector_name_from_obj(getattr(assignment, "school", None))
+
+        if sup_sector:
+            result[sid].append(sup_sector)
+        if school_sector:
+            result[sid].append(school_sector)
+
+    return {
+        sid: "، ".join(_ro_unique_sector_names(names)) or "—"
+        for sid, names in result.items()
+    }
+

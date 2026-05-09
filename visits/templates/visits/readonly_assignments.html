@@ -1,18 +1,55 @@
 {% extends "visits/readonly_base.html" %}
+
 {% block title %}الإسنادات{% endblock %}
 {% block page_title %}الإسنادات{% endblock %}
 {% block page_subtitle %}استعراض الإسنادات النشطة ضمن نطاق الصلاحية فقط، دون إضافة أو حذف أو تعديل.{% endblock %}
+
 {% block content %}
 <form class="ro-card ro-filter ro-filter-assignments" method="get">
-  <div class="ro-field"><label>القطاع</label><select class="ro-select" name="sector"><option value="0">حسب الصلاحية</option>{% for sector in sector_choices %}<option value="{{ sector.id }}" {% if sector_id == sector.id %}selected{% endif %}>{{ sector.name }}</option>{% endfor %}</select></div>
-  <div class="ro-field"><label>بحث</label><input class="ro-input" name="q" value="{{ q }}" placeholder="المدرسة، المشرف، الرقم الإحصائي، الهوية"></div>
+  <div class="ro-field">
+    <label for="sector">القطاع</label>
+    <select class="ro-select" name="sector" id="sector">
+      <option value="0" {% if not sector_id %}selected{% endif %}>حسب الصلاحية</option>
+      {% for sector in sector_choices %}
+        <option value="{{ sector.id }}" {% if sector_id == sector.id %}selected{% endif %}>{{ sector.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="ro-field">
+    <label for="q">بحث</label>
+    <input class="ro-input" type="search" name="q" id="q" value="{{ q }}" placeholder="المدرسة، المشرف، الرقم الإحصائي، الهوية">
+  </div>
+
   <button class="ro-btn primary" type="submit">تطبيق</button>
 </form>
+
 <div class="ro-stats ro-stats-3">
-  <div class="ro-stat"><div><div class="label">الإسنادات النشطة</div><div class="sub">مدرسة ↔ مشرف</div></div><div class="value">{{ assignments_count }}</div></div>
-  <div class="ro-stat"><div><div class="label">المدارس المسندة</div><div class="sub">ضمن النطاق</div></div><div class="value">{{ schools_count }}</div></div>
-  <div class="ro-stat"><div><div class="label">المشرفون</div><div class="sub">لديهم إسناد</div></div><div class="value">{{ supervisors_count }}</div></div>
+  <div class="ro-stat">
+    <div>
+      <div class="label">الإسنادات النشطة</div>
+      <div class="sub">مدرسة ↔ مشرف</div>
+    </div>
+    <div class="value">{{ assignments_count }}</div>
+  </div>
+
+  <div class="ro-stat">
+    <div>
+      <div class="label">المدارس المسندة</div>
+      <div class="sub">ضمن النطاق</div>
+    </div>
+    <div class="value">{{ schools_count }}</div>
+  </div>
+
+  <div class="ro-stat">
+    <div>
+      <div class="label">المشرفون</div>
+      <div class="sub">لديهم إسناد</div>
+    </div>
+    <div class="value">{{ supervisors_count }}</div>
+  </div>
 </div>
+
 <div class="ro-card">
   <div class="ro-card-head">
     <div>
@@ -20,25 +57,63 @@
       <div class="ro-note">تظهر الإسنادات النشطة فقط ضمن نطاق الاطلاع.</div>
     </div>
   </div>
+
   <div class="ro-table-wrap">
     <table class="ro-table">
-      <thead><tr><th>المدرسة</th><th>الرقم الإحصائي</th><th>القطاع</th><th>المشرف</th><th>هوية المشرف</th><th>الحالة</th></tr></thead>
-      <tbody>
-      {% for a in rows %}
+      <thead>
         <tr>
-          <td><span class="ro-name">{{ a.school.name }}</span></td>
-          <td>{{ a.school.stat_code|default:"—" }}</td>
-          <td><span class="ro-badge">{{ a.school.sector.name|default:"—" }}</span></td>
-          <td>{{ a.supervisor.full_name }}</td>
-          <td>{{ a.supervisor.national_id|default:"—" }}</td>
-          <td><span class="ro-badge ok">نشط</span></td>
+          <th>المدرسة</th>
+          <th>الرقم الإحصائي</th>
+          <th>القطاع</th>
+          <th>المشرف</th>
+          <th>هوية المشرف</th>
+          <th>الحالة</th>
         </tr>
-      {% empty %}
-        <tr><td colspan="6" class="ro-empty">لا توجد إسنادات ضمن الفلاتر الحالية.</td></tr>
-      {% endfor %}
+      </thead>
+      <tbody>
+        {% for a in rows %}
+          <tr>
+            <td><span class="ro-name">{{ a.school.name }}</span></td>
+            <td>{{ a.school.stat_code|default:"—" }}</td>
+            <td><span class="ro-badge">{% firstof a.supervisor.sector.name a.school.sector.name "—" %}</span></td>
+            <td>{{ a.supervisor.full_name }}</td>
+            <td>{{ a.supervisor.national_id|default:"—" }}</td>
+            <td><span class="ro-badge ok">نشط</span></td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6" class="ro-empty">لا توجد إسنادات ضمن الفلاتر الحالية.</td>
+          </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
-  <div class="ro-pager"><span>صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}</span><span>المعروض {{ page_obj.object_list|length }} من {{ page_obj.paginator.count }}</span></div>
+
+  {% if page_obj %}
+    <div class="ro-pagination">
+      <div class="ro-pagination-info">
+        <span>صفحة {{ page_obj.number }} من {{ page_obj.paginator.num_pages }}</span>
+        <span>المعروض {{ page_obj.start_index }}–{{ page_obj.end_index }} من {{ page_obj.paginator.count }}</span>
+      </div>
+
+      <div class="ro-pagination-actions">
+        {% if page_obj.has_previous %}
+          <a class="ro-page-btn" href="?sector={{ sector_id|default:0 }}&q={{ q|urlencode }}&ps={{ request.GET.ps|default:'25' }}&page=1">الأولى</a>
+          <a class="ro-page-btn" href="?sector={{ sector_id|default:0 }}&q={{ q|urlencode }}&ps={{ request.GET.ps|default:'25' }}&page={{ page_obj.previous_page_number }}">السابق</a>
+        {% else %}
+          <span class="ro-page-btn disabled">الأولى</span>
+          <span class="ro-page-btn disabled">السابق</span>
+        {% endif %}
+
+        {% if page_obj.has_next %}
+          <a class="ro-page-btn" href="?sector={{ sector_id|default:0 }}&q={{ q|urlencode }}&ps={{ request.GET.ps|default:'25' }}&page={{ page_obj.next_page_number }}">التالي</a>
+          <a class="ro-page-btn" href="?sector={{ sector_id|default:0 }}&q={{ q|urlencode }}&ps={{ request.GET.ps|default:'25' }}&page={{ page_obj.paginator.num_pages }}">الأخيرة</a>
+        {% else %}
+          <span class="ro-page-btn disabled">التالي</span>
+          <span class="ro-page-btn disabled">الأخيرة</span>
+        {% endif %}
+      </div>
+    </div>
+  {% endif %}
 </div>
 {% endblock %}
