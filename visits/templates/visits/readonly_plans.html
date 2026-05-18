@@ -4,6 +4,198 @@
 {% block page_title %}خطط الزيارات{% endblock %}
 {% block page_subtitle %}استعراض خطط الزيارات حسب الأسبوع والحالة ونطاق الصلاحية، دون صلاحيات تعديل أو اعتماد.{% endblock %}
 
+{% block extra_css %}
+<style>
+  .ro-mobile-plans-list{
+    display:none;
+  }
+
+  .readonly-plans-actions{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  @media (max-width:900px){
+    .ro-filter-grid{
+      display:grid!important;
+      grid-template-columns:1fr!important;
+      gap:9px!important;
+      padding:12px!important;
+    }
+
+    .ro-filter-grid .ro-btn,
+    .readonly-plans-actions .ro-btn{
+      width:100%!important;
+      min-height:36px;
+    }
+
+    .ro-stats,
+    .ro-stats-5{
+      display:grid!important;
+      grid-template-columns:1fr!important;
+      gap:8px!important;
+    }
+
+    .ro-stat{
+      min-height:58px;
+      padding:10px 12px;
+      border-radius:15px;
+    }
+
+    .ro-stat .label{
+      font-size:11.5px;
+    }
+
+    .ro-stat .sub{
+      font-size:10.8px;
+    }
+
+    .ro-stat .value{
+      font-size:18px;
+    }
+
+    .ro-card-head{
+      display:grid!important;
+      gap:9px!important;
+    }
+
+    .readonly-plans-actions{
+      justify-content:stretch;
+      width:100%;
+    }
+
+    .readonly-plans-table-wrap{
+      display:none!important;
+    }
+
+    .readonly-plans-mobile-list{
+      display:grid!important;
+      gap:8px;
+      margin-top:10px;
+    }
+
+    .readonly-plan-card{
+      border:1px solid var(--vp-line, #dfe8e2);
+      background:#fff;
+      border-radius:15px;
+      padding:11px 12px;
+      display:grid;
+      gap:8px;
+      box-shadow:0 6px 16px rgba(15,23,42,.025);
+    }
+
+    .readonly-plan-head{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:8px;
+      padding-bottom:7px;
+      border-bottom:1px solid #edf2ee;
+    }
+
+    .readonly-plan-name{
+      color:var(--vp-primary, #173f31);
+      font-size:13px;
+      font-weight:600;
+      line-height:1.8;
+    }
+
+    .readonly-plan-sub{
+      color:#7a877f;
+      font-size:10.8px;
+      line-height:1.7;
+    }
+
+    .readonly-plan-week{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:24px;
+      padding:0 9px;
+      border-radius:999px;
+      border:1px solid #e2e9e5;
+      background:#fbfdfc;
+      color:#5f6e66;
+      font-size:10.5px;
+      white-space:nowrap;
+    }
+
+    .readonly-plan-lines{
+      display:grid;
+      gap:5px;
+    }
+
+    .readonly-plan-line{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:10px;
+      color:#66746c;
+      font-size:11.5px;
+      line-height:1.8;
+    }
+
+    .readonly-plan-line .label{
+      color:#7a877f;
+      white-space:nowrap;
+    }
+
+    .readonly-plan-line .value{
+      color:#25392e;
+      text-align:left;
+      overflow-wrap:anywhere;
+    }
+
+    .readonly-plan-badges{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      flex-wrap:wrap;
+      margin-top:2px;
+    }
+
+    .readonly-plan-actions{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:6px;
+      margin-top:2px;
+    }
+
+    .readonly-plan-actions .ro-btn{
+      width:100%;
+      min-height:34px;
+    }
+
+    .ro-pagination{
+      display:grid!important;
+      gap:8px!important;
+      margin-top:10px;
+    }
+
+    .ro-pagination-actions{
+      display:grid!important;
+      grid-template-columns:repeat(2,minmax(0,1fr))!important;
+      gap:6px!important;
+    }
+
+    .ro-page-btn{
+      width:100%;
+      justify-content:center;
+    }
+  }
+
+  @media (min-width:901px){
+    .readonly-plans-mobile-list{
+      display:none!important;
+    }
+  }
+</style>
+{% endblock %}
+
+
 {% block content %}
 <form class="ro-card ro-filter ro-filter-grid" method="get">
   <div class="ro-field">
@@ -93,15 +285,17 @@
       <div class="ro-note">القطاع يعرض من الإسنادات النشطة للمشرف، وليس من المدرسة المختارة في الخطة فقط.</div>
     </div>
 
-    {% if can_export_weekly_plans %}
-      <a class="ro-btn soft"
-         href="{% url 'visits:viewer_plans_export' %}?week={{ week }}&status={{ status }}&sector={{ sector_id|default:0 }}&q={{ q|urlencode }}&ps={{ request.GET.ps|default:'20' }}">
-        تصدير خطط الزيارات
-      </a>
-    {% endif %}
+    <div class="readonly-plans-actions">
+      {% if can_export_weekly_plans %}
+        <a class="ro-btn soft"
+           href="{% url 'visits:viewer_plans_export' %}?week={{ week }}&status={{ status }}&sector={{ sector_id|default:0 }}&q={{ q|urlencode }}&ps={{ request.GET.ps|default:'20' }}">
+          تصدير خطط الزيارات
+        </a>
+      {% endif %}
+    </div>
   </div>
 
-  <div class="ro-table-wrap">
+  <div class="ro-table-wrap readonly-plans-table-wrap">
     <table class="ro-table">
       <thead>
         <tr>
@@ -146,6 +340,54 @@
         {% endfor %}
       </tbody>
     </table>
+  </div>
+
+  <div class="readonly-plans-mobile-list">
+    {% for r in rows %}
+      <div class="readonly-plan-card">
+        <div class="readonly-plan-head">
+          <div>
+            <div class="readonly-plan-name">{{ r.supervisor.full_name }}</div>
+            <div class="readonly-plan-sub">{{ r.supervisor.national_id }}</div>
+          </div>
+          <span class="readonly-plan-week">الأسبوع {{ r.plan.week.week_no }}</span>
+        </div>
+
+        <div class="readonly-plan-lines">
+          <div class="readonly-plan-line">
+            <span class="label">القطاع</span>
+            <span class="value">{{ r.sector_names }}</span>
+          </div>
+
+          <div class="readonly-plan-line">
+            <span class="label">آخر حفظ</span>
+            <span class="value">{% if r.last_saved %}{{ r.last_saved|date:"Y-m-d H:i" }}{% else %}—{% endif %}</span>
+          </div>
+        </div>
+
+        <div class="readonly-plan-badges">
+          <span class="ro-badge {{ r.status_code }} {% if r.status_code == 'unlock' %}ro-status-split{% endif %}">
+            {% if r.status_code == "unlock" %}
+              <span>فك اعتماد</span>
+            {% else %}
+              {{ r.status_label }}
+            {% endif %}
+          </span>
+
+          <span class="ro-badge {% if r.is_full %}full{% else %}partial{% endif %}">
+            {{ r.filled_label }}
+          </span>
+        </div>
+
+        <div class="readonly-plan-actions">
+          <a class="ro-btn" href="{% url 'visits:viewer_plan_detail' r.plan.id %}">تفاصيل الخطة</a>
+        </div>
+      </div>
+    {% empty %}
+      <div class="readonly-plan-card">
+        <div class="readonly-plan-name">لا توجد نتائج مطابقة للفلاتر الحالية.</div>
+      </div>
+    {% endfor %}
   </div>
 
   {% if page_obj %}

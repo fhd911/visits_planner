@@ -9,14 +9,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   {% include "visits/readonly_base_style.html" %}
-  {% block extra_css %}{% endblock %}
+{% block extra_css %}{% endblock %}
 </head>
 <body>
 {% with url_name=request.resolver_match.url_name %}
 <header class="ro-topbar">
   <div class="ro-inner">
     <div class="ro-brand">
-      <div class="ro-logo">ط</div>
       <div>
         <div class="ro-title">نظام زيارات المشرفين</div>
         <div class="ro-subtitle">بوابة الاطلاع — قسم الإدارة المدرسية — تعليم عسير</div>
