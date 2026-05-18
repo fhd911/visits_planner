@@ -7,7 +7,7 @@
   <title>{% block title %}بوابة الاطلاع{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   {% include "visits/readonly_base_style.html" %}
   {% block extra_css %}{% endblock %}
 </head>
@@ -24,13 +24,16 @@
     </div>
 
     <div class="ro-pills">
-      <span class="ro-pill ro-viewer-user-pill" title="الشخص المخوّل بدخول بوابة الاطلاع"><span class="dot"></span>{% firstof request.user.get_full_name request.user.username %}</span>
-      <span class="ro-pill"><span class="dot"></span>{{ viewer_scope_label|default:"نطاق الاطلاع" }}</span>
-      <span class="ro-pill"><span class="dot"></span>اليوم: {% now "d-m-Y" %}</span>
+      <span class="ro-pill ro-viewer-user-pill" title="الشخص المخوّل بدخول بوابة الاطلاع">
+        <span class="dot"></span>{% firstof request.user.get_full_name request.user.username %}
+      </span>
+      <span class="ro-pill">
+        <span class="dot"></span>اليوم: {% now "d-m-Y" %}
+      </span>
     </div>
 
     <nav class="ro-nav">
-      <a href="{% url 'visits:viewer_dashboard' %}" class="{% if url_name == 'viewer_dashboard' %}active{% endif %}">لوحة الاطلاع</a>
+      <a href="{% url 'visits:viewer_dashboard' %}" class="{% if url_name == 'viewer_dashboard' %}active{% endif %}">لوحة عامة</a>
       <a href="{% url 'visits:viewer_plans' %}" class="{% if url_name == 'viewer_plans' or url_name == 'viewer_plan_detail' %}active{% endif %}">خطط الزيارات</a>
       <a href="{% url 'visits:viewer_assignments' %}" class="{% if url_name == 'viewer_assignments' %}active{% endif %}">الإسنادات</a>
       <a href="{% url 'visits:viewer_logout' %}">خروج</a>
@@ -44,12 +47,21 @@
     <div class="ro-hero">
       <div>
         <h1>{% block page_title %}{{ viewer_page_title|default:"بوابة الاطلاع" }}{% endblock %}</h1>
-        <p>{% block page_subtitle %}استعراض الخطط والإسنادات حسب نطاق الصلاحية، دون صلاحيات تعديل أو اعتماد أو حذف.{% endblock %}</p>
+        <p>{% block page_subtitle %}استعراض الخطط والإسنادات حسب الصلاحية، دون صلاحيات تعديل أو اعتماد أو حذف.{% endblock %}</p>
       </div>
+
       <div class="ro-role-card">
         <span>الدور: <b>{{ viewer_role_label|default:"—" }}</b></span>
-        <span>نطاق الاطلاع: <b>{{ viewer_scope_label|default:"—" }}</b></span>
-        <span class="readonly-mark">الصلاحية: اطلاع فقط</span>
+        <span>
+          {% if viewer_role_label == "مدير القسم" %}
+            رئيس القسم:
+          {% elif viewer_role_label == "مدير وحدة" %}
+            مدير الوحدة:
+          {% else %}
+            المخوّل:
+          {% endif %}
+          <b>{% firstof request.user.get_full_name request.user.username %}</b>
+        </span>
       </div>
     </div>
 

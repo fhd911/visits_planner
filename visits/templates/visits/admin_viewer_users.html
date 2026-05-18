@@ -219,7 +219,7 @@
 
   .viewer-access-table{
     width:100%;
-    min-width:980px;
+    min-width:860px;
     border-collapse:separate;
     border-spacing:0;
   }
@@ -402,7 +402,6 @@
           <tr>
             <th>المستخدم المخوّل</th>
             <th>الدور</th>
-            <th>نطاق الاطلاع</th>
             <th>الحالة</th>
             <th>آخر دخول</th>
             <th>إجراءات</th>
@@ -417,7 +416,6 @@
                 {% if row.user.email %}<div class="viewer-access-muted"><span class="mini-label">البريد:</span> {{ row.user.email }}</div>{% endif %}
               </td>
               <td><span class="viewer-access-badge soft">{{ row.meta.role_label }}</span></td>
-              <td>{{ row.meta.scope_label }}</td>
               <td>
                 {% if row.user.is_active %}<span class="viewer-access-badge ok">مفعل</span>{% else %}<span class="viewer-access-badge warn">معطل</span>{% endif %}
               </td>
@@ -438,7 +436,7 @@
               </td>
             </tr>
           {% empty %}
-            <tr><td colspan="6"><div class="viewer-access-empty">لا توجد حسابات اطلاع مطابقة.</div></td></tr>
+            <tr><td colspan="5"><div class="viewer-access-empty">لا توجد حسابات اطلاع مطابقة.</div></td></tr>
           {% endfor %}
         </tbody>
       </table>

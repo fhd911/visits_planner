@@ -6491,6 +6491,21 @@ UNIT_GROUP_PREFIXES = (
     "readonly_unit:",
 )
 
+EXPORT_ASSIGNMENTS_GROUPS = {
+    "تصدير الإسنادات",
+    "readonly_export_assignments",
+    "export_assignments",
+}
+
+EXPORT_WEEKLY_PLANS_GROUPS = {
+    "تصدير الخطط الأسبوعية",
+    "تصدير خطط الزيارات",
+    "readonly_export_weekly_plans",
+    "export_weekly_plans",
+}
+
+EXPORT_GROUPS = EXPORT_ASSIGNMENTS_GROUPS | EXPORT_WEEKLY_PLANS_GROUPS
+
 
 @dataclass(frozen=True)
 class ReadOnlyScope:
@@ -6982,7 +6997,41 @@ def _clear_readonly_access_groups(user) -> None:
         user.groups.remove(*list(readonly_groups))
 
 
-def _apply_readonly_access_groups(user, *, role: str, sector_ids: list[int]) -> None:
+def _clear_readonly_export_groups(user) -> None:
+    from django.contrib.auth.models import Group
+
+    export_groups = Group.objects.filter(name__in=EXPORT_GROUPS)
+    if export_groups.exists():
+        user.groups.remove(*list(export_groups))
+
+
+def _apply_readonly_export_groups(
+    user,
+    *,
+    can_export_assignments: bool = False,
+    can_export_weekly_plans: bool = False,
+) -> None:
+    from django.contrib.auth.models import Group
+
+    _clear_readonly_export_groups(user)
+
+    if can_export_assignments:
+        group, _ = Group.objects.get_or_create(name="تصدير الإسنادات")
+        user.groups.add(group)
+
+    if can_export_weekly_plans:
+        group, _ = Group.objects.get_or_create(name="تصدير الخطط الأسبوعية")
+        user.groups.add(group)
+
+
+def _apply_readonly_access_groups(
+    user,
+    *,
+    role: str,
+    sector_ids: list[int],
+    can_export_assignments: bool = False,
+    can_export_weekly_plans: bool = False,
+) -> None:
     from django.contrib.auth.models import Group
 
     _clear_readonly_access_groups(user)
@@ -6990,16 +7039,30 @@ def _apply_readonly_access_groups(user, *, role: str, sector_ids: list[int]) -> 
     if role == "department":
         group, _ = Group.objects.get_or_create(name="مدير القسم")
         user.groups.add(group)
-        return
 
-    if role == "unit":
+    elif role == "unit":
         for sector_id in sector_ids:
             group, _ = Group.objects.get_or_create(name=f"مدير وحدة:{sector_id}")
             user.groups.add(group)
 
+    _apply_readonly_export_groups(
+        user,
+        can_export_assignments=can_export_assignments,
+        can_export_weekly_plans=can_export_weekly_plans,
+    )
+
+
+def _readonly_export_meta_for_user(user) -> dict[str, Any]:
+    groups = _user_group_names(user)
+    return {
+        "can_export_assignments": bool(groups & EXPORT_ASSIGNMENTS_GROUPS),
+        "can_export_weekly_plans": bool(groups & EXPORT_WEEKLY_PLANS_GROUPS),
+    }
+
 
 def _readonly_role_meta_for_user(user) -> dict[str, Any]:
     groups = _user_group_names(user)
+    export_meta = _readonly_export_meta_for_user(user)
 
     if groups & DEPARTMENT_GROUPS:
         return {
@@ -7007,7 +7070,8 @@ def _readonly_role_meta_for_user(user) -> dict[str, Any]:
             "role_label": "مدير القسم",
             "sector_ids": [],
             "sector_names": ["جميع القطاعات"],
-            "scope_label": "جميع الخطط والإسنادات",
+            "scope_label": "صلاحية عامة",
+            **export_meta,
         }
 
     sectors_by_name = {
@@ -7033,7 +7097,8 @@ def _readonly_role_meta_for_user(user) -> dict[str, Any]:
             "role_label": "مدير وحدة",
             "sector_ids": sector_ids,
             "sector_names": names,
-            "scope_label": "، ".join(names),
+            "scope_label": f"{len(names)} قطاعات محددة" if len(names) > 1 else (names[0] if names else "—"),
+            **export_meta,
         }
 
     return {
@@ -7042,6 +7107,7 @@ def _readonly_role_meta_for_user(user) -> dict[str, Any]:
         "sector_ids": [],
         "sector_names": [],
         "scope_label": "—",
+        **export_meta,
     }
 
 
@@ -7086,6 +7152,19 @@ def _validate_viewer_user_form(request: HttpRequest, *, existing_user=None) -> t
     password = request.POST.get("password") or ""
     password2 = request.POST.get("password2") or ""
     sector_ids = _parse_sector_ids_from_request(request)
+    if "can_export_assignments" in request.POST:
+        can_export_assignments = _cell_str(request.POST.get("can_export_assignments") or "") in ("1", "on", "true", "yes")
+    elif existing_user is not None:
+        can_export_assignments = _readonly_export_meta_for_user(existing_user)["can_export_assignments"]
+    else:
+        can_export_assignments = False
+
+    if "can_export_weekly_plans" in request.POST:
+        can_export_weekly_plans = _cell_str(request.POST.get("can_export_weekly_plans") or "") in ("1", "on", "true", "yes")
+    elif existing_user is not None:
+        can_export_weekly_plans = _readonly_export_meta_for_user(existing_user)["can_export_weekly_plans"]
+    else:
+        can_export_weekly_plans = False
 
     errors: list[str] = []
 
@@ -7131,6 +7210,8 @@ def _validate_viewer_user_form(request: HttpRequest, *, existing_user=None) -> t
         "is_active": is_active,
         "password": password,
         "sector_ids": sector_ids,
+        "can_export_assignments": can_export_assignments,
+        "can_export_weekly_plans": can_export_weekly_plans,
     }
     return data, errors
 
@@ -7176,6 +7257,8 @@ def admin_viewer_users_view(request: HttpRequest) -> HttpResponse:
         "active_count": sum(1 for row in rows if row["user"].is_active),
         "department_count": sum(1 for row in rows if row["meta"]["role"] == "department"),
         "unit_count": sum(1 for row in rows if row["meta"]["role"] == "unit"),
+        "export_assignments_count": sum(1 for row in rows if row["meta"].get("can_export_assignments")),
+        "export_weekly_plans_count": sum(1 for row in rows if row["meta"].get("can_export_weekly_plans")),
     }
     return render(request, "visits/admin_viewer_users.html", context)
 
@@ -7192,6 +7275,8 @@ def admin_viewer_user_create_view(request: HttpRequest) -> HttpResponse:
         "role": "department",
         "is_active": True,
         "sector_ids": [],
+        "can_export_assignments": False,
+        "can_export_weekly_plans": False,
     }
 
     if request.method == "POST":
@@ -7212,7 +7297,13 @@ def admin_viewer_user_create_view(request: HttpRequest) -> HttpResponse:
             )
             user.set_password(data["password"])
             user.save()
-            _apply_readonly_access_groups(user, role=data["role"], sector_ids=data["sector_ids"])
+            _apply_readonly_access_groups(
+                user,
+                role=data["role"],
+                sector_ids=data["sector_ids"],
+                can_export_assignments=data["can_export_assignments"],
+                can_export_weekly_plans=data["can_export_weekly_plans"],
+            )
             messages.success(request, "تم إنشاء حساب الاطلاع بنجاح.")
             return redirect("visits:admin_viewer_users")
 
@@ -7256,6 +7347,8 @@ def admin_viewer_user_edit_view(request: HttpRequest, user_id: int) -> HttpRespo
         "role": meta["role"],
         "is_active": target_user.is_active,
         "sector_ids": meta["sector_ids"],
+        "can_export_assignments": meta.get("can_export_assignments", False),
+        "can_export_weekly_plans": meta.get("can_export_weekly_plans", False),
     }
 
     if request.method == "POST":
@@ -7273,7 +7366,13 @@ def admin_viewer_user_edit_view(request: HttpRequest, user_id: int) -> HttpRespo
             if data["password"]:
                 target_user.set_password(data["password"])
             target_user.save()
-            _apply_readonly_access_groups(target_user, role=data["role"], sector_ids=data["sector_ids"])
+            _apply_readonly_access_groups(
+                target_user,
+                role=data["role"],
+                sector_ids=data["sector_ids"],
+                can_export_assignments=data["can_export_assignments"],
+                can_export_weekly_plans=data["can_export_weekly_plans"],
+            )
             messages.success(request, "تم تحديث حساب الاطلاع بنجاح.")
             return redirect("visits:admin_viewer_users")
 
@@ -7385,6 +7484,19 @@ except Exception:  # عند وجود الأسماء مستوردة مسبقًا 
 RO_DEPARTMENT_GROUP_NAMES = {"مدير القسم", "مدير قسم", "readonly_department", "readonly_department_manager", "department_manager"}
 RO_UNIT_GROUP_PREFIXES = ("مدير وحدة:", "مدير وحدة -", "مدير وحدة ", "readonly_unit:", "unit_manager:")
 RO_SUP_SESSION_KEY = globals().get("SESSION_SUP_ID", "visits_sup_id")
+
+RO_EXPORT_ASSIGNMENTS_GROUP_NAMES = {
+    "تصدير الإسنادات",
+    "readonly_export_assignments",
+    "export_assignments",
+}
+
+RO_EXPORT_WEEKLY_PLANS_GROUP_NAMES = {
+    "تصدير الخطط الأسبوعية",
+    "تصدير خطط الزيارات",
+    "readonly_export_weekly_plans",
+    "export_weekly_plans",
+}
 
 
 def _ro_digits(value: object) -> str:
@@ -7499,25 +7611,41 @@ def _ro_can_view(user) -> bool:
 
 
 def _ro_access_profile(user) -> dict:
+    """
+    يبني ملف صلاحية بوابة الاطلاع دون تمرير قائمة أسماء القطاعات الطويلة للواجهة.
+    التفاصيل تبقى مستخدمة في الاستعلامات فقط، أما العرض العام فيكون مختصرًا أو مخفيًا.
+    """
     if _ro_is_department_manager(user):
         sectors = list(_RoSector.objects.filter(is_active=True).order_by("name"))
         return {
             "role_code": "department",
             "role_label": "مدير القسم" if not getattr(user, "is_staff", False) else "مدير النظام",
-            "scope_label": "جميع القطاعات",
+            "scope_label": "",
+            "scope_summary": "جميع القطاعات",
             "allowed_sector_ids": None,
             "allowed_sectors": sectors,
+            "allowed_sectors_count": len(sectors),
             "is_department": True,
         }
 
     sector_ids = _ro_unit_sector_ids(user)
     sectors = list(_RoSector.objects.filter(id__in=sector_ids, is_active=True).order_by("name"))
+    count = len(sectors)
+    if count == 0:
+        scope_summary = "نطاق غير محدد"
+    elif count == 1:
+        scope_summary = "قطاع واحد محدد"
+    else:
+        scope_summary = f"{count} قطاعات محددة"
+
     return {
         "role_code": "unit",
         "role_label": "مدير وحدة",
-        "scope_label": "، ".join(s.name for s in sectors) if sectors else "لم يحدد نطاق الاطلاع",
+        "scope_label": "",
+        "scope_summary": scope_summary,
         "allowed_sector_ids": sector_ids,
         "allowed_sectors": sectors,
+        "allowed_sectors_count": count,
         "is_department": False,
     }
 
@@ -7608,14 +7736,36 @@ def _ro_plan_rows(plans, profile: dict) -> list[dict]:
     return rows
 
 
+def _ro_can_export_assignments(user) -> bool:
+    if getattr(user, "is_staff", False) or getattr(user, "is_superuser", False):
+        return True
+    groups = _ro_group_names(user)
+    return bool(groups & RO_EXPORT_ASSIGNMENTS_GROUP_NAMES)
+
+
+def _ro_can_export_weekly_plans(user) -> bool:
+    if getattr(user, "is_staff", False) or getattr(user, "is_superuser", False):
+        return True
+    groups = _ro_group_names(user)
+    return bool(groups & RO_EXPORT_WEEKLY_PLANS_GROUP_NAMES)
+
+
+def _ro_export_forbidden_response(request):
+    _ro_messages.warning(request, "لا تملك صلاحية تصدير هذا الملف.")
+    return _ro_redirect("visits:viewer_dashboard")
+
+
 def _ro_common_context(request, *, page_title: str = "بوابة الاطلاع") -> dict:
     profile = _ro_access_profile(request.user)
     return {
         "viewer_profile": profile,
         "viewer_role_label": profile["role_label"],
-        "viewer_scope_label": profile["scope_label"],
+        "viewer_scope_label": "",
+        "viewer_scope_summary": profile.get("scope_summary", ""),
         "viewer_allowed_sectors": profile["allowed_sectors"],
         "viewer_page_title": page_title,
+        "can_export_assignments": _ro_can_export_assignments(request.user),
+        "can_export_weekly_plans": _ro_can_export_weekly_plans(request.user),
     }
 
 
@@ -7650,35 +7800,227 @@ def readonly_logout_view(request):
 @_ro_require_viewer
 def readonly_dashboard_view(request):
     profile = _ro_access_profile(request.user)
-    week_no = _ro_safe_int(request.GET.get("week") or _ro_default_week_no(), _ro_default_week_no())
-    week_obj = _ro_get_object_or_404(_RoPlanWeek, week_no=week_no)
 
+    raw_week = (request.GET.get("week") or "all").strip()
+    is_all_period = raw_week in ("", "all", "0", "all_weeks")
+
+    default_week_no = _ro_default_week_no()
+    week_no = default_week_no
+    week_obj = None
+
+    # نستخدم المشرفين فقط لتحديد نطاق البيانات في الخلفية، ولا نعرضهم في لوحة الاطلاع.
     supervisor_ids = _ro_scoped_supervisor_ids(profile)
-    plans = (
+
+    plans_qs = (
         _RoPlan.objects
-        .filter(week=week_obj, supervisor_id__in=supervisor_ids)
-        .select_related("supervisor", "week")
+        .filter(supervisor_id__in=supervisor_ids)
+        .select_related("week")
         .prefetch_related("days")
-        .order_by("supervisor__full_name")
+        .order_by("week__week_no", "id")
     )
 
-    plan_rows = _ro_plan_rows(plans[:8], profile)
-    assignments = _ro_scoped_assignments_qs(profile)
+    if is_all_period:
+        plans_qs = plans_qs.filter(week__is_break=False)
+        period_label = "جميع الأسابيع"
+        period_heading = "الموقف العام"
+        period_note = "قراءة تراكمية لجميع الأسابيع ضمن نطاق الاطلاع."
+        selected_week_value = "all"
+    else:
+        week_no = _ro_safe_int(raw_week, default_week_no)
+        week_obj = _ro_get_object_or_404(_RoPlanWeek, week_no=week_no)
+        plans_qs = plans_qs.filter(week=week_obj)
+        period_label = f"الأسبوع {week_no}"
+        period_heading = f"الأسبوع {week_no}"
+        period_note = "قراءة أسبوعية مختصرة ضمن نطاق الاطلاع."
+        selected_week_value = str(week_no)
+
+    plans = list(plans_qs)
+    plan_ids = [p.id for p in plans]
+
+    approved_status = getattr(_RoPlan, "STATUS_APPROVED", "approved")
+    draft_status = getattr(_RoPlan, "STATUS_DRAFT", "draft")
+    unlock_status = getattr(_RoPlan, "STATUS_UNLOCK_REQUESTED", "unlock_requested")
+
+    total_plans = len(plans)
+    approved_count = sum(1 for p in plans if p.status == approved_status)
+    draft_count = sum(1 for p in plans if p.status == draft_status)
+    unlock_count = sum(1 for p in plans if p.status == unlock_status)
+    other_plans_count = max(total_plans - approved_count - draft_count - unlock_count, 0)
+
+    full_count = sum(1 for p in plans if _ro_plan_filled_count(p) == len(WEEKDAYS))
+    not_full_count = max(total_plans - full_count, 0)
+
+    day_qs = _RoPlanDay.objects.filter(plan_id__in=plan_ids)
+
+    visit_in_value = getattr(_RoPlanDay, "VISIT_IN", "in")
+    visit_remote_value = getattr(_RoPlanDay, "VISIT_REMOTE", "remote")
+    visit_none_value = getattr(_RoPlanDay, "VISIT_NONE", "none")
+
+    visit_in_count = day_qs.filter(visit_type=visit_in_value).count()
+    visit_remote_count = day_qs.filter(visit_type=visit_remote_value).count()
+    visit_none_count = day_qs.filter(visit_type=visit_none_value).count()
+    visit_total = visit_in_count + visit_remote_count
+
+    planned_visit_days = day_qs.filter(school_id__isnull=False).count()
+    planned_school_ids = set(
+        day_qs
+        .filter(school_id__isnull=False)
+        .values_list("school_id", flat=True)
+        .distinct()
+    )
+    period_planned_schools_count = len(planned_school_ids)
+
+    assignments_qs = _ro_scoped_assignments_qs(profile)
     schools_qs = _ro_scoped_schools_qs(profile)
 
-    context = _ro_common_context(request, page_title="لوحة الاطلاع")
+    assignments_count = assignments_qs.count()
+    assigned_schools_count = assignments_qs.values("school_id").distinct().count()
+    scoped_schools_count = schools_qs.count()
+
+    period_week_numbers = set()
+    for p in plans:
+        week = getattr(p, "week", None)
+        week_num = getattr(week, "week_no", None)
+        if week_num is not None:
+            period_week_numbers.add(week_num)
+    period_weeks_count = len(period_week_numbers)
+
+    def pct(part: int, whole: int) -> int:
+        return round((part / whole) * 100) if whole else 0
+
+    approval_percent = pct(approved_count, total_plans)
+    completion_percent = pct(full_count, total_plans)
+    in_visit_percent = pct(visit_in_count, visit_total)
+    remote_visit_percent = pct(visit_remote_count, visit_total)
+
+    critical_followup_count = not_full_count + unlock_count
+    attention_count = draft_count + not_full_count + unlock_count
+
+    if total_plans == 0:
+        general_status_label = "لا توجد بيانات"
+        general_status_tone = "neutral"
+        general_status_text = "لا توجد خطط ضمن نطاق الاطلاع للفترة المحددة."
+    elif unlock_count or completion_percent < 70 or approval_percent < 70:
+        general_status_label = "يتطلب متابعة"
+        general_status_tone = "warn"
+        general_status_text = "توجد قراءات تستدعي المتابعة قبل اعتماد الموقف العام."
+    elif draft_count or not_full_count:
+        general_status_label = "متابعة عادية"
+        general_status_tone = "info"
+        general_status_text = "الموقف العام مقبول مع وجود بنود تشغيلية تحتاج إكمالًا."
+    else:
+        general_status_label = "مستقر"
+        general_status_tone = "ok"
+        general_status_text = "المؤشرات العامة مستقرة ضمن نطاق الاطلاع."
+
+    general_sentence = (
+        f"تم اعتماد {approved_count} من أصل {total_plans} خطة، "
+        f"واكتملت {full_count} خطة، مع وجود {not_full_count} خطة غير مكتملة "
+        f"و{unlock_count} طلب فك اعتماد."
+    )
+
+    attention_items = [
+        {
+            "title": "خطط غير معتمدة",
+            "value": draft_count,
+            "text": "خطط ما زالت في حالة مسودة.",
+            "tone": "warn" if draft_count else "neutral",
+        },
+        {
+            "title": "خطط غير مكتملة",
+            "value": not_full_count,
+            "text": "خطط لم تستكمل أيامها.",
+            "tone": "warn" if not_full_count else "neutral",
+        },
+        {
+            "title": "طلبات فك اعتماد",
+            "value": unlock_count,
+            "text": "طلبات تحتاج معالجة إدارية.",
+            "tone": "danger" if unlock_count else "neutral",
+        },
+    ]
+
+    if total_plans == 0:
+        followup_items = [{
+            "tone": "neutral",
+            "title": "لا توجد خطط ضمن الفترة",
+            "text": "لا تظهر بيانات خطط للفترة المحددة ضمن نطاق الاطلاع الحالي.",
+        }]
+    elif not (draft_count or not_full_count or unlock_count):
+        followup_items = [{
+            "tone": "ok",
+            "title": "لا توجد نقاط متابعة بارزة",
+            "text": "لا توجد بنود ظاهرة تحتاج متابعة في القراءة الحالية.",
+        }]
+    else:
+        followup_items = []
+        if draft_count:
+            followup_items.append({
+                "tone": "warn",
+                "title": "خطط غير معتمدة",
+                "text": f"يوجد {draft_count} خطة في حالة مسودة.",
+            })
+        if not_full_count:
+            followup_items.append({
+                "tone": "warn",
+                "title": "خطط غير مكتملة",
+                "text": f"يوجد {not_full_count} خطة لم تستكمل أيامها.",
+            })
+        if unlock_count:
+            followup_items.append({
+                "tone": "danger",
+                "title": "طلبات فك اعتماد",
+                "text": f"يوجد {unlock_count} طلب فك اعتماد يحتاج معالجة إدارية.",
+            })
+
+    context = _ro_common_context(request, page_title="لوحة عامة")
     context.update({
         "week": week_no,
         "week_obj": week_obj,
         "week_choices": _ro_week_choices(),
-        "plans_count": plans.count(),
-        "approved_count": plans.filter(status=getattr(_RoPlan, "STATUS_APPROVED", "approved")).count(),
-        "draft_count": plans.filter(status=getattr(_RoPlan, "STATUS_DRAFT", "draft")).count(),
-        "unlock_count": plans.filter(status=getattr(_RoPlan, "STATUS_UNLOCK_REQUESTED", "unlock_requested")).count(),
-        "supervisors_count": len(supervisor_ids),
-        "schools_count": schools_qs.count(),
-        "assignments_count": assignments.count(),
-        "rows": plan_rows,
+        "selected_week_value": selected_week_value,
+        "is_all_period": is_all_period,
+        "period_label": period_label,
+        "period_heading": period_heading,
+        "period_note": period_note,
+        "period_weeks_count": period_weeks_count,
+        "details_week": week_no,
+
+        # الحالة العامة
+        "executive_status_label": general_status_label,
+        "executive_status_tone": general_status_tone,
+        "executive_status_text": general_status_text,
+        "general_status_label": general_status_label,
+        "general_status_tone": general_status_tone,
+        "general_status_text": general_status_text,
+        "general_sentence": general_sentence,
+        "attention_items": attention_items,
+        "followup_items": followup_items,
+
+        # القيم الرقمية
+        "plans_count": total_plans,
+        "approved_count": approved_count,
+        "draft_count": draft_count,
+        "unlock_count": unlock_count,
+        "other_plans_count": other_plans_count,
+        "full_count": full_count,
+        "not_full_count": not_full_count,
+        "approval_percent": approval_percent,
+        "completion_percent": completion_percent,
+        "visit_in_count": visit_in_count,
+        "visit_remote_count": visit_remote_count,
+        "visit_none_count": visit_none_count,
+        "visit_total": visit_total,
+        "planned_visit_days": planned_visit_days,
+        "period_planned_schools_count": period_planned_schools_count,
+        "weekly_planned_schools_count": period_planned_schools_count,
+        "assignments_count": assignments_count,
+        "assigned_schools_count": assigned_schools_count,
+        "schools_count": scoped_schools_count,
+        "in_visit_percent": in_visit_percent,
+        "remote_visit_percent": remote_visit_percent,
+        "critical_followup_count": critical_followup_count,
+        "attention_count": attention_count,
     })
     return _ro_render(request, "visits/readonly_dashboard.html", context)
 
@@ -7760,6 +8102,7 @@ def readonly_plans_view(request):
         "draft_count": draft_count,
         "unlock_count": unlock_count,
         "not_full_count": not_full_count,
+        "export_query": request.GET.urlencode(),
     })
     return _ro_render(request, "visits/readonly_plans.html", context)
 
@@ -7858,8 +8201,314 @@ def readonly_assignments_view(request):
         "assignments_count": assignments.count(),
         "schools_count": assignments.values("school_id").distinct().count(),
         "supervisors_count": assignments.values("supervisor_id").distinct().count(),
+        "export_query": request.GET.urlencode(),
     })
     return _ro_render(request, "visits/readonly_assignments.html", context)
+
+
+def _ro_export_cell_value(value) -> str:
+    value = "" if value is None else str(value).strip()
+    return value or "—"
+
+
+def _ro_export_sector_label_for_assignment(assignment) -> str:
+    sup_sector = _ro_sector_name_from_obj(getattr(assignment, "supervisor", None))
+    school_sector = _ro_sector_name_from_obj(getattr(assignment, "school", None))
+    return sup_sector or school_sector or "—"
+
+
+def _ro_export_visit_label(day) -> str:
+    if not day:
+        return "—"
+    try:
+        return day.get_visit_type_display()
+    except Exception:
+        value = getattr(day, "visit_type", "") or ""
+        if value == getattr(_RoPlanDay, "VISIT_IN", "in"):
+            return "حضوري"
+        if value == getattr(_RoPlanDay, "VISIT_REMOTE", "remote"):
+            return "عن بُعد"
+        if value == getattr(_RoPlanDay, "VISIT_NONE", "none"):
+            return "بدون زيارة"
+        return value or "—"
+
+
+def _ro_export_school_or_reason(day) -> str:
+    if not day:
+        return "—"
+    if getattr(day, "school_id", None) and getattr(day, "school", None):
+        return _ro_export_cell_value(getattr(day.school, "name", ""))
+    if getattr(day, "no_visit_reason", None):
+        try:
+            return day.get_no_visit_reason_display()
+        except Exception:
+            return _ro_export_cell_value(getattr(day, "no_visit_reason", ""))
+    return "—"
+
+
+def _ro_prepare_export_sheet(ws, *, title: str, subtitle: str, headers: list[str]):
+    ws.sheet_view.rightToLeft = True
+
+    title_font = Font(name="Cairo", bold=True, size=14, color="173F31")
+    subtitle_font = Font(name="Cairo", size=11, color="66746C")
+    header_font = Font(name="Cairo", bold=True, size=11, color="173F31")
+    normal_font = Font(name="Cairo", size=10, color="1F2933")
+
+    header_fill = PatternFill("solid", fgColor="F4F8F6")
+    title_fill = PatternFill("solid", fgColor="EAF3EE")
+    thin = Side(style="thin", color="D9E4DE")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    right = Alignment(horizontal="right", vertical="center", wrap_text=True)
+
+    last_col = get_column_letter(len(headers))
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(headers))
+    ws["A1"] = title
+    ws["A1"].font = title_font
+    ws["A1"].fill = title_fill
+    ws["A1"].alignment = center
+
+    ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=len(headers))
+    ws["A2"] = subtitle
+    ws["A2"].font = subtitle_font
+    ws["A2"].alignment = center
+
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=4, column=col, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = center
+        cell.border = border
+
+    return {
+        "normal_font": normal_font,
+        "border": border,
+        "center": center,
+        "right": right,
+    }
+
+
+def _ro_style_export_row(ws, row_idx: int, *, col_count: int, style: dict, right_cols: set[int] | None = None):
+    right_cols = right_cols or set()
+    for col in range(1, col_count + 1):
+        cell = ws.cell(row=row_idx, column=col)
+        cell.font = style["normal_font"]
+        cell.border = style["border"]
+        cell.alignment = style["right"] if col in right_cols else style["center"]
+
+
+def _ro_build_weekly_plans_export_workbook(*, week_obj, plans: list, profile: dict, period_label: str = "") -> Workbook:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "خطط الزيارات"
+
+    headers = [
+        "الأسبوع",
+        "المشرف",
+        "القطاع",
+        "حالة الخطة",
+        "اكتمال الخطة",
+        "اليوم",
+        "المدرسة / السبب",
+        "نوع الزيارة",
+        "ملاحظات",
+    ]
+
+    style = _ro_prepare_export_sheet(
+        ws,
+        title="تصدير خطط الزيارات",
+        subtitle=f"نطاق الاطلاع: {profile.get('scope_label', '—')} — {period_label or getattr(week_obj, 'week_no', '—')}",
+        headers=headers,
+    )
+
+    weekday_names = [(0, "الأحد"), (1, "الإثنين"), (2, "الثلاثاء"), (3, "الأربعاء"), (4, "الخميس")]
+    sector_map = _ro_supervisor_sector_map([p.supervisor_id for p in plans], profile)
+
+    row_idx = 5
+    for plan in plans:
+        day_map = {day.weekday: day for day in plan.days.all()}
+        filled = _ro_plan_filled_count(plan)
+        for wd, wd_name in weekday_names:
+            day = day_map.get(wd)
+            values = [
+                f"الأسبوع {getattr(getattr(plan, 'week', None), 'week_no', getattr(week_obj, 'week_no', '—'))}",
+                _ro_export_cell_value(getattr(getattr(plan, "supervisor", None), "full_name", "")),
+                sector_map.get(plan.supervisor_id, "—"),
+                _ro_plan_status_label(plan),
+                f"{filled}/5",
+                wd_name,
+                _ro_export_school_or_reason(day),
+                _ro_export_visit_label(day),
+                _ro_export_cell_value(getattr(day, "note", "") if day else ""),
+            ]
+            for col, value in enumerate(values, start=1):
+                ws.cell(row=row_idx, column=col, value=value)
+            _ro_style_export_row(ws, row_idx, col_count=len(headers), style=style, right_cols={2, 3, 7, 9})
+            row_idx += 1
+
+    widths = {
+        1: 14,
+        2: 28,
+        3: 24,
+        4: 16,
+        5: 14,
+        6: 13,
+        7: 42,
+        8: 16,
+        9: 36,
+    }
+    for col, width in widths.items():
+        ws.column_dimensions[get_column_letter(col)].width = width
+
+    ws.freeze_panes = "A5"
+    return wb
+
+
+def _ro_build_assignments_export_workbook(*, assignments, profile: dict) -> Workbook:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "الإسنادات"
+
+    headers = [
+        "م",
+        "القطاع",
+        "اسم المدرسة",
+        "الرقم الإحصائي",
+        "الجنس",
+        "المشرف المسند",
+        "حالة الإسناد",
+    ]
+
+    style = _ro_prepare_export_sheet(
+        ws,
+        title="تصدير الإسنادات",
+        subtitle=f"نطاق الاطلاع: {profile.get('scope_label', '—')}",
+        headers=headers,
+    )
+
+    row_idx = 5
+    for i, assignment in enumerate(assignments, start=1):
+        school = getattr(assignment, "school", None)
+        supervisor = getattr(assignment, "supervisor", None)
+        values = [
+            i,
+            _ro_export_sector_label_for_assignment(assignment),
+            _ro_export_cell_value(getattr(school, "name", "")),
+            _ro_export_cell_value(getattr(school, "stat_code", "")),
+            _gender_label(getattr(school, "gender", "")),
+            _ro_export_cell_value(getattr(supervisor, "full_name", "")),
+            "نشط" if getattr(assignment, "is_active", False) else "غير نشط",
+        ]
+        for col, value in enumerate(values, start=1):
+            ws.cell(row=row_idx, column=col, value=value)
+        _ro_style_export_row(ws, row_idx, col_count=len(headers), style=style, right_cols={2, 3, 6})
+        row_idx += 1
+
+    widths = {1: 8, 2: 24, 3: 42, 4: 18, 5: 12, 6: 30, 7: 14}
+    for col, width in widths.items():
+        ws.column_dimensions[get_column_letter(col)].width = width
+
+    ws.freeze_panes = "A5"
+    return wb
+
+
+def _ro_scoped_plans_for_export(request, profile: dict):
+    week_no = _ro_safe_int(request.GET.get("week") or _ro_default_week_no(), _ro_default_week_no())
+    status = (request.GET.get("status") or "all").strip()
+    q = (request.GET.get("q") or "").strip()
+    sector_id = _ro_safe_int(request.GET.get("sector") or 0, 0)
+
+    week_obj = _ro_get_object_or_404(_RoPlanWeek, week_no=week_no)
+
+    allowed = profile.get("allowed_sector_ids")
+    effective_allowed = allowed
+    if sector_id:
+        if allowed is None or sector_id in allowed:
+            effective_allowed = [sector_id]
+        else:
+            effective_allowed = []
+
+    scoped_profile = dict(profile)
+    scoped_profile["allowed_sector_ids"] = effective_allowed
+    supervisor_ids = _ro_scoped_supervisor_ids(scoped_profile)
+
+    plans_qs = (
+        _RoPlan.objects
+        .filter(week=week_obj, supervisor_id__in=supervisor_ids)
+        .select_related("supervisor", "week")
+        .prefetch_related("days", "days__school")
+        .order_by("supervisor__full_name")
+    )
+
+    if q:
+        plans_qs = plans_qs.filter(
+            _RoQ(supervisor__full_name__icontains=q)
+            | _RoQ(supervisor__national_id__icontains=q)
+        )
+
+    plans_list = list(plans_qs)
+    approved_status = getattr(_RoPlan, "STATUS_APPROVED", "approved")
+    draft_status = getattr(_RoPlan, "STATUS_DRAFT", "draft")
+    unlock_status = getattr(_RoPlan, "STATUS_UNLOCK_REQUESTED", "unlock_requested")
+
+    if status == "approved":
+        plans_list = [p for p in plans_list if p.status == approved_status]
+    elif status == "draft":
+        plans_list = [p for p in plans_list if p.status == draft_status]
+    elif status == "unlock":
+        plans_list = [p for p in plans_list if p.status == unlock_status]
+    elif status == "not_full":
+        plans_list = [p for p in plans_list if _ro_plan_filled_count(p) < 5]
+
+    return week_obj, plans_list, scoped_profile
+
+
+@_ro_require_viewer
+def readonly_export_weekly_plans_view(request):
+    if not _ro_can_export_weekly_plans(request.user):
+        return _ro_export_forbidden_response(request)
+
+    profile = _ro_access_profile(request.user)
+    week_obj, plans, scoped_profile = _ro_scoped_plans_for_export(request, profile)
+
+    wb = _ro_build_weekly_plans_export_workbook(
+        week_obj=week_obj,
+        plans=plans,
+        profile=scoped_profile,
+        period_label=f"الأسبوع {week_obj.week_no}",
+    )
+    return _excel_response(wb, f"readonly-weekly-plans-week-{week_obj.week_no}.xlsx")
+
+
+@_ro_require_viewer
+def readonly_export_assignments_view(request):
+    if not _ro_can_export_assignments(request.user):
+        return _ro_export_forbidden_response(request)
+
+    profile = _ro_access_profile(request.user)
+    q = (request.GET.get("q") or "").strip()
+    sector_id = _ro_safe_int(request.GET.get("sector") or 0, 0)
+
+    allowed = profile.get("allowed_sector_ids")
+    scoped_profile = dict(profile)
+    if sector_id:
+        if allowed is None or sector_id in allowed:
+            scoped_profile["allowed_sector_ids"] = [sector_id]
+        else:
+            scoped_profile["allowed_sector_ids"] = []
+
+    assignments = _ro_scoped_assignments_qs(scoped_profile)
+    if q:
+        assignments = assignments.filter(
+            _RoQ(supervisor__full_name__icontains=q)
+            | _RoQ(supervisor__national_id__icontains=q)
+            | _RoQ(school__name__icontains=q)
+            | _RoQ(school__stat_code__icontains=q)
+        )
+
+    wb = _ro_build_assignments_export_workbook(assignments=list(assignments), profile=scoped_profile)
+    return _excel_response(wb, "readonly-assignments.xlsx")
+
 
 # =============================================================================
 # Read-only portal sector display fix

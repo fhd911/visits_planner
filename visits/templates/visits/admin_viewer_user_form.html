@@ -2,7 +2,7 @@
 
 {% block title %}{% if mode == 'create' %}إضافة حساب اطلاع{% else %}تعديل حساب اطلاع{% endif %}{% endblock %}
 {% block header_title %}{% if mode == 'create' %}إضافة حساب اطلاع{% else %}تعديل حساب اطلاع{% endif %}{% endblock %}
-{% block header_subtitle %}إدارة حساب مخوّل بالاطلاع فقط، مع تحديد الدور ونطاق القطاعات دون منحه صلاحيات تنفيذية.{% endblock %}
+{% block header_subtitle %}إدارة حساب مخوّل بالاطلاع فقط، مع تحديد الدور والصلاحيات دون منحه صلاحيات تنفيذية.{% endblock %}
 
 
 
@@ -10,7 +10,7 @@
   <div class="hero admin-viewer-hero-clean">
     <div>
       <h1>{% if mode == 'create' %}إضافة حساب اطلاع{% else %}تعديل حساب اطلاع{% endif %}</h1>
-      <p>إدارة حساب مخوّل بالاطلاع فقط، مع تحديد الدور ونطاق القطاعات دون منحه صلاحيات تنفيذية.</p>
+      <p>إدارة حساب مخوّل بالاطلاع فقط، مع تحديد الدور والصلاحيات دون منحه صلاحيات تنفيذية.</p>
     </div>
   </div>
 {% endblock %}
@@ -338,8 +338,8 @@
 
     <div class="viewer-form-section">
       <div class="viewer-form-section-title">
-        <h3>الصلاحية ونطاق الاطلاع</h3>
-        <p>مدير القسم يرى جميع القطاعات، ومدير الوحدة يرى القطاعات المحددة فقط.</p>
+        <h3>الصلاحية</h3>
+        <p>مدير القسم يملك صلاحية عامة، ومدير الوحدة تحدد قطاعات عمله داخل النموذج فقط دون عرضها في سجل الحسابات.</p>
       </div>
 
       <div class="viewer-form-grid three">
@@ -360,7 +360,7 @@
         </div>
 
         <div class="viewer-form-field full" id="sectorsBox">
-          <label>القطاعات لمدير الوحدة</label>
+          <label>تحديد قطاعات مدير الوحدة</label>
           <div class="viewer-sector-box">
             {% for s in sectors %}
               <label class="viewer-sector-item">
@@ -373,6 +373,41 @@
           </div>
           <div class="viewer-form-help">إذا كان الدور مدير القسم فلن يتم استخدام اختيار القطاعات.</div>
         </div>
+      </div>
+    </div>
+
+    <div class="viewer-form-section">
+      <div class="viewer-form-section-title">
+        <h3>صلاحيات التصدير</h3>
+        <p>تُمنح هذه الصلاحيات بشكل مستقل عن صلاحية الاطلاع، وتعمل ضمن نطاق الاطلاع المحدد للحساب فقط.</p>
+      </div>
+
+      <div class="viewer-form-grid">
+        <label class="viewer-form-active" style="height:auto;min-height:46px;align-items:flex-start;padding:10px 11px;">
+          <input
+            type="checkbox"
+            name="can_export_weekly_plans"
+            value="1"
+            {% if form_data.can_export_weekly_plans %}checked{% endif %}
+          >
+          <span>
+            <b>تصدير خطط الزيارات</b>
+            <span class="viewer-form-help" style="display:block;">يسمح بتنزيل ملف Excel لخطط الزيارات ضمن نطاق الاطلاع.</span>
+          </span>
+        </label>
+
+        <label class="viewer-form-active" style="height:auto;min-height:46px;align-items:flex-start;padding:10px 11px;">
+          <input
+            type="checkbox"
+            name="can_export_assignments"
+            value="1"
+            {% if form_data.can_export_assignments %}checked{% endif %}
+          >
+          <span>
+            <b>تصدير الإسنادات</b>
+            <span class="viewer-form-help" style="display:block;">يسمح بتنزيل ملف Excel للإسنادات ضمن نطاق الاطلاع.</span>
+          </span>
+        </label>
       </div>
     </div>
 

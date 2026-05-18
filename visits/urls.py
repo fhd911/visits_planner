@@ -94,6 +94,11 @@ def _fallback_supervisor_control_followups_view(request):
     return redirect("visits:supervisor_dashboard")
 
 
+def _fallback_readonly_export_not_configured_view(request, *args, **kwargs):
+    messages.warning(request, "مسار التصدير موجود، لكن دالة التصدير غير مفعلة في views.py.")
+    return redirect("visits:viewer_dashboard")
+
+
 def _supervisor_control_followup_respond_route(request, pk=None, followup_id=None, *args, **kwargs):
     target_id = followup_id if followup_id is not None else pk
     func = getattr(views, "supervisor_control_followup_respond_view", None)
@@ -125,16 +130,36 @@ urlpatterns = [
     path("viewer-logout/", views.readonly_logout_view, name="viewer_logout"),
     path("viewer/", views.readonly_dashboard_view, name="viewer_dashboard"),
     path("viewer/plans/", views.readonly_plans_view, name="viewer_plans"),
+    path(
+        "viewer/plans/export.xlsx",
+        _view_or("readonly_plans_export_view", _fallback_readonly_export_not_configured_view),
+        name="viewer_plans_export",
+    ),
     path("viewer/plans/<int:plan_id>/", views.readonly_plan_detail_view, name="viewer_plan_detail"),
     path("viewer/assignments/", views.readonly_assignments_view, name="viewer_assignments"),
+    path(
+        "viewer/assignments/export.xlsx",
+        _view_or("readonly_assignments_export_view", _fallback_readonly_export_not_configured_view),
+        name="viewer_assignments_export",
+    ),
 
     # أسماء توافقية قديمة لبوابة الاطلاع
     path("viewer-login/", views.readonly_login_view, name="readonly_login"),
     path("viewer-logout/", views.readonly_logout_view, name="readonly_logout"),
     path("viewer/", views.readonly_dashboard_view, name="readonly_dashboard"),
     path("viewer/plans/", views.readonly_plans_view, name="readonly_plans"),
+    path(
+        "viewer/plans/export.xlsx",
+        _view_or("readonly_plans_export_view", _fallback_readonly_export_not_configured_view),
+        name="readonly_plans_export",
+    ),
     path("viewer/plans/<int:plan_id>/", views.readonly_plan_detail_view, name="readonly_plan_detail"),
     path("viewer/assignments/", views.readonly_assignments_view, name="readonly_assignments"),
+    path(
+        "viewer/assignments/export.xlsx",
+        _view_or("readonly_assignments_export_view", _fallback_readonly_export_not_configured_view),
+        name="readonly_assignments_export",
+    ),
 
     # =========================================================
     # بوابة المشرف

@@ -1,53 +1,551 @@
 {% extends "visits/readonly_base.html" %}
-{% block title %}لوحة الاطلاع{% endblock %}
-{% block page_title %}لوحة الاطلاع{% endblock %}
-{% block page_subtitle %}عرض مختصر للخطط والإسنادات ضمن نطاق الصلاحية دون صلاحيات تعديل أو اعتماد.{% endblock %}
+
+{% block title %}لوحة عامة{% endblock %}
+{% block page_title %}لوحة عامة{% endblock %}
+{% block page_subtitle %}
+قراءة إدارية للموقف العام، تعرض الحكم على المؤشرات قبل عرض الأرقام.
+{% endblock %}
+
 {% block content %}
-<form class="ro-card ro-filter ro-filter-dashboard" method="get">
-  <div class="ro-field">
-    <label>الأسبوع</label>
-    <select class="ro-select" name="week">
-      {% for w,label in week_choices %}<option value="{{ w }}" {% if week == w %}selected{% endif %}>{{ label }}</option>{% endfor %}
-    </select>
-  </div>
-  <button class="ro-btn primary" type="submit">تطبيق</button>
-</form>
+<style>
+  .decision-board,
+  .decision-board *{
+    font-weight:400;
+  }
 
-<div class="ro-stats ro-stats-6">
-  <div class="ro-stat"><div><div class="label">خطط الأسبوع</div><div class="sub">حسب نطاق الاطلاع</div></div><div class="value">{{ plans_count }}</div></div>
-  <div class="ro-stat"><div><div class="label">معتمدة</div><div class="sub">للاطلاع فقط</div></div><div class="value">{{ approved_count }}</div></div>
-  <div class="ro-stat"><div><div class="label">مسودة</div><div class="sub">غير معتمدة</div></div><div class="value">{{ draft_count }}</div></div>
-  <div class="ro-stat"><div><div class="label">طلبات فك اعتماد</div><div class="sub">معلومة فقط</div></div><div class="value">{{ unlock_count }}</div></div>
-  <div class="ro-stat"><div><div class="label">المشرفون ضمن النطاق</div><div class="sub">لديهم إسناد نشط</div></div><div class="value">{{ supervisors_count }}</div></div>
-  <div class="ro-stat"><div><div class="label">المدارس المسندة</div><div class="sub">مدارس نشطة</div></div><div class="value">{{ schools_count }}</div></div>
-</div>
+  .decision-board{
+    display:grid;
+    gap:12px;
+  }
 
-<div class="ro-card">
-  <div class="ro-card-head">
+  .decision-board strong,
+  .decision-board b{
+    font-weight:500;
+  }
+
+  .db-main{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 260px;
+    gap:16px;
+    align-items:stretch;
+    padding:18px 20px;
+  }
+
+  .db-title-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    margin-bottom:8px;
+  }
+
+  .db-title{
+    margin:0;
+    color:#173f31;
+    font-size:23px;
+    line-height:1.7;
+    font-weight:500;
+  }
+
+  .db-status{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:31px;
+    padding:0 13px;
+    border-radius:999px;
+    border:1px solid #e2e8e4;
+    background:#f8faf9;
+    color:#5c6a62;
+    font-size:11.5px;
+    line-height:1;
+    font-weight:500;
+    white-space:nowrap;
+  }
+
+  .db-status.ok{background:#f3faf5;border-color:#d6eadb;color:#2b6b42;}
+  .db-status.info{background:#f4f8fb;border-color:#d8e6ef;color:#315b77;}
+  .db-status.warn{background:#fff9ed;border-color:#ead9ae;color:#7e5a16;}
+  .db-status.neutral{background:#f8faf9;border-color:#e2e7e4;color:#65736b;}
+
+  .db-lead{
+    color:#66746c;
+    font-size:12.7px;
+    line-height:2;
+  }
+
+  .db-judgement{
+    margin-top:12px;
+    border:1px solid #e2eae5;
+    background:#fbfdfc;
+    border-radius:17px;
+    padding:13px 14px;
+    display:grid;
+    gap:6px;
+  }
+
+  .db-judgement-title{
+    color:#173f31;
+    font-size:13.5px;
+    line-height:1.8;
+    font-weight:500;
+  }
+
+  .db-judgement-text{
+    color:#536158;
+    font-size:12.7px;
+    line-height:2;
+  }
+
+  .db-summary{
+    margin-top:12px;
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:8px;
+  }
+
+  .db-mini{
+    border:1px solid #e5ece8;
+    background:#fff;
+    border-radius:14px;
+    padding:9px 10px;
+    display:grid;
+    gap:5px;
+    min-height:68px;
+  }
+
+  .db-mini-label{
+    color:#718078;
+    font-size:10.8px;
+    line-height:1.5;
+  }
+
+  .db-mini-value{
+    color:#173f31;
+    font-size:18px;
+    line-height:1;
+    font-weight:600;
+    direction:ltr;
+  }
+
+  .db-readiness{
+    border:1px solid #e3ebe6;
+    background:linear-gradient(180deg,#fff,#fbfdfc);
+    border-radius:18px;
+    padding:15px;
+    display:grid;
+    align-content:space-between;
+    gap:12px;
+    min-height:100%;
+  }
+
+  .db-readiness-label{
+    color:#68756d;
+    font-size:12px;
+    line-height:1.7;
+  }
+
+  .db-readiness-value{
+    color:#173f31;
+    font-size:40px;
+    line-height:1;
+    font-weight:600;
+    direction:ltr;
+    letter-spacing:-.3px;
+  }
+
+  .db-readiness-caption{
+    color:#65736b;
+    font-size:12px;
+    line-height:1.9;
+  }
+
+  .db-readiness-pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:max-content;
+    min-height:28px;
+    padding:0 11px;
+    border-radius:999px;
+    border:1px solid #e2e8e4;
+    background:#f8faf9;
+    color:#5f6e66;
+    font-size:11px;
+    line-height:1;
+    white-space:nowrap;
+  }
+
+  .db-readiness-pill.ok{background:#f3faf5;border-color:#d6eadb;color:#2b6b42;}
+  .db-readiness-pill.info{background:#f4f8fb;border-color:#d8e6ef;color:#315b77;}
+  .db-readiness-pill.warn{background:#fff9ed;border-color:#ead9ae;color:#7e5a16;}
+
+  .db-filter{
+    border-top:1px solid #edf2ee;
+    padding-top:10px;
+    display:grid;
+    gap:8px;
+  }
+
+  .db-filter .ro-field label{
+    color:#718078;
+    font-size:10.8px;
+    font-weight:400;
+  }
+
+  .db-filter .ro-btn{
+    width:100%;
+    font-weight:500;
+  }
+
+  .db-section-head{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    padding:0 2px;
+  }
+
+  .db-section-title{
+    margin:0;
+    color:#174a37;
+    font-size:15px;
+    line-height:1.7;
+    font-weight:500;
+  }
+
+  .db-section-note{
+    color:#75837b;
+    font-size:11.7px;
+    line-height:1.8;
+  }
+
+  .db-axes{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px;
+  }
+
+  .db-axis{
+    background:#fff;
+    border:1px solid #dfe8e2;
+    border-radius:18px;
+    box-shadow:0 8px 22px rgba(15,23,42,.035);
+    padding:15px;
+    min-height:142px;
+    display:grid;
+    align-content:space-between;
+    gap:12px;
+  }
+
+  .db-axis-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+  }
+
+  .db-axis-title{
+    color:#173f31;
+    font-size:14px;
+    line-height:1.7;
+    font-weight:500;
+  }
+
+  .db-axis-state{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:27px;
+    padding:0 10px;
+    border-radius:999px;
+    border:1px solid #e2e8e4;
+    background:#f8faf9;
+    color:#5f6e66;
+    font-size:10.8px;
+    line-height:1;
+    white-space:nowrap;
+  }
+
+  .db-axis-state.ok{background:#f3faf5;border-color:#d6eadb;color:#2b6b42;}
+  .db-axis-state.info{background:#f4f8fb;border-color:#d8e6ef;color:#315b77;}
+  .db-axis-state.warn{background:#fff9ed;border-color:#ead9ae;color:#7e5a16;}
+  .db-axis-state.danger{background:#fff6f4;border-color:#edccc6;color:#9b4036;}
+
+  .db-axis-number{
+    color:#173f31;
+    font-size:26px;
+    line-height:1;
+    font-weight:600;
+    direction:ltr;
+  }
+
+  .db-axis-text{
+    color:#6d7b73;
+    font-size:12px;
+    line-height:1.9;
+  }
+
+  .db-axis-foot{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+
+  .db-chip{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:24px;
+    padding:0 8px;
+    border-radius:999px;
+    border:1px solid #e2e9e5;
+    background:#fbfdfc;
+    color:#5f6e66;
+    font-size:10.5px;
+    line-height:1;
+    white-space:nowrap;
+  }
+
+  .db-chip.ok{background:#f3faf5;border-color:#d6eadb;color:#2b6b42;}
+  .db-chip.warn{background:#fff9ed;border-color:#ead9ae;color:#7e5a16;}
+  .db-chip.danger{background:#fff6f4;border-color:#edccc6;color:#9b4036;}
+
+  .db-detail{
+    padding:13px 15px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+
+  .db-detail-title{
+    color:#174a37;
+    font-size:13.2px;
+    line-height:1.8;
+    font-weight:500;
+  }
+
+  .db-detail-note{
+    color:#6c7a72;
+    font-size:11.8px;
+    line-height:1.8;
+  }
+
+  @media(max-width:1100px){
+    .db-main{
+      grid-template-columns:1fr;
+    }
+
+    .db-axes{
+      grid-template-columns:1fr;
+    }
+  }
+
+  @media(max-width:760px){
+    .db-title{
+      font-size:19px;
+    }
+
+    .db-summary{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+
+    .db-detail{
+      display:grid;
+      grid-template-columns:1fr;
+    }
+
+    .db-detail .ro-btn{
+      width:100%;
+    }
+  }
+
+  @media(max-width:520px){
+    .db-summary{
+      grid-template-columns:1fr;
+    }
+  }
+</style>
+
+<section class="decision-board">
+
+  <div class="ro-card db-main">
     <div>
-      <h2 class="ro-card-title">آخر خطط الأسبوع</h2>
-      <div class="ro-note">عرض مختصر لأحدث الخطط ضمن نطاق الصلاحية.</div>
+      <div class="db-title-row">
+        <h2 class="db-title">{{ period_heading }} — {{ executive_status_label }}</h2>
+        <span class="db-status {{ executive_status_tone }}">{{ executive_status_label }}</span>
+      </div>
+
+      <div class="db-lead">
+        {{ period_note }} {{ executive_status_text }}
+      </div>
+
+      <div class="db-judgement">
+        <div class="db-judgement-title">قراءة الموقف</div>
+        <div class="db-judgement-text">
+          {% if plans_count == 0 %}
+            لا توجد خطط ضمن الفترة المحددة، ولا يمكن تكوين قراءة عامة حتى تظهر بيانات الخطط.
+          {% elif approval_percent < 50 and completion_percent < 50 %}
+            الخطط غير جاهزة للاعتماد العام؛ إذ لا تزال نسبة الاعتماد والاكتمال منخفضة وتحتاج متابعة قبل اعتماد الموقف.
+          {% elif approval_percent < 70 or completion_percent < 70 %}
+            الموقف يحتاج متابعة؛ توجد فجوة في الاعتماد أو اكتمال الخطط ضمن الفترة المحددة.
+          {% elif critical_followup_count > 0 %}
+            الموقف مقبول إجمالًا، مع وجود مؤشرات تشغيلية تحتاج مراجعة عند الحاجة.
+          {% else %}
+            الموقف العام مستقر، ولا تظهر مؤشرات تشغيلية بارزة تحتاج متابعة.
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="db-summary">
+        <div class="db-mini">
+          <span class="db-mini-label">اعتماد الخطط</span>
+          <span class="db-mini-value">{{ approval_percent|default:0 }}%</span>
+        </div>
+        <div class="db-mini">
+          <span class="db-mini-label">اكتمال الخطط</span>
+          <span class="db-mini-value">{{ completion_percent|default:0 }}%</span>
+        </div>
+        <div class="db-mini">
+          <span class="db-mini-label">الزيارات</span>
+          <span class="db-mini-value">{{ visit_total|default:0 }}</span>
+        </div>
+        <div class="db-mini">
+          <span class="db-mini-label">تحتاج مراجعة</span>
+          <span class="db-mini-value">{{ critical_followup_count|default:0 }}</span>
+        </div>
+      </div>
     </div>
-    <a class="ro-btn soft" href="{% url 'visits:viewer_plans' %}?week={{ week }}">عرض الكل</a>
+
+    <div class="db-readiness">
+      <div>
+        <div class="db-readiness-label">جاهزية القراءة العامة</div>
+        <div class="db-readiness-value">{{ completion_percent|default:0 }}%</div>
+        <div class="db-readiness-caption">
+          تعتمد القراءة على اكتمال الخطط بوصفه مؤشرًا رئيسيًا لجاهزية الموقف.
+        </div>
+      </div>
+
+      {% if completion_percent >= 90 %}
+        <span class="db-readiness-pill ok">جاهزية مرتفعة</span>
+      {% elif completion_percent >= 70 %}
+        <span class="db-readiness-pill info">جاهزية متوسطة</span>
+      {% else %}
+        <span class="db-readiness-pill warn">جاهزية منخفضة</span>
+      {% endif %}
+
+      <form class="db-filter" method="get">
+        <div class="ro-field">
+          <label>نطاق القراءة</label>
+          <select class="ro-select" name="week">
+            <option value="all" {% if selected_week_value == "all" %}selected{% endif %}>جميع الأسابيع</option>
+            {% for w,label in week_choices %}
+              <option value="{{ w }}" {% if selected_week_value == w|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <button class="ro-btn primary" type="submit">تحديث القراءة</button>
+      </form>
+    </div>
   </div>
-  <div class="ro-table-wrap">
-    <table class="ro-table">
-      <thead><tr><th>المشرف</th><th>القطاع</th><th>حالة الخطة</th><th>اكتمال الخطة</th><th>آخر حفظ</th><th>عرض</th></tr></thead>
-      <tbody>
-      {% for r in rows %}
-        <tr>
-          <td><span class="ro-name">{{ r.supervisor.full_name }}</span><span class="ro-sub">{{ r.supervisor.national_id }}</span></td>
-          <td><span class="ro-badge">{{ r.sector_names }}</span></td>
-          <td><span class="ro-badge {{ r.status_code }} {% if r.status_code == 'unlock' %}ro-status-split{% endif %}">{% if r.status_code == "unlock" %}<span>فك اعتماد</span><small>بانتظار الإدارة</small>{% else %}{{ r.status_label }}{% endif %}</span></td>
-          <td><span class="ro-badge {% if r.is_full %}full{% else %}partial{% endif %}">{{ r.filled_label }}</span></td>
-          <td>{% if r.last_saved %}{{ r.last_saved|date:"Y-m-d H:i" }}{% else %}—{% endif %}</td>
-          <td><a class="ro-btn" href="{% url 'visits:viewer_plan_detail' r.plan.id %}">تفاصيل</a></td>
-        </tr>
-      {% empty %}
-        <tr><td colspan="6" class="ro-empty">لا توجد خطط ضمن هذا الأسبوع.</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
+
+  <div class="db-section-head">
+    <div>
+      <h2 class="db-section-title">محاور الموقف</h2>
+      <div class="db-section-note">القراءة تعرض الحكم أولًا، ثم الرقم الداعم له.</div>
+    </div>
   </div>
-</div>
+
+  <div class="db-axes">
+    <div class="db-axis">
+      <div class="db-axis-head">
+        <div>
+          <div class="db-axis-title">جاهزية الخطط</div>
+          <div class="db-axis-number">{{ approved_count|default:0 }}/{{ plans_count|default:0 }}</div>
+        </div>
+        {% if approval_percent >= 90 %}
+          <span class="db-axis-state ok">مرتفعة</span>
+        {% elif approval_percent >= 70 %}
+          <span class="db-axis-state info">متوسطة</span>
+        {% else %}
+          <span class="db-axis-state warn">منخفضة</span>
+        {% endif %}
+      </div>
+
+      <div class="db-axis-text">
+        عدد الخطط المعتمدة مقارنة بإجمالي الخطط في الفترة المحددة.
+      </div>
+
+      <div class="db-axis-foot">
+        <span class="db-chip ok">معتمدة: {{ approved_count|default:0 }}</span>
+        <span class="db-chip warn">مسودة: {{ draft_count|default:0 }}</span>
+        <span class="db-chip danger">فك اعتماد: {{ unlock_count|default:0 }}</span>
+      </div>
+    </div>
+
+    <div class="db-axis">
+      <div class="db-axis-head">
+        <div>
+          <div class="db-axis-title">اكتمال الخطط</div>
+          <div class="db-axis-number">{{ full_count|default:0 }}/{{ plans_count|default:0 }}</div>
+        </div>
+        {% if completion_percent >= 90 %}
+          <span class="db-axis-state ok">مرتفع</span>
+        {% elif completion_percent >= 70 %}
+          <span class="db-axis-state info">متوسط</span>
+        {% else %}
+          <span class="db-axis-state warn">منخفض</span>
+        {% endif %}
+      </div>
+
+      <div class="db-axis-text">
+        عدد الخطط المكتملة مقارنة بإجمالي الخطط في الفترة المحددة.
+      </div>
+
+      <div class="db-axis-foot">
+        <span class="db-chip ok">مكتملة: {{ full_count|default:0 }}</span>
+        <span class="db-chip warn">غير مكتملة: {{ not_full_count|default:0 }}</span>
+      </div>
+    </div>
+
+    <div class="db-axis">
+      <div class="db-axis-head">
+        <div>
+          <div class="db-axis-title">حركة الزيارات</div>
+          <div class="db-axis-number">{{ visit_total|default:0 }}</div>
+        </div>
+        {% if visit_total > 0 %}
+          <span class="db-axis-state info">بدأت</span>
+        {% else %}
+          <span class="db-axis-state neutral">لم تبدأ</span>
+        {% endif %}
+      </div>
+
+      <div class="db-axis-text">
+        إجمالي الزيارات المدرجة في الخطط ضمن الفترة المحددة.
+      </div>
+
+      <div class="db-axis-foot">
+        <span class="db-chip ok">حضوري: {{ visit_in_count|default:0 }}</span>
+        <span class="db-chip">عن بُعد: {{ visit_remote_count|default:0 }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="ro-card db-detail">
+    <div>
+      <div class="db-detail-title">التفاصيل التشغيلية متاحة عند الحاجة</div>
+      <div class="db-detail-note">
+        لا تُعرض التفاصيل التشغيلية في اللوحة العامة، ويمكن فتح صفحة الخطط للمراجعة عند الحاجة.
+      </div>
+    </div>
+
+    <a class="ro-btn soft" href="{% url 'visits:viewer_plans' %}?week={{ details_week }}">فتح التفاصيل التشغيلية</a>
+  </div>
+
+</section>
 {% endblock %}

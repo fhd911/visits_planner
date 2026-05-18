@@ -56,6 +56,13 @@
       <h2 class="ro-card-title">سجل الإسنادات</h2>
       <div class="ro-note">تظهر الإسنادات النشطة فقط ضمن نطاق الاطلاع.</div>
     </div>
+
+    {% if can_export_assignments %}
+      <a class="ro-btn soft"
+         href="{% url 'visits:viewer_assignments_export' %}?sector={{ sector_id|default:0 }}&q={{ q|urlencode }}&ps={{ request.GET.ps|default:'25' }}">
+        تصدير الإسنادات
+      </a>
+    {% endif %}
   </div>
 
   <div class="ro-table-wrap">

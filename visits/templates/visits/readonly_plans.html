@@ -92,6 +92,13 @@
       <h2 class="ro-card-title">سجل الخطط</h2>
       <div class="ro-note">القطاع يعرض من الإسنادات النشطة للمشرف، وليس من المدرسة المختارة في الخطة فقط.</div>
     </div>
+
+    {% if can_export_weekly_plans %}
+      <a class="ro-btn soft"
+         href="{% url 'visits:viewer_plans_export' %}?week={{ week }}&status={{ status }}&sector={{ sector_id|default:0 }}&q={{ q|urlencode }}&ps={{ request.GET.ps|default:'20' }}">
+        تصدير خطط الزيارات
+      </a>
+    {% endif %}
   </div>
 
   <div class="ro-table-wrap">
