@@ -33,6 +33,17 @@
   .box-note{padding:9px 10px;border-radius:13px;border:1px solid var(--line);background:#fbfcfb;line-height:1.8}
   .box-note.closed{background:#fffaf3;border-color:var(--warn-br);color:var(--warn)}
   .muted{color:var(--mut2)}
+
+  .unlock-box{margin:12px 15px 0;padding:12px;border:1px solid var(--line);border-radius:16px;background:#fff;display:grid;gap:9px}
+  .unlock-box.warn{background:linear-gradient(180deg,#fffdf8,var(--warn-bg));border-color:var(--warn-br);color:var(--warn)}
+  .unlock-box.ok{background:linear-gradient(180deg,#f7fcf8,var(--ok-bg));border-color:var(--ok-br);color:var(--ok)}
+  .unlock-box.info{background:linear-gradient(180deg,#fff,var(--primary-soft));border-color:var(--primary-soft-br);color:var(--primary)}
+  .unlock-box-title{font-size:12.6px;font-weight:600;line-height:1.7;color:var(--txt)}
+  .unlock-box-text{font-size:11.2px;font-weight:400;line-height:1.9;color:var(--mut)}
+  .unlock-form{display:grid;gap:8px}
+  .unlock-textarea{width:100%;min-height:78px;border-radius:13px;border:1px solid var(--line);background:#fff;padding:10px 11px;font-family:var(--ff);font-size:11.5px;line-height:1.8;color:var(--txt);resize:vertical;outline:none}
+  .unlock-textarea:focus{border-color:#c7d6ce;box-shadow:0 0 0 4px rgba(47,98,80,.06)}
+  .unlock-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
   @media(max-width:760px){.head,.summary{align-items:stretch}.chips .btn,.chips .chip{flex:1}.table-wrap table{min-width:850px}.table-wrap{padding:10px}}
 </style>
 {% endblock %}
@@ -47,7 +58,7 @@
           <div class="sub">{{ week_label }} — المشرف: {{ sup.full_name }} — رقم الهوية: {{ sup.national_id }}</div>
         </div>
         <div class="chips">
-          {% if plan.status == 'approved' %}<span class="chip ok">{{ status_label }}</span>{% elif plan.status == 'unlock' %}<span class="chip warn">{{ status_label }}</span>{% else %}<span class="chip info">{{ status_label }}</span>{% endif %}
+          {% if plan.status == plan.STATUS_APPROVED %}<span class="chip ok">{{ status_label }}</span>{% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}<span class="chip warn">{{ status_label }}</span>{% else %}<span class="chip info">{{ status_label }}</span>{% endif %}
           <a class="btn" href="{% url 'visits:supervisor_previous_plans' %}">عودة للخطط السابقة</a>
           <a class="btn primary" href="{% url 'visits:plan_export' %}?week={{ week_obj.week_no }}">تصدير Excel</a>
         </div>
@@ -59,7 +70,40 @@
           <span class="chip {% if counts.filled_required_count >= counts.required_count %}ok{% else %}warn{% endif %}">المكتمل: {{ counts.filled_required_count }}/{{ counts.required_count }}</span>
           <span class="chip warn">الأيام المغلقة: {{ counts.closed_count }}</span>
         </div>
-        <div class="sub">هذه الصفحة للعرض والتصدير فقط، ولا تسمح بالتعديل. تعديل أي خطة سابقة يكون عبر طلب فك اعتماد وموافقة الإدارة.</div>
+        <div class="sub">هذه الصفحة للعرض والتصدير فقط، ولا تسمح بالتعديل. تعديل أي خطة سابقة يكون عبر طلب فتح تعديل استثنائي وموافقة الإدارة، سواء كانت الخطة معتمدة أو مسودة.</div>
+      </div>
+
+      <div class="unlock-box {% if can_edit_exception %}ok{% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}warn{% else %}info{% endif %}">
+        {% if can_edit_exception and exception_edit_url %}
+          <div class="unlock-box-title">التعديل الاستثنائي متاح الآن لهذه الخطة فقط</div>
+          <div class="unlock-box-text">
+            لا يتم فتح الأسبوع كاملًا، وإنما تفتح هذه الخطة المحددة بمهلة مؤقتة.
+            {% if unlock_edit_expires_at %} تنتهي صلاحية التعديل في: <b>{{ unlock_edit_expires_at|date:"Y-m-d H:i" }}</b>{% endif %}
+          </div>
+          <div class="unlock-actions">
+            <a class="btn primary" href="{{ exception_edit_url }}">فتح التعديل الآن</a>
+          </div>
+        {% elif plan.status == plan.STATUS_UNLOCK_REQUESTED %}
+          <div class="unlock-box-title">طلب فتح التعديل بانتظار قرار الإدارة</div>
+          <div class="unlock-box-text">بعد موافقة الإدارة سيظهر زر فتح التعديل هنا، وتكون المهلة محددة دون فتح الأسبوع كاملًا.</div>
+        {% else %}
+          <div class="unlock-box-title">طلب فتح تعديل استثنائي</div>
+          <div class="unlock-box-text">
+            {% if plan.status == plan.STATUS_APPROVED %}
+              هذه الخطة معتمدة، وسيتم إرسال طلب فك الاعتماد وفتح تعديل مؤقت للإدارة.
+            {% else %}
+              هذه خطة سابقة غير مفتوحة للتعديل حاليًا. يمكنك طلب فتح تعديل استثنائي لها دون فتح الأسبوع كاملًا.
+            {% endif %}
+          </div>
+          <form class="unlock-form" method="post" action="{% url 'visits:request_unlock' %}">
+            {% csrf_token %}
+            <input type="hidden" name="plan" value="{{ plan.id }}">
+            <textarea class="unlock-textarea" name="reason" rows="3" placeholder="اكتب سبب طلب فتح التعديل الاستثنائي..." required></textarea>
+            <div class="unlock-actions">
+              <button type="submit" class="btn primary">إرسال طلب فتح التعديل</button>
+            </div>
+          </form>
+        {% endif %}
       </div>
 
       <div class="table-wrap">

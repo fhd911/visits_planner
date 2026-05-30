@@ -4119,6 +4119,39 @@
     }
   }
 
+
+
+  .plan-page .exception-edit-alert{
+    margin:10px 14px 0;
+    padding:10px 12px;
+    border-radius:14px;
+    border:1px solid var(--v2-warn-bd);
+    background:linear-gradient(180deg,#fffdf8,var(--v2-warn-bg));
+    color:var(--v2-warn-tx);
+    display:grid;
+    gap:3px;
+  }
+
+  .plan-page .exception-edit-alert__title{
+    font-size:12.5px;
+    font-weight:var(--fw-strong);
+    line-height:1.6;
+  }
+
+  .plan-page .exception-edit-alert__text{
+    font-size:11.4px;
+    line-height:1.8;
+    color:var(--v2-text);
+    font-weight:var(--fw-normal);
+  }
+
+  .plan-page .exception-edit-alert__time{
+    display:inline-flex;
+    margin-inline-start:6px;
+    color:var(--v2-warn-tx);
+    font-weight:var(--fw-mid);
+  }
+
 </style>
 {% endblock %}
 
@@ -4130,7 +4163,7 @@
       <div class="plan-topbar compact-plan-topbar simplified-plan-topbar">
         <div class="plan-topbar-right">
           <div class="plan-title-row">
-            <h1 class="plan-title">خطة الأسبوع الحالي</h1>
+            <h1 class="plan-title">{% if is_exception_edit %}تعديل استثنائي لخطة سابقة{% else %}خطة الأسبوع الحالي{% endif %}</h1>
 
             {% if plan.status == plan.STATUS_APPROVED %}
               <div class="status-inline ok" title="حالة الخطة"><span class="s-dot"></span><span>معتمدة</span></div>
@@ -4140,7 +4173,9 @@
               <div class="status-inline draft" title="حالة الخطة"><span class="s-dot"></span><span>مسودة</span></div>
             {% endif %}
 
-            {% if week_obj.is_open_for_supervisors %}
+            {% if is_exception_edit %}
+              <div class="status-inline warn" title="فتح مؤقت لخطة محددة"><span class="s-dot"></span><span>فتح استثنائي</span></div>
+            {% elif week_obj.is_open_for_supervisors %}
               <div class="status-inline ok" title="حالة الأسبوع"><span class="s-dot"></span><span>مفتوح</span></div>
             {% endif %}
 
@@ -4175,6 +4210,19 @@
       <form method="post" id="planForm">
         {% csrf_token %}
         <input type="hidden" name="week" value="{{ week }}">
+        <input type="hidden" name="plan" value="{{ plan.id }}">
+
+        {% if is_exception_edit %}
+          <div class="exception-edit-alert" role="status">
+            <div class="exception-edit-alert__title">فتح تعديل استثنائي مؤقت</div>
+            <div class="exception-edit-alert__text">
+              هذه الخطة مفتوحة للتعديل بتفويض إداري لخطة محددة فقط، ولا يعني ذلك فتح الأسبوع كاملًا للمشرفين.
+              {% if unlock_edit_expires_at %}
+                <span class="exception-edit-alert__time">صلاحية التعديل حتى: {{ unlock_edit_expires_at|date:"Y-m-d H:i" }}</span>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
 
         <div class="plan-table-area">
           <div class="table-box">

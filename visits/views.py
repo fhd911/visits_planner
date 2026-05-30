@@ -1045,6 +1045,151 @@ def _build_supervisor_week_choices() -> list[tuple[int, str]]:
     return [(week_obj.week_no, _week_display_label(week_obj))]
 
 
+# =============================================================================
+# Exceptional unlock helpers
+# =============================================================================
+UNLOCK_EXCEPTION_DEFAULT_HOURS = 24
+UNLOCK_EXCEPTION_MAX_HOURS = 168
+
+
+def _latest_unlock_request(plan: Plan) -> Optional[UnlockRequest]:
+    return (
+        UnlockRequest.objects
+        .filter(plan=plan)
+        .order_by("-resolved_at", "-id")
+        .first()
+    )
+
+
+def _pending_unlock_request(plan: Plan) -> Optional[UnlockRequest]:
+    return (
+        UnlockRequest.objects
+        .filter(plan=plan, status=UnlockRequest.STATUS_PENDING)
+        .order_by("-id")
+        .first()
+    )
+
+
+def _active_or_latest_unlock_request(plan: Plan) -> Optional[UnlockRequest]:
+    return _pending_unlock_request(plan) or _latest_unlock_request(plan)
+
+
+def _unlock_edit_expires_at(unlock: UnlockRequest | None) -> Optional[datetime]:
+    if not unlock:
+        return None
+
+    # الاسم المعتمد في التعديل الجديد: edit_expires_at.
+    # بقية الأسماء احتياط فقط حتى لا ينكسر الكود إن كان لديك حقل قديم باسم مختلف.
+    # مهم: لا نُرجع None مباشرة إذا كان الحقل موجودًا لكن قيمته فارغة؛ لأن بعض قواعد
+    # البيانات قد تحتوي طلبات تمت الموافقة عليها قبل إضافة الحقل أو قبل تطبيق migration.
+    for field_name in ("edit_expires_at", "unlocked_until", "expires_at", "valid_until"):
+        if _model_has_field(UnlockRequest, field_name):
+            value = getattr(unlock, field_name, None)
+            if value:
+                return value
+
+    # fallback آمن:
+    # إذا تمت الموافقة لكن لم تُحفظ صلاحية التعديل لأي سبب، نعتبرها مفتوحة لمدة
+    # افتراضية من وقت المعالجة. هذا يمنع رجوع الصفحة لنموذج الطلب بعد الموافقة.
+    resolved_at = getattr(unlock, "resolved_at", None)
+    if resolved_at and getattr(unlock, "status", None) == getattr(UnlockRequest, "STATUS_APPROVED", "approved"):
+        if timezone.is_naive(resolved_at):
+            resolved_at = timezone.make_aware(resolved_at, timezone.get_current_timezone())
+        return resolved_at + timedelta(hours=UNLOCK_EXCEPTION_DEFAULT_HOURS)
+
+    return None
+
+
+def _set_unlock_edit_expires_at(unlock: UnlockRequest, value: datetime | None, update_fields: list[str]) -> None:
+    for field_name in ("edit_expires_at", "unlocked_until", "expires_at", "valid_until"):
+        if _model_has_field(UnlockRequest, field_name):
+            setattr(unlock, field_name, value)
+            if field_name not in update_fields:
+                update_fields.append(field_name)
+            return
+
+
+def _set_unlock_admin_note(unlock: UnlockRequest, note: str, update_fields: list[str]) -> None:
+    for field_name in ("admin_note", "resolution_note", "note"):
+        if _model_has_field(UnlockRequest, field_name):
+            setattr(unlock, field_name, note)
+            if field_name not in update_fields:
+                update_fields.append(field_name)
+            return
+
+
+def _plan_is_current_open_for_supervisor(plan: Plan) -> bool:
+    current_week = _get_supervisor_current_week_obj()
+    return bool(current_week and plan.week_id == current_week.id)
+
+
+def _plan_has_active_exception_unlock(plan: Plan) -> bool:
+    """هل يوجد فتح استثنائي نشط لهذه الخطة فقط؟
+
+    هذا لا يفتح الأسبوع كاملًا؛ يفتح خطة محددة برابط خاص ووقت محدد.
+
+    ملاحظة مهمة:
+    بعد اعتماد المشرف للخطة نهائيًا يجب أن ينتهي أثر الفتح الاستثنائي
+    حتى لا يظهر زر «فتح التعديل الآن» مرة أخرى في تفاصيل الخطة السابقة.
+    لذلك لا نعتبر الفتح نشطًا إذا كانت الخطة معتمدة، حتى لو كان وقت
+    صلاحية طلب الفتح لم ينتهِ بعد.
+    """
+    if getattr(plan, "status", None) == getattr(Plan, "STATUS_APPROVED", "approved"):
+        return False
+
+    unlock = _latest_unlock_request(plan)
+    if not unlock or unlock.status != UnlockRequest.STATUS_APPROVED:
+        return False
+
+    expires_at = _unlock_edit_expires_at(unlock)
+    if not expires_at:
+        return False
+
+    if timezone.is_naive(expires_at):
+        expires_at = timezone.make_aware(expires_at, timezone.get_current_timezone())
+
+    return timezone.now() <= expires_at
+
+
+def _plan_can_be_edited_by_supervisor(plan: Plan) -> bool:
+    if plan.status in (Plan.STATUS_APPROVED, Plan.STATUS_UNLOCK_REQUESTED):
+        return False
+
+    if _plan_is_current_open_for_supervisor(plan):
+        return True
+
+    return _plan_has_active_exception_unlock(plan)
+
+
+def _supervisor_plan_return_url(plan: Plan) -> str:
+    current_week = _get_supervisor_current_week_obj()
+    if current_week and plan.week_id == current_week.id:
+        return _plan_url(current_week.week_no)
+
+    try:
+        return reverse("visits:supervisor_previous_plan_detail", args=[plan.id])
+    except Exception:
+        return _plan_url(getattr(plan.week, "week_no", _get_default_week_no()))
+
+
+def _supervisor_plan_edit_url(plan: Plan) -> str:
+    current_week = _get_supervisor_current_week_obj()
+    if current_week and plan.week_id == current_week.id:
+        return _plan_url(current_week.week_no)
+    return f"{reverse('visits:plan')}?plan={plan.id}"
+
+
+def _unlock_exception_hours_from_request(request: HttpRequest) -> int:
+    hours = _safe_int(
+        request.POST.get("unlock_hours")
+        or request.POST.get("edit_hours")
+        or request.POST.get("hours")
+        or UNLOCK_EXCEPTION_DEFAULT_HOURS,
+        default=UNLOCK_EXCEPTION_DEFAULT_HOURS,
+    )
+    return min(max(hours, 1), UNLOCK_EXCEPTION_MAX_HOURS)
+
+
 def _closed_days_map_for_week(week_obj: PlanWeek | None) -> dict[int, PlanClosedDay]:
     if not week_obj:
         return {}
@@ -1238,6 +1383,9 @@ def _plan_display_status(plan: Plan, filled: int | None = None) -> tuple[str, st
 
     if plan.status == Plan.STATUS_UNLOCK_REQUESTED:
         return "unlock", "طلب فك اعتماد"
+
+    if _plan_has_active_exception_unlock(plan):
+        return "exception-open", "مفتوحة للتعديل"
 
     if filled >= needed:
         return "ready", "جاهزة للاعتماد"
@@ -2933,6 +3081,8 @@ def supervisor_previous_plan_detail_view(request: HttpRequest, plan_id: int) -> 
 
     rows = _previous_plan_rows(plan)
     counts = _previous_plan_work_counts(plan)
+    unlock_request = _latest_unlock_request(plan)
+    can_edit_exception = _plan_has_active_exception_unlock(plan)
 
     return render(
         request,
@@ -2945,6 +3095,10 @@ def supervisor_previous_plan_detail_view(request: HttpRequest, plan_id: int) -> 
             "rows": rows,
             "counts": counts,
             "status_label": _previous_plan_status_label(plan),
+            "unlock_request": unlock_request,
+            "can_edit_exception": can_edit_exception,
+            "exception_edit_url": _supervisor_plan_edit_url(plan) if can_edit_exception else "",
+            "unlock_edit_expires_at": _unlock_edit_expires_at(unlock_request),
         },
     )
 
@@ -3132,32 +3286,53 @@ def plan_view(request: HttpRequest) -> HttpResponse:
     except Supervisor.DoesNotExist:
         return redirect("visits:login")
 
-    week_obj = _get_supervisor_current_week_obj()
-    if not week_obj:
-        messages.warning(request, "لا يوجد أسبوع مفتوح حاليًا لإدخال الخطة.")
-        return redirect("visits:supervisor_dashboard")
+    explicit_plan_id = _safe_int(request.GET.get("plan") or request.POST.get("plan") or 0, default=0)
+    is_exception_edit = False
+
+    if explicit_plan_id:
+        plan = get_object_or_404(
+            Plan.objects.select_related("supervisor", "week").prefetch_related("days__school"),
+            id=explicit_plan_id,
+            supervisor=supervisor,
+        )
+        week_obj = plan.week
+
+        # لا نسمح بفتح خطة سابقة من صفحة التحرير إلا إذا كان لديها فتح استثنائي نشط.
+        if not _plan_has_active_exception_unlock(plan) and not _plan_is_current_open_for_supervisor(plan):
+            messages.warning(request, "هذه الخطة غير مفتوحة للتعديل. يمكن عرضها فقط من خططي السابقة.")
+            return redirect(_supervisor_plan_return_url(plan))
+
+        is_exception_edit = not _plan_is_current_open_for_supervisor(plan)
+    else:
+        week_obj = _get_supervisor_current_week_obj()
+        if not week_obj:
+            messages.warning(request, "لا يوجد أسبوع مفتوح حاليًا لإدخال الخطة.")
+            return redirect("visits:supervisor_dashboard")
+
+        week_no = week_obj.week_no
+        requested_week_no = _safe_int(
+            request.GET.get("week") or request.POST.get("week") or week_no,
+            default=week_no,
+        )
+        if requested_week_no != week_no:
+            messages.info(request, "يظهر للمشرف الأسبوع الحالي المفتوح فقط لإدخال الخطة.")
+            return redirect(_plan_url(week_no))
+
+        plan, _ = Plan.objects.get_or_create(supervisor=supervisor, week=week_obj)
 
     week_no = week_obj.week_no
-    requested_week_no = _safe_int(
-        request.GET.get("week") or request.POST.get("week") or week_no,
-        default=week_no,
-    )
-    if requested_week_no != week_no:
-        messages.info(request, "يظهر للمشرف الأسبوع الحالي المفتوح فقط لإدخال الخطة.")
-        return redirect(_plan_url(week_no))
 
     if _supervisor_needs_email_prompt(supervisor):
         messages.info(request, "يرجى تسجيل بريدك الإلكتروني أولًا وتأكيده برمز تحقق لتصلك التنبيهات والإشعارات.")
         settings_url = reverse("visits:supervisor_email_settings")
-        return redirect(f"{settings_url}?next={_plan_url(week_no)}")
+        return redirect(f"{settings_url}?next={_supervisor_plan_edit_url(plan)}")
 
-    plan, _ = Plan.objects.get_or_create(supervisor=supervisor, week=week_obj)
     _inject_week_no(plan)
 
     schools = _supervisor_schools_qs(supervisor)
     allowed_school_ids = _supervisor_school_ids(supervisor)
     days_map = {d.weekday: d for d in plan.days.all().select_related("school")}
-    week_choices = _build_supervisor_week_choices()
+    week_choices = [(week_obj.week_no, _week_display_label(week_obj))] if is_exception_edit else _build_supervisor_week_choices()
     day_dates = _build_day_dates_from_week(week_obj)
     closed_days_map = _closed_days_map_for_week(week_obj)
     days_rows = []
@@ -3186,11 +3361,14 @@ def plan_view(request: HttpRequest) -> HttpResponse:
     notifications = supervisor.notifications.select_related("plan").order_by("-created_at")[:8]
     unread_count = supervisor.notifications.filter(is_read=False).count()
     week_letter = WeeklyLetterLink.objects.filter(week=week_obj, is_active=True).first()
+    can_edit_plan = _plan_can_be_edited_by_supervisor(plan)
+    unlock_request = _latest_unlock_request(plan)
+    unlock_edit_expires_at = _unlock_edit_expires_at(unlock_request)
 
     if request.method == "POST":
-        if plan.status in (Plan.STATUS_APPROVED, Plan.STATUS_UNLOCK_REQUESTED):
-            messages.info(request, "لا يمكن تعديل الخطة الآن. إذا كانت معتمدة فاطلب فك الاعتماد أولًا.")
-            return redirect(_plan_url(week_obj.week_no))
+        if not can_edit_plan:
+            messages.info(request, "لا يمكن تعديل هذه الخطة الآن. إن كانت معتمدة أو من أسبوع سابق فاطلب فتح تعديل استثنائي أولًا.")
+            return redirect(_supervisor_plan_return_url(plan))
 
         action = (request.POST.get("action") or "save").strip()
 
@@ -3226,8 +3404,6 @@ def plan_view(request: HttpRequest) -> HttpResponse:
             reason = (request.POST.get(f"reason_{wd}") or "").strip() or None
             note = (request.POST.get(f"note_{wd}") or "").strip() or None
 
-            # إذا لم يختر المشرف نوع اليوم ولم يختر مدرسة أو سببًا، يبقى اليوم غير مكتمل.
-            # إذا اختار مدرسة فقط، نعتمدها زيارة حضورية افتراضيًا لحماية البيانات من الفقد.
             if not raw_vtype:
                 if sid:
                     vtype = getattr(PlanDay, "VISIT_IN", "in")
@@ -3281,19 +3457,45 @@ def plan_view(request: HttpRequest) -> HttpResponse:
 
         if action == "approve":
             if _plan_is_fully_filled(plan):
+                now = timezone.now()
                 plan.status = Plan.STATUS_APPROVED
-                plan.approved_at = timezone.now()
+                plan.approved_at = now
                 plan.admin_note = None
                 plan.save(update_fields=["saved_at", "status", "approved_at", "admin_note"])
+
+                # عند اعتماد خطة كانت مفتوحة بتعديل استثنائي نغلق صلاحية الفتح فورًا،
+                # حتى لا يرجع زر «فتح التعديل الآن» للظهور في تفاصيل الخطة السابقة.
+                if is_exception_edit:
+                    unlock = _latest_unlock_request(plan)
+                    if unlock and getattr(unlock, "status", None) == getattr(UnlockRequest, "STATUS_APPROVED", "approved"):
+                        unlock_update_fields: list[str] = []
+                        _set_unlock_edit_expires_at(unlock, now, unlock_update_fields)
+                        if unlock_update_fields:
+                            unlock.save(update_fields=unlock_update_fields)
+
                 messages.success(request, "تم اعتماد الخطة بنجاح.")
             else:
                 plan.save(update_fields=["saved_at"])
                 messages.warning(request, "تم الحفظ، لكن لا يمكن الاعتماد قبل اكتمال أيام العمل المتاحة في الأسبوع.")
         else:
-            plan.save(update_fields=["saved_at"])
+            # في الفتح الاستثنائي لا نتركها معتمدة بعد التعديل؛ تعود للمراجعة/الاعتماد.
+            if is_exception_edit and plan.status == Plan.STATUS_APPROVED:
+                plan.status = Plan.STATUS_DRAFT
+                plan.approved_at = None
+                plan.save(update_fields=["saved_at", "status", "approved_at"])
+            else:
+                plan.save(update_fields=["saved_at"])
             messages.success(request, "تم حفظ الخطة بنجاح.")
 
-        return redirect(_plan_url(week_obj.week_no))
+        # مهم في التعديل الاستثنائي:
+        # بعد الضغط على "حفظ" يجب أن يبقى المشرف داخل صفحة تحرير الخطة نفسها
+        # حتى يظهر زر "اعتماد" ويتمكن من اعتماد الخطة بعد حفظ التعديل.
+        # الرجوع لتفاصيل الخطة السابقة يجعل الصفحة تعرض زر "فتح التعديل الآن" فقط،
+        # وهذا ما كان يسبب اختفاء زر الاعتماد بعد الحفظ.
+        if is_exception_edit and action != "approve":
+            return redirect(_supervisor_plan_edit_url(plan))
+
+        return redirect(_supervisor_plan_return_url(plan) if is_exception_edit else _plan_url(week_obj.week_no))
 
     school_tracking = _plan_school_tracking(supervisor)
 
@@ -3337,9 +3539,12 @@ def plan_view(request: HttpRequest) -> HttpResponse:
 
             "supervisor_email": _supervisor_email_value(supervisor),
             "email_notifications_enabled": _supervisor_email_notifications_enabled(supervisor),
+            "is_exception_edit": is_exception_edit,
+            "can_edit_plan": can_edit_plan,
+            "unlock_request": unlock_request,
+            "unlock_edit_expires_at": unlock_edit_expires_at,
         },
     )
-
 
 def supervisor_email_settings_view(request: HttpRequest) -> HttpResponse:
     setting = _get_site_setting()
@@ -3771,7 +3976,9 @@ def _notification_action_meta(notification: SupervisorNotification) -> dict[str,
         return {"show": True, "label": "فتح الخطة للتعديل", "url": plan_url}
 
     if notif_type == getattr(SupervisorNotification, "TYPE_UNLOCK_APPROVED", "unlock_approved"):
-        return {"show": True, "label": "فتح الخطة", "url": plan_url}
+        if _plan_has_active_exception_unlock(plan):
+            return {"show": True, "label": "فتح التعديل", "url": _supervisor_plan_edit_url(plan)}
+        return {"show": True, "label": "عرض الخطة", "url": previous_url if not is_current_open else plan_url}
 
     if notif_type == getattr(SupervisorNotification, "TYPE_ADMIN_ALERT", "admin_alert"):
         return {"show": True, "label": "عرض الخطة" if not is_current_open else "فتح الأسبوع", "url": plan_url if is_current_open else previous_url}
@@ -4910,24 +5117,58 @@ def admin_sector_toggle_active_view(request: HttpRequest, sector_id: int) -> Htt
 # =============================================================================
 @require_POST
 def request_unlock_view(request: HttpRequest) -> HttpResponse:
+    """طلب فتح تعديل استثنائي لخطة سابقة.
+
+    الاسم التاريخي للمسار هو request_unlock لأن النظام بدأ بفكرة فك اعتماد
+    الخطط المعتمدة، لكن المنطق هنا أوسع: يسمح بطلب فتح تعديل لخطة سابقة
+    غير معتمدة أيضًا، دون فتح الأسبوع كاملًا.
+    """
     try:
         supervisor = _require_supervisor(request)
     except Supervisor.DoesNotExist:
         return redirect("visits:login")
 
     plan_id = _safe_int(request.POST.get("plan") or 0, default=0)
-    plan = get_object_or_404(Plan, id=plan_id, supervisor=supervisor)
+    plan = get_object_or_404(
+        Plan.objects.select_related("week", "supervisor"),
+        id=plan_id,
+        supervisor=supervisor,
+    )
     _inject_week_no(plan)
+    return_url = _supervisor_plan_return_url(plan)
 
-    if plan.status != Plan.STATUS_APPROVED:
-        messages.info(request, "لا يمكن طلب فك اعتماد إلا لخطة معتمدة.")
-        return redirect(_plan_url(plan.week.week_no))
+    # إذا كانت الخطة تخص الأسبوع الحالي المفتوح فلا نحتاج طلبًا إداريًا.
+    if _plan_is_current_open_for_supervisor(plan):
+        messages.info(request, "هذه خطة الأسبوع الحالي ويمكن تعديلها مباشرة من صفحة الخطة.")
+        return redirect(_supervisor_plan_edit_url(plan))
+
+    # إذا كان هناك فتح استثنائي نشط فلا ننشئ طلبًا جديدًا.
+    if _plan_has_active_exception_unlock(plan):
+        messages.info(request, "هذه الخطة مفتوحة للتعديل الآن بمهلة استثنائية.")
+        return redirect(_supervisor_plan_edit_url(plan))
+
+    pending_req = _pending_unlock_request(plan)
+    if pending_req:
+        messages.info(request, "يوجد طلب فتح تعديل سابق لهذه الخطة بانتظار الإدارة.")
+        return redirect(return_url)
 
     reason = _cell_str(request.POST.get("reason"))
     if not reason:
-        reason = "طلب المشرف فك اعتماد الخطة لإجراء تعديل على بيانات الخطة الأسبوعية."
+        if plan.status == Plan.STATUS_APPROVED:
+            reason = "طلب المشرف فك اعتماد خطة سابقة معتمدة وفتح تعديل استثنائي."
+        else:
+            reason = "طلب المشرف فتح تعديل استثنائي لخطة سابقة غير معتمدة."
 
-    req, created = UnlockRequest.objects.get_or_create(
+    # مهم جدًا:
+    # نموذج UnlockRequest عندك يستدعي full_clean داخل save()، ويتحقق أن الخطة
+    # معتمدة أو حالتها طلب فك اعتماد. لذلك في حالة الخطط السابقة غير المعتمدة
+    # نغيّر حالة الخطة أولًا إلى STATUS_UNLOCK_REQUESTED قبل إنشاء طلب الفتح،
+    # مع إبقاء approved_at كما هو حتى نستطيع عند الرفض إرجاع الحالة الصحيحة.
+    if plan.status != Plan.STATUS_UNLOCK_REQUESTED:
+        plan.status = Plan.STATUS_UNLOCK_REQUESTED
+        plan.save(update_fields=["status"])
+
+    req, _created = UnlockRequest.objects.get_or_create(
         plan=plan,
         defaults={
             "reason": reason,
@@ -4936,22 +5177,18 @@ def request_unlock_view(request: HttpRequest) -> HttpResponse:
         },
     )
 
-    if not created and req.status == UnlockRequest.STATUS_PENDING:
-        messages.info(request, "يوجد طلب فك اعتماد سابق لهذه الخطة بانتظار الإدارة.")
-        return redirect(_plan_url(plan.week.week_no))
-
     req.reason = reason
     req.status = UnlockRequest.STATUS_PENDING
     req.resolved_at = None
-    req.save(update_fields=["reason", "status", "resolved_at"])
+    update_fields = ["reason", "status", "resolved_at"]
+    _set_unlock_edit_expires_at(req, None, update_fields)
+    _set_unlock_admin_note(req, "", update_fields)
+    req.save(update_fields=update_fields)
 
-    plan.status = Plan.STATUS_UNLOCK_REQUESTED
-    plan.save(update_fields=["status"])
     send_unlock_request_received_email(plan, request=request)
 
-    messages.success(request, "تم إرسال طلب فك الاعتماد.")
-    return redirect(_plan_url(plan.week.week_no))
-
+    messages.success(request, "تم إرسال طلب فتح التعديل الاستثنائي للإدارة.")
+    return redirect(return_url)
 
 # =============================================================================
 # Admin visit follow-up
@@ -6915,37 +7152,59 @@ def admin_unlock_approve_view(request: HttpRequest, plan_id: int) -> HttpRespons
         page=state["page"],
     )
 
-    unlock = get_object_or_404(UnlockRequest, plan=plan)
-
-    if unlock.status != UnlockRequest.STATUS_PENDING:
-        msg = "تمت معالجة طلب فك الاعتماد سابقًا."
+    unlock = _pending_unlock_request(plan)
+    if not unlock:
+        msg = "لا يوجد طلب فتح تعديل بانتظار المعالجة لهذه الخطة."
         ajax_response = _admin_json_response(request, plan=plan, message=msg, ok=False, http_status=400, errors=[msg])
         if ajax_response:
             return ajax_response
         messages.warning(request, msg)
         return redirect(return_url)
 
+    if unlock.status != UnlockRequest.STATUS_PENDING:
+        msg = "تمت معالجة طلب فتح التعديل سابقًا."
+        ajax_response = _admin_json_response(request, plan=plan, message=msg, ok=False, http_status=400, errors=[msg])
+        if ajax_response:
+            return ajax_response
+        messages.warning(request, msg)
+        return redirect(return_url)
+
+    now = timezone.now()
+    hours = _unlock_exception_hours_from_request(request)
+    edit_expires_at = now + timedelta(hours=hours)
+    admin_note = (request.POST.get("note") or request.POST.get("admin_note") or "").strip()
+
     unlock.status = UnlockRequest.STATUS_APPROVED
-    unlock.resolved_at = timezone.now()
-    unlock.save(update_fields=["status", "resolved_at"])
+    unlock.resolved_at = now
+    update_fields = ["status", "resolved_at"]
+    _set_unlock_edit_expires_at(unlock, edit_expires_at, update_fields)
+    _set_unlock_admin_note(unlock, admin_note, update_fields)
+    unlock.save(update_fields=update_fields)
 
     plan.status = Plan.STATUS_DRAFT
     plan.approved_at = None
     plan.save(update_fields=["status", "approved_at"])
 
+    edit_url = _supervisor_plan_edit_url(plan)
+    expires_text = _format_dt_ar_pretty(edit_expires_at)
+
     _notify_supervisor(
         supervisor=plan.supervisor,
         plan=plan,
         notif_type=SupervisorNotification.TYPE_UNLOCK_APPROVED,
-        title="تمت الموافقة على فك اعتماد الخطة",
-        message=f"تمت الموافقة على فك اعتماد خطة الأسبوع {plan.week.week_no}. يمكنك التعديل الآن.",
+        title="تمت الموافقة على فتح تعديل الخطة",
+        message=(
+            f"تمت الموافقة على فتح تعديل خطة الأسبوع {plan.week.week_no}. "
+            f"التعديل متاح حتى {expires_text}."
+        ),
     )
     send_unlock_approved_email(plan, request=request)
 
-    msg = "تمت الموافقة على فك الاعتماد وإرجاع الخطة إلى مسودة."
+    msg = f"تم فتح الخطة للتعديل لمدة {hours} ساعة دون فتح الأسبوع كاملًا."
     ajax_response = _admin_json_response(request, plan=plan, message=msg, ok=True, http_status=200)
     if ajax_response:
-        return ajax_response
+        payload = ajax_response
+        return payload
 
     messages.success(request, msg)
     return redirect(return_url)
@@ -6969,11 +7228,19 @@ def admin_unlock_reject_view(request: HttpRequest, plan_id: int) -> HttpResponse
         page=state["page"],
     )
 
-    unlock = get_object_or_404(UnlockRequest, plan=plan)
+    unlock = _pending_unlock_request(plan)
+    if not unlock:
+        msg = "لا يوجد طلب فتح تعديل بانتظار المعالجة لهذه الخطة."
+        ajax_response = _admin_json_response(request, plan=plan, message=msg, ok=False, http_status=400, errors=[msg])
+        if ajax_response:
+            return ajax_response
+        messages.warning(request, msg)
+        return redirect(return_url)
+
     note = (request.POST.get("note") or "").strip()
 
     if unlock.status != UnlockRequest.STATUS_PENDING:
-        msg = "تمت معالجة طلب فك الاعتماد سابقًا."
+        msg = "تمت معالجة طلب فتح التعديل سابقًا."
         ajax_response = _admin_json_response(request, plan=plan, message=msg, ok=False, http_status=400, errors=[msg])
         if ajax_response:
             return ajax_response
@@ -6982,21 +7249,27 @@ def admin_unlock_reject_view(request: HttpRequest, plan_id: int) -> HttpResponse
 
     unlock.status = UnlockRequest.STATUS_REJECTED
     unlock.resolved_at = timezone.now()
-    unlock.save(update_fields=["status", "resolved_at"])
+    update_fields = ["status", "resolved_at"]
+    _set_unlock_edit_expires_at(unlock, None, update_fields)
+    _set_unlock_admin_note(unlock, note, update_fields)
+    unlock.save(update_fields=update_fields)
 
-    plan.status = Plan.STATUS_APPROVED
+    if getattr(plan, "approved_at", None):
+        plan.status = Plan.STATUS_APPROVED
+    else:
+        plan.status = Plan.STATUS_DRAFT
     plan.save(update_fields=["status"])
 
     _notify_supervisor(
         supervisor=plan.supervisor,
         plan=plan,
         notif_type=SupervisorNotification.TYPE_UNLOCK_REJECTED,
-        title="تم رفض طلب فك اعتماد الخطة",
-        message=f"تم رفض طلب فك اعتماد خطة الأسبوع {plan.week.week_no}." + (f" الملاحظة: {note}" if note else ""),
+        title="تم رفض طلب فتح تعديل الخطة",
+        message=f"تم رفض طلب فتح تعديل خطة الأسبوع {plan.week.week_no}." + (f" الملاحظة: {note}" if note else ""),
     )
     send_unlock_rejected_email(plan, note=note, request=request)
 
-    msg = "تم رفض طلب فك الاعتماد."
+    msg = "تم رفض طلب فتح التعديل."
     ajax_response = _admin_json_response(request, plan=plan, message=msg, ok=True, http_status=200)
     if ajax_response:
         return ajax_response

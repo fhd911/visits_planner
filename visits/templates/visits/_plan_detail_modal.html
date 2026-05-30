@@ -105,6 +105,41 @@
       {% if plan.status == plan.STATUS_DRAFT %}disabled{% endif %}
     >↩ إرجاع لمسودة</button>
 
+
+    {% if plan.status == plan.STATUS_UNLOCK_REQUESTED %}
+      <form method="post" action="{% url 'visits:admin_unlock_approve' plan.id %}" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0">
+        {% csrf_token %}
+        <label style="color:#64748b;font-size:11px;font-weight:900">فتح التعديل</label>
+        <input
+          type="number"
+          name="unlock_hours"
+          value="24"
+          min="1"
+          max="168"
+          style="height:32px;width:74px;border-radius:999px;border:1px solid rgba(226,232,240,.95);background:#fff;padding:0 10px;font-weight:900;font-size:12px;color:#0f172a;text-align:center"
+        >
+        <span style="color:#64748b;font-size:11px;font-weight:900">ساعة</span>
+        <button
+          type="submit"
+          style="height:34px;padding:0 12px;border-radius:999px;border:1px solid rgba(15,118,110,.25);background:rgba(15,118,110,.12);color:#0f766e;font-weight:900;font-size:12px;cursor:pointer"
+        >🔓 موافقة</button>
+      </form>
+
+      <form method="post" action="{% url 'visits:admin_unlock_reject' plan.id %}" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0">
+        {% csrf_token %}
+        <input
+          type="text"
+          name="note"
+          placeholder="ملاحظة الرفض"
+          style="height:32px;min-width:130px;border-radius:999px;border:1px solid rgba(226,232,240,.95);background:#fff;padding:0 10px;font-weight:800;font-size:11px;color:#0f172a"
+        >
+        <button
+          type="submit"
+          style="height:34px;padding:0 12px;border-radius:999px;border:1px solid rgba(220,38,38,.22);background:rgba(220,38,38,.10);color:#991b1b;font-weight:900;font-size:12px;cursor:pointer"
+        >✖ رفض</button>
+      </form>
+    {% endif %}
+
     <div style="flex:1"></div>
 
     <div style="color:#64748b;font-size:12px;font-weight:900;align-self:center">
