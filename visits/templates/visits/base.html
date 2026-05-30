@@ -1068,10 +1068,13 @@
             الإشعارات
           </a>
 
-          <a href="{% url 'visits:supervisor_control_followups' %}"
-             class="{% if url_name == 'supervisor_control_followups' or url_name == 'supervisor_control_followup_respond' %}active{% endif %}">
-            الملحوظات
-          </a>
+          {% if has_supervisor_active_control_followups %}
+            <a href="{% url 'visits:supervisor_control_followups' %}"
+               class="{% if url_name == 'supervisor_control_followups' or url_name == 'supervisor_control_followup_respond' %}active{% endif %}">
+              الملاحظات الرقابية
+              <span class="nav-alert-count">{{ supervisor_active_control_followups_count }}</span>
+            </a>
+          {% endif %}
 
         {% elif request.user.is_staff %}
           <a href="{% url 'visits:admin_dashboard' %}"
@@ -1092,7 +1095,7 @@
             مركز التقارير
           </a>
 
-          <div class="nav-group {% if url_name == 'admin_school_list' or url_name == 'admin_school_save' or url_name == 'admin_school_toggle_active' or url_name == 'admin_supervisor_list' or url_name == 'admin_supervisor_save' or url_name == 'admin_supervisor_toggle_active' or url_name == 'admin_sector_list' or url_name == 'admin_sector_save' or url_name == 'admin_sector_toggle_active' %}active{% endif %}">
+          <div class="nav-group {% if url_name == 'admin_school_list' or url_name == 'admin_school_save' or url_name == 'admin_school_toggle_active' or url_name == 'admin_principal_list' or url_name == 'admin_principal_edit' or url_name == 'admin_supervisor_list' or url_name == 'admin_supervisor_save' or url_name == 'admin_supervisor_toggle_active' or url_name == 'admin_sector_list' or url_name == 'admin_sector_save' or url_name == 'admin_sector_toggle_active' %}active{% endif %}">
             <button class="nav-trigger" type="button" aria-haspopup="true" aria-expanded="false">
               البيانات الأساسية
               <span class="nav-caret">▾</span>
@@ -1101,6 +1104,11 @@
               <a href="{% url 'visits:admin_school_list' %}"
                  class="{% if url_name == 'admin_school_list' or url_name == 'admin_school_save' or url_name == 'admin_school_toggle_active' %}active{% endif %}">
                 المدارس
+              </a>
+
+              <a href="{% url 'visits:admin_principal_list' %}"
+                 class="{% if url_name == 'admin_principal_list' or url_name == 'admin_principal_edit' %}active{% endif %}">
+                قادة المدارس
               </a>
 
               <a href="{% url 'visits:admin_supervisor_list' %}"

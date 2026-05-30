@@ -5,14 +5,13 @@
 {% block page_messages %}{% endblock %}
 
 {% block header_title %}الإشعارات{% endblock %}
-{% block header_subtitle %}متابعة إشعارات اعتماد الخطة، إعادتها للمراجعة، وقرارات فك الاعتماد{% endblock %}
+{% block header_subtitle %}صندوق وارد مختصر للتنبيهات المرتبطة بالخطة والاعتماد وفك الاعتماد{% endblock %}
 
 {% block extra_css %}
 <style>
   .notif-page{
     --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
 
-    --fw-hero:700;
     --fw-title:600;
     --fw-strong:500;
     --fw-normal:400;
@@ -49,7 +48,7 @@
     --shadow2:0 4px 12px rgba(22,36,29,.028);
 
     display:grid;
-    gap:12px;
+    gap:10px;
     margin-top:2px;
     color:var(--txt);
     direction:rtl;
@@ -62,9 +61,9 @@
     font-family:var(--ff) !important;
   }
 
-  .notif-page .summary-card,
-  .notif-page .action-card,
-  .notif-page .kpi,
+  .notif-page .inbox-head,
+  .notif-page .inbox-tools,
+  .notif-page .metric,
   .notif-page .list-panel{
     background:var(--card);
     border:1px solid var(--line);
@@ -72,27 +71,43 @@
     box-shadow:var(--shadow);
   }
 
-  .notif-page .summary-card{
-    padding:12px 15px;
+  .notif-page .inbox-head{
+    padding:14px 16px;
+    display:grid;
+    gap:8px;
+    background:
+      radial-gradient(520px 170px at 100% 0%, rgba(31,75,58,.035), transparent 65%),
+      linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,252,251,.98));
+  }
+
+  .notif-page .inbox-title-row{
     display:flex;
-    align-items:center;
+    align-items:flex-start;
     justify-content:space-between;
-    gap:10px;
+    gap:12px;
     flex-wrap:wrap;
-    background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,252,251,.98));
   }
 
-  .notif-page .summary-note{
+  .notif-page .inbox-title{
+    margin:0;
+    color:var(--txt);
+    font-size:18px;
+    font-weight:var(--fw-title);
+    line-height:1.5;
+  }
+
+  .notif-page .inbox-subtitle{
+    margin:2px 0 0;
     color:var(--mut);
-    font-size:11.6px;
-    line-height:1.85;
+    font-size:11.7px;
+    line-height:1.9;
     font-weight:var(--fw-normal);
-    max-width:780px;
   }
 
-  .notif-page .summary-right{
+  .notif-page .inbox-meta{
     display:flex;
     align-items:center;
+    justify-content:flex-start;
     gap:7px;
     flex-wrap:wrap;
   }
@@ -100,18 +115,17 @@
   .notif-page .chip{
     display:inline-flex;
     align-items:center;
-    gap:8px;
-    min-height:30px;
-    padding:5px 10px;
+    gap:7px;
+    min-height:28px;
+    padding:4px 10px;
     border-radius:999px;
     background:var(--soft);
     border:1px solid var(--line);
     color:var(--mut);
-    font-size:10.8px;
+    font-size:10.7px;
     font-weight:var(--fw-strong);
     white-space:nowrap;
     text-decoration:none;
-    transition:.16s ease;
   }
 
   .notif-page .chip b{
@@ -120,17 +134,12 @@
   }
 
   .notif-page .dot{
-    width:8px;
-    height:8px;
+    width:7px;
+    height:7px;
     border-radius:50%;
     background:#5e8d7a;
-    box-shadow:0 0 0 4px rgba(94,141,122,.10);
+    box-shadow:0 0 0 4px rgba(94,141,122,.09);
     flex:0 0 auto;
-  }
-
-  .notif-page .dot.ok{
-    background:#2f6250;
-    box-shadow:0 0 0 4px rgba(47,98,80,.10);
   }
 
   .notif-page .dot.warn{
@@ -138,8 +147,8 @@
     box-shadow:0 0 0 4px rgba(183,121,31,.10);
   }
 
-  .notif-page .action-card{
-    padding:12px 13px;
+  .notif-page .inbox-tools{
+    padding:11px 13px;
     display:flex;
     align-items:center;
     justify-content:space-between;
@@ -149,15 +158,14 @@
     box-shadow:var(--shadow2);
   }
 
-  .notif-page .action-copy{
+  .notif-page .tools-copy{
     color:var(--mut);
-    font-size:11.1px;
+    font-size:11.2px;
     line-height:1.85;
     font-weight:var(--fw-normal);
-    max-width:720px;
   }
 
-  .notif-page .action-buttons{
+  .notif-page .tool-buttons{
     display:flex;
     align-items:center;
     gap:7px;
@@ -165,7 +173,7 @@
   }
 
   .notif-page .btn{
-    height:35px;
+    min-height:35px;
     padding:0 13px;
     border-radius:999px;
     border:1px solid var(--line-strong);
@@ -207,71 +215,70 @@
     color:var(--primary);
   }
 
-  .notif-page .btn.warn{
-    background:var(--warn-bg);
-    border-color:var(--warn-br);
-    color:var(--warn);
-  }
-
-  .notif-page .kpis{
+  .notif-page .metrics{
     display:grid;
-    grid-template-columns:repeat(4, minmax(0,1fr));
+    grid-template-columns:repeat(3, minmax(0,1fr));
     gap:8px;
   }
 
-  .notif-page .kpi{
+  .notif-page .metric{
     box-shadow:var(--shadow2);
-    padding:11px 12px;
+    padding:10px 12px;
     display:flex;
     align-items:center;
     justify-content:space-between;
     gap:8px;
-    min-height:66px;
+    min-height:62px;
     border-radius:17px;
     background:linear-gradient(180deg, #ffffff 0%, #fbfcfb 100%);
   }
 
-  .notif-page .kpi-meta{
+  .notif-page .metric.warn{
+    background:linear-gradient(180deg, #fffdf7, #fffaf0);
+    border-color:var(--warn-br);
+  }
+
+  .notif-page .metric-meta{
     display:grid;
     gap:2px;
     min-width:0;
   }
 
-  .notif-page .kpi-label{
+  .notif-page .metric-label{
     font-size:10.7px;
     font-weight:var(--fw-normal);
     color:var(--mut);
     line-height:1.7;
   }
 
-  .notif-page .kpi-value{
+  .notif-page .metric-value{
     font-size:18px;
     font-weight:var(--fw-title);
     color:var(--txt);
     line-height:1.2;
   }
 
-  .notif-page .kpi-icon{
-    width:34px;
-    height:34px;
+  .notif-page .metric.warn .metric-value{
+    color:var(--warn);
+  }
+
+  .notif-page .metric-icon{
+    width:33px;
+    height:33px;
     border-radius:12px;
     display:grid;
     place-items:center;
     border:1px solid var(--line);
     background:var(--soft);
     color:var(--primary);
-    font-size:12px;
+    font-size:11px;
     font-weight:var(--fw-title);
     flex:0 0 auto;
   }
 
-  .notif-page .kpi.warn .kpi-icon{
+  .notif-page .metric.warn .metric-icon{
     background:var(--warn-bg);
     border-color:var(--warn-br);
-    color:var(--warn);
-  }
-
-  .notif-page .kpi.warn .kpi-value{
     color:var(--warn);
   }
 
@@ -294,7 +301,7 @@
   .notif-page .panel-title{
     margin:0;
     color:var(--txt);
-    font-size:12.2px;
+    font-size:12.5px;
     font-weight:var(--fw-title);
     line-height:1.65;
   }
@@ -309,20 +316,22 @@
   .notif-page .notif-list{
     padding:10px 11px 12px;
     display:grid;
-    gap:7px;
+    grid-template-columns:repeat(auto-fit, minmax(430px, 1fr));
+    gap:9px;
+    align-items:start;
   }
 
   .notif-page .notif-item{
     position:relative;
     border:1px solid var(--line);
-    border-radius:16px;
+    border-radius:15px;
     background:#fff;
     display:grid;
-    grid-template-columns:minmax(0,1fr) auto;
-    gap:10px;
+    gap:7px;
     padding:10px 11px;
     box-shadow:var(--shadow2);
     transition:.14s ease;
+    min-height:132px;
   }
 
   .notif-page .notif-item:hover{
@@ -333,31 +342,39 @@
 
   .notif-page .notif-item.unread{
     border-color:var(--primary-soft-br);
-    background:linear-gradient(180deg, rgba(243,247,244,.72), #fff);
+    background:linear-gradient(180deg, rgba(243,247,244,.66), #fff);
+  }
+
+  .notif-page .notif-top{
+    display:grid;
+    gap:3px;
+    min-width:0;
   }
 
   .notif-page .notif-main{
     min-width:0;
     display:grid;
-    gap:5px;
+    gap:3px;
   }
 
   .notif-page .kind-row{
     display:flex;
     align-items:center;
-    gap:6px;
+    justify-content:flex-start;
+    gap:5px;
     flex-wrap:wrap;
   }
 
   .notif-page .kind-pill,
   .notif-page .read-pill,
-  .notif-page .mini-chip{
+  .notif-page .mini-chip,
+  .notif-page .email-chip{
     display:inline-flex;
     align-items:center;
     justify-content:center;
     gap:6px;
-    min-height:24px;
-    padding:3px 8px;
+    min-height:22px;
+    padding:2px 8px;
     border-radius:999px;
     font-size:10.3px;
     font-weight:var(--fw-strong);
@@ -415,11 +432,29 @@
     color:#4b5563;
   }
 
+  .notif-page .email-chip.sent{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+  }
+
+  .notif-page .email-chip.failed{
+    background:var(--danger-bg);
+    border-color:var(--danger-br);
+    color:var(--danger);
+  }
+
+  .notif-page .email-chip.not-sent{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn);
+  }
+
   .notif-page .notif-title{
     margin:0;
     color:var(--txt);
-    font-size:12.2px;
-    line-height:1.7;
+    font-size:12.3px;
+    line-height:1.55;
     font-weight:var(--fw-title);
   }
 
@@ -427,24 +462,53 @@
     margin:0;
     color:var(--mut);
     font-size:10.9px;
-    line-height:1.8;
-    font-weight:var(--fw-normal);
-  }
-
-  .notif-page .notif-side{
-    display:grid;
-    align-content:start;
-    justify-items:end;
-    gap:7px;
-    min-width:170px;
-  }
-
-  .notif-page .time{
-    color:var(--mut2);
-    font-size:10.5px;
     line-height:1.6;
     font-weight:var(--fw-normal);
+  }
+
+
+
+  .notif-page .notif-main{
+    min-width:0;
+  }
+
+  .notif-page .notif-title,
+  .notif-page .notif-message{
+    max-width:100%;
+  }
+
+  .notif-page .notif-message{
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+
+  .notif-page .notif-time{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:27px;
+    padding:0 8px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fafcfb;
+    color:var(--mut2);
+    font-size:10.3px;
+    line-height:1.5;
+    font-weight:var(--fw-normal);
     white-space:nowrap;
+  }
+
+  .notif-page .notif-footer{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:7px;
+    flex-wrap:wrap;
+    padding-top:8px;
+    border-top:1px dashed #e5ece8;
+    margin-top:2px;
   }
 
   .notif-page .mini-chip{
@@ -456,8 +520,8 @@
   .notif-page .item-actions{
     display:flex;
     align-items:center;
-    justify-content:flex-end;
-    gap:6px;
+    justify-content:flex-start;
+    gap:5px;
     flex-wrap:wrap;
   }
 
@@ -473,7 +537,7 @@
     justify-content:center;
     text-decoration:none;
     cursor:pointer;
-    font-size:10.3px;
+    font-size:10.4px;
     font-weight:var(--fw-strong);
     white-space:nowrap;
     transition:.14s ease;
@@ -542,66 +606,88 @@
     pointer-events:none;
   }
 
-  @media (max-width: 1050px){
-    .notif-page .kpis{
-      grid-template-columns:repeat(2, minmax(0,1fr));
-    }
-
-    .notif-page .notif-item{
+  @media (max-width: 900px){
+    .notif-page .metrics{
       grid-template-columns:1fr;
     }
 
-    .notif-page .notif-side{
-      min-width:0;
-      justify-items:start;
+    .notif-page .notif-top{
+      display:grid;
+      gap:6px;
     }
 
-    .notif-page .item-actions{
-      justify-content:flex-start;
+    .notif-page .notif-time{
+      white-space:normal;
     }
   }
 
   @media (max-width: 620px){
-    .notif-page .kpis{
-      grid-template-columns:1fr;
-    }
-
-    .notif-page .summary-card,
-    .notif-page .action-card{
+    .notif-page .inbox-head,
+    .notif-page .inbox-tools{
       padding:12px;
     }
 
-    .notif-page .action-buttons .btn,
+    .notif-page .tool-buttons,
+    .notif-page .tool-buttons .btn,
+    .notif-page .item-actions,
     .notif-page .item-actions .mini-btn,
     .notif-page .pager-links .pbtn{
+      width:100%;
+    }
+
+    .notif-page .tool-buttons .btn,
+    .notif-page .item-actions .mini-btn{
       flex:1 1 auto;
     }
   }
+
+
+  @media (max-width: 900px){
+    .notif-page .notif-list{
+      grid-template-columns:1fr;
+    }
+
+    .notif-page .notif-item{
+      min-height:auto;
+    }
+  }
+
+  @media (min-width: 1280px){
+    .notif-page .notif-list{
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+    }
+  }
+
 </style>
 {% endblock %}
 
 {% block content %}
 <section class="notif-page">
 
-  <div class="summary-card">
-    <div class="summary-note">
-      متابعة إشعارات اعتماد الخطط وإعادتها للمراجعة وقرارات فك الاعتماد، مع تمييز الإشعارات غير المقروءة للوصول السريع لما يحتاج انتباهًا.
+  <div class="inbox-head">
+    <div class="inbox-title-row">
+      <div>
+        <h1 class="inbox-title">الإشعارات</h1>
+        <div class="inbox-subtitle">
+          متابعة التنبيهات المرتبطة بالخطة والاعتماد وفك الاعتماد، مع فتح الإجراء المناسب لكل إشعار عند الحاجة.
+        </div>
+      </div>
     </div>
 
-    <div class="summary-right">
-      <span class="chip"><span class="dot ok"></span> المشرف: <b>{{ sup.full_name }}</b></span>
+    <div class="inbox-meta">
+      <span class="chip"><span class="dot"></span> إجمالي الإشعارات: <b>{{ page_obj.paginator.count }}</b></span>
       <span class="chip"><span class="dot {% if unread_count and unread_count > 0 %}warn{% endif %}"></span> غير المقروء: <b>{{ unread_count }}</b></span>
-      <span class="chip"><span class="dot"></span> الأسبوع: <b>{{ week }}</b></span>
+      <span class="chip"><span class="dot"></span> البريد المرسل: <b>{{ email_sent_count|default:"0" }}</b></span>
     </div>
   </div>
 
-  <div class="action-card">
-    <div class="action-copy">
-      استخدم هذه الصفحة لمراجعة التنبيهات الواردة، وفتح الأسبوع المرتبط بكل إشعار، أو تعيين الإشعارات كمقروءة بعد الاطلاع.
+  <div class="inbox-tools">
+    <div class="tools-copy">
+      راجع التنبيهات الأحدث أولًا، ثم استخدم زر الإجراء داخل كل إشعار للوصول إلى الخطة أو فتحها للتعديل.
     </div>
 
-    <div class="action-buttons">
-      <a class="btn soft" href="{% url 'visits:plan' %}?week={{ week }}">↩ العودة إلى الخطة</a>
+    <div class="tool-buttons">
+      <a class="btn soft" href="{% url 'visits:supervisor_dashboard' %}">↩ العودة إلى بوابة المشرف</a>
 
       {% if unread_count and unread_count > 0 %}
         <form method="post" action="{% url 'visits:mark_all_notifications_read' %}" style="margin:0">
@@ -613,37 +699,29 @@
     </div>
   </div>
 
-  <div class="kpis">
-    <article class="kpi">
-      <div class="kpi-meta">
-        <div class="kpi-label">إجمالي الإشعارات</div>
-        <div class="kpi-value">{{ page_obj.paginator.count }}</div>
+  <div class="metrics">
+    <article class="metric">
+      <div class="metric-meta">
+        <div class="metric-label">إجمالي الإشعارات</div>
+        <div class="metric-value">{{ page_obj.paginator.count }}</div>
       </div>
-      <div class="kpi-icon">01</div>
+      <div class="metric-icon">01</div>
     </article>
 
-    <article class="kpi {% if unread_count and unread_count > 0 %}warn{% endif %}">
-      <div class="kpi-meta">
-        <div class="kpi-label">غير المقروءة</div>
-        <div class="kpi-value">{{ unread_count }}</div>
+    <article class="metric {% if unread_count and unread_count > 0 %}warn{% endif %}">
+      <div class="metric-meta">
+        <div class="metric-label">غير المقروءة</div>
+        <div class="metric-value">{{ unread_count }}</div>
       </div>
-      <div class="kpi-icon">02</div>
+      <div class="metric-icon">02</div>
     </article>
 
-    <article class="kpi">
-      <div class="kpi-meta">
-        <div class="kpi-label">الصفحة الحالية</div>
-        <div class="kpi-value">{{ page_obj.number }}</div>
+    <article class="metric">
+      <div class="metric-meta">
+        <div class="metric-label">البريد المرسل</div>
+        <div class="metric-value">{{ email_sent_count|default:"0" }}</div>
       </div>
-      <div class="kpi-icon">03</div>
-    </article>
-
-    <article class="kpi">
-      <div class="kpi-meta">
-        <div class="kpi-label">إجمالي الصفحات</div>
-        <div class="kpi-value">{{ page_obj.paginator.num_pages }}</div>
-      </div>
-      <div class="kpi-icon">04</div>
+      <div class="metric-icon">03</div>
     </article>
   </div>
 
@@ -651,7 +729,7 @@
     <div class="panel-head">
       <div>
         <h3 class="panel-title">سجل الإشعارات</h3>
-        <div class="panel-note">قائمة مرتبة بأحدث الإشعارات، مع حالة القراءة والإجراء المرتبط بكل إشعار.</div>
+        <div class="panel-note">قائمة مختصرة بأحدث الإشعارات، مع حالة القراءة والإجراء المرتبط بكل إشعار.</div>
       </div>
 
       <div class="panel-note">
@@ -663,58 +741,77 @@
       {% if notifications %}
         {% for n in notifications %}
           <article class="notif-item {% if not n.is_read %}unread{% endif %}">
-            <div class="notif-main">
-              <div class="kind-row">
-                <span class="kind-pill {% if n.notif_type == 'approved' %}approved{% elif n.notif_type == 'returned' %}returned{% elif n.notif_type == 'unlock_approved' %}unlock_approved{% elif n.notif_type == 'unlock_rejected' %}unlock_rejected{% else %}default{% endif %}">
-                  <span class="kind-dot"></span>
-                  {% if n.notif_type == "approved" %}
-                    تم اعتماد الخطة
-                  {% elif n.notif_type == "returned" %}
-                    تمت إعادة الخطة للمراجعة
-                  {% elif n.notif_type == "unlock_approved" %}
-                    تم قبول طلب فك الاعتماد
-                  {% elif n.notif_type == "unlock_rejected" %}
-                    تم رفض طلب فك الاعتماد
+            <div class="notif-top">
+              <div class="notif-main">
+                <div class="kind-row">
+                  <span class="kind-pill {% if n.notif_type == 'approved' %}approved{% elif n.notif_type == 'returned' %}returned{% elif n.notif_type == 'unlock_approved' %}unlock_approved{% elif n.notif_type == 'unlock_rejected' %}unlock_rejected{% else %}default{% endif %}">
+                    <span class="kind-dot"></span>
+                    {% if n.notif_type == "approved" %}
+                      تم اعتماد الخطة
+                    {% elif n.notif_type == "returned" %}
+                      تمت إعادة الخطة للمراجعة
+                    {% elif n.notif_type == "unlock_approved" %}
+                      تم قبول طلب فك الاعتماد
+                    {% elif n.notif_type == "unlock_rejected" %}
+                      تم رفض طلب فك الاعتماد
+                    {% else %}
+                      إشعار
+                    {% endif %}
+                  </span>
+
+                  {% if n.is_read %}
+                    <span class="read-pill read">مقروء</span>
                   {% else %}
-                    إشعار
+                    <span class="read-pill unread">غير مقروء</span>
                   {% endif %}
-                </span>
 
-                {% if n.is_read %}
-                  <span class="read-pill read">مقروء</span>
-                {% else %}
-                  <span class="read-pill unread">غير مقروء</span>
-                {% endif %}
+                  {% if n.plan %}
+                    <span class="mini-chip">الأسبوع {{ n.plan.week.week_no }}</span>
+                  {% endif %}
 
-                {% if n.plan %}
-                  <span class="mini-chip">الأسبوع {{ n.plan.week.week_no }}</span>
+                  {% if n.email_status == "sent" %}
+                    <span class="email-chip sent">بريد مرسل</span>
+                  {% elif n.email_status == "failed" %}
+                    <span class="email-chip failed">فشل البريد</span>
+                  {% elif n.email_status == "not_sent" or n.email_status == "skipped" %}
+                    <span class="email-chip not-sent">لم يُرسل بريد</span>
+                  {% endif %}
+                </div>
+
+                <h3 class="notif-title">{{ n.title }}</h3>
+
+                {% if n.message %}
+                  <p class="notif-message">{{ n.message }}</p>
                 {% endif %}
               </div>
 
-              <h3 class="notif-title">{{ n.title }}</h3>
-
-              {% if n.message %}
-                <p class="notif-message">{{ n.message }}</p>
-              {% endif %}
             </div>
 
-            <div class="notif-side">
-              <div class="time">
+            <div class="notif-footer">
+              <div class="notif-time">
                 {{ n.created_at|date:"Y-m-d" }} — {{ n.created_at|time:"H:i" }}
               </div>
 
               <div class="item-actions">
-                {% if n.plan %}
-                  <a class="mini-btn" href="{% url 'visits:plan' %}?week={{ n.plan.week.week_no }}">فتح الأسبوع</a>
-                {% endif %}
+              {% if n.action_url %}
+                <a class="mini-btn" href="{{ n.action_url }}">{{ n.action_label|default:"عرض التفاصيل" }}</a>
+              {% elif n.plan %}
+                <a class="mini-btn" href="{% url 'visits:plan' %}?week={{ n.plan.week.week_no }}">
+                  {% if n.notif_type == "returned" or n.notif_type == "unlock_approved" %}
+                    فتح الخطة للتعديل
+                  {% else %}
+                    عرض الخطة
+                  {% endif %}
+                </a>
+              {% endif %}
 
-                {% if not n.is_read %}
-                  <form method="post" action="{% url 'visits:mark_notification_read' n.id %}" style="margin:0">
-                    {% csrf_token %}
-                    <input type="hidden" name="next" value="{{ request.get_full_path }}">
-                    <button class="mini-btn primary" type="submit">تعيين كمقروء</button>
-                  </form>
-                {% endif %}
+              {% if not n.is_read %}
+                <form method="post" action="{% url 'visits:mark_notification_read' n.id %}" style="margin:0">
+                  {% csrf_token %}
+                  <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <button class="mini-btn primary" type="submit">تعيين كمقروء</button>
+                </form>
+              {% endif %}
               </div>
             </div>
           </article>

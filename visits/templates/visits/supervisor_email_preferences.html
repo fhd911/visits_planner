@@ -1,0 +1,140 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}تفضيلات البريد والتنبيهات{% endblock %}
+{% block page_messages %}{% endblock %}
+{% block hero %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .email-pref-page{direction:rtl;font-family:"Cairo",system-ui,sans-serif;color:var(--vp-text)}
+  .email-pref-page *{box-sizing:border-box;font-family:"Cairo",system-ui,sans-serif!important}
+  .email-pref-page .wrap{max-width:1050px;margin:0 auto;display:grid;gap:12px}
+  .email-pref-page .card{background:#fff;border:1px solid var(--vp-line);border-radius:20px;box-shadow:var(--vp-shadow);overflow:hidden}
+  .email-pref-page .head{padding:14px 16px;border-bottom:1px solid var(--vp-line);background:linear-gradient(180deg,#fff,#fbfcfb);display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .email-pref-page h1,.email-pref-page h2{margin:0;color:var(--vp-text);font-weight:600;line-height:1.6}
+  .email-pref-page h1{font-size:18px}.email-pref-page h2{font-size:13px}
+  .email-pref-page .sub{color:var(--vp-text-soft);font-size:11.4px;line-height:1.8;margin-top:2px}
+  .email-pref-page .body{padding:14px 16px;display:grid;gap:12px}
+  .email-pref-page .chips{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+  .email-pref-page .chip{min-height:30px;padding:5px 10px;border:1px solid var(--vp-line);border-radius:999px;background:#fff;color:var(--vp-text-soft);font-size:11px;font-weight:500;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+  .email-pref-page .chip.ok{background:var(--vp-ok-bg);border-color:var(--vp-ok-border);color:var(--vp-ok-text)}
+  .email-pref-page .chip.warn{background:var(--vp-warn-bg);border-color:var(--vp-warn-border);color:var(--vp-warn-text)}
+  .email-pref-page .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .email-pref-page .option{border:1px solid var(--vp-line);border-radius:16px;background:#fbfcfb;padding:11px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .email-pref-page .option-title{font-size:12px;font-weight:600;color:var(--vp-text);line-height:1.7}
+  .email-pref-page .option-sub{font-size:10.8px;color:var(--vp-text-soft);line-height:1.75;margin-top:2px}
+  .email-pref-page input[type="checkbox"]{width:18px;height:18px;accent-color:var(--vp-primary);flex:0 0 auto;margin-top:5px}
+  .email-pref-page .actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap;padding-top:4px}
+  .email-pref-page .btn{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--vp-line);background:#fff;color:var(--vp-text);font-size:11.5px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+  .email-pref-page .btn.primary{background:var(--vp-primary);border-color:var(--vp-primary);color:#fff}
+  .email-pref-page table{width:100%;border-collapse:collapse}
+  .email-pref-page th,.email-pref-page td{border-bottom:1px solid var(--vp-line-2);padding:8px 7px;text-align:right;font-size:11px;color:var(--vp-text-soft)}
+  .email-pref-page th{background:#f8fbf9;color:var(--vp-text);font-weight:600}
+  .email-pref-page .empty{padding:14px;text-align:center;color:var(--vp-text-soft);font-size:11.5px}
+  @media(max-width:780px){.email-pref-page .grid{grid-template-columns:1fr}.email-pref-page .actions{justify-content:stretch}.email-pref-page .btn{width:100%}}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="email-pref-page">
+  <div class="wrap">
+    <div class="card">
+      <div class="head">
+        <div>
+          <h1>تفضيلات البريد والتنبيهات</h1>
+          <div class="sub">اجعل البريد قناة متابعة فعلية للتنبيهات المهمة: الاعتماد، الإرجاع، فك الاعتماد، الملاحظات الرقابية، وتذكير عدم اكتمال الخطة.</div>
+        </div>
+        <div class="chips">
+          <a class="chip" href="{% url 'visits:supervisor_dashboard' %}">بوابة المشرف</a>
+          <a class="chip" href="{% url 'visits:supervisor_email_settings' %}?next={{ request.get_full_path|urlencode }}">تعديل البريد</a>
+        </div>
+      </div>
+      <div class="body">
+        <div class="chips">
+          <span class="chip">البريد: <b>{% if supervisor_email %}{{ supervisor_email }}{% else %}غير مضاف{% endif %}</b></span>
+          {% if supervisor_email and email_notifications_enabled %}
+            <span class="chip ok">التنبيهات البريدية مفعلة</span>
+          {% elif supervisor_email %}
+            <span class="chip warn">التنبيهات البريدية متوقفة</span>
+          {% else %}
+            <span class="chip warn">أضف بريدًا لتفعيل التنبيهات</span>
+          {% endif %}
+        </div>
+
+        <form method="post">
+          {% csrf_token %}
+          <div class="grid">
+            <label class="option">
+              <div><div class="option-title">تفعيل البريد عمومًا</div><div class="option-sub">إيقافه يعطل كل الرسائل البريدية غير الإجبارية.</div></div>
+              <input type="checkbox" name="email_notifications_enabled" value="1" {% if email_notifications_enabled %}checked{% endif %}>
+            </label>
+            <label class="option">
+              <div><div class="option-title">اعتماد الخطة</div><div class="option-sub">يصلك بريد عند اعتماد الإدارة لخطة الأسبوع.</div></div>
+              <input type="checkbox" name="plan_approved" value="1" {% if preferences.plan_approved %}checked{% endif %}>
+            </label>
+            <label class="option">
+              <div><div class="option-title">إرجاع الخطة للتعديل</div><div class="option-sub">يصلك بريد عند إعادة الخطة لمسودة مع ملاحظة الإدارة.</div></div>
+              <input type="checkbox" name="plan_returned" value="1" {% if preferences.plan_returned %}checked{% endif %}>
+            </label>
+            <label class="option">
+              <div><div class="option-title">نتيجة فك الاعتماد</div><div class="option-sub">يصلك بريد عند قبول أو رفض طلب فك اعتماد الخطة.</div></div>
+              <input type="checkbox" name="unlock_result" value="1" {% if preferences.unlock_result %}checked{% endif %}>
+            </label>
+            <label class="option">
+              <div><div class="option-title">التنبيهات الإدارية</div><div class="option-sub">رسائل الإدارة العامة المرتبطة بالخطة.</div></div>
+              <input type="checkbox" name="admin_alert" value="1" {% if preferences.admin_alert %}checked{% endif %}>
+            </label>
+            <label class="option">
+              <div><div class="option-title">الملاحظات الرقابية</div><div class="option-sub">تنبيه عند وجود ملاحظة رقابية تحتاج متابعة أو إفادة.</div></div>
+              <input type="checkbox" name="control_followup" value="1" {% if preferences.control_followup %}checked{% endif %}>
+            </label>
+            <label class="option">
+              <div><div class="option-title">تذكير عدم اكتمال الخطة</div><div class="option-sub">تذكير عند بقاء أيام عمل غير مكتملة قبل الاعتماد.</div></div>
+              <input type="checkbox" name="incomplete_reminder" value="1" {% if preferences.incomplete_reminder %}checked{% endif %}>
+            </label>
+            <label class="option">
+              <div><div class="option-title">ملخص أسبوعي</div><div class="option-sub">ملخص مختصر بعد إغلاق الأسبوع أو اعتماد الخطة.</div></div>
+              <input type="checkbox" name="weekly_summary" value="1" {% if preferences.weekly_summary %}checked{% endif %}>
+            </label>
+          </div>
+          <div class="actions">
+            <button class="btn primary" type="submit">حفظ التفضيلات</button>
+            <a class="btn" href="{% url 'visits:supervisor_dashboard' %}">عودة</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="head">
+        <div>
+          <h2>آخر رسائل البريد</h2>
+          <div class="sub">يعرض آخر محاولات الإرسال لتوضيح ما أُرسل أو ما تعذر إرساله.</div>
+        </div>
+      </div>
+      <div class="body" style="padding:0">
+        {% if recent_email_logs %}
+          <div style="overflow:auto">
+            <table>
+              <thead><tr><th>التاريخ</th><th>النوع</th><th>العنوان</th><th>الحالة</th></tr></thead>
+              <tbody>
+                {% for log in recent_email_logs %}
+                  <tr>
+                    <td>{{ log.created_at|date:"Y-m-d H:i" }}</td>
+                    <td>{{ log.get_event_type_display }}</td>
+                    <td>{{ log.subject }}</td>
+                    <td>{{ log.get_status_display }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty">لا توجد رسائل بريد مسجلة حتى الآن.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

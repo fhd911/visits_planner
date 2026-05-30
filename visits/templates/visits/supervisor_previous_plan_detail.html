@@ -1,0 +1,102 @@
+{% extends "visits/base.html" %}
+{% load static %}
+{% load hijri_extras %}
+
+{% block title %}تفاصيل خطة سابقة{% endblock %}
+{% block page_messages %}{% endblock %}
+{% block hero %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .prev-detail{--ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;--card:#fff;--soft:#f7f9f8;--txt:var(--vp-text);--mut:var(--vp-text-soft);--mut2:var(--vp-text-faint);--line:var(--vp-line);--ok:var(--vp-ok-text);--ok-bg:var(--vp-ok-bg);--ok-br:var(--vp-ok-border);--warn:var(--vp-warn-text);--warn-bg:var(--vp-warn-bg);--warn-br:var(--vp-warn-border);--primary:var(--vp-primary);--primary-soft:var(--vp-primary-soft);--primary-soft-br:var(--vp-primary-soft-border);font-family:var(--ff);direction:rtl;color:var(--txt)}
+  .prev-detail *{box-sizing:border-box;font-family:var(--ff)!important}
+  .prev-detail .wrap{max-width:1180px;margin:0 auto;display:grid;gap:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--vp-shadow);overflow:hidden}
+  .head{padding:14px 15px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#fbfcfb);display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .title{margin:0;font-size:20px;line-height:1.5;font-weight:600;color:var(--txt)}
+  .sub{font-size:11.5px;color:var(--mut);line-height:1.8;margin-top:2px}
+  .chips{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .chip{min-height:28px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--mut);font-size:10.8px;font-weight:500;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;text-decoration:none}
+  .chip.ok{background:var(--ok-bg);border-color:var(--ok-br);color:var(--ok)}
+  .chip.warn{background:var(--warn-bg);border-color:var(--warn-br);color:var(--warn)}
+  .chip.info{background:var(--primary-soft);border-color:var(--primary-soft-br);color:var(--primary)}
+  .btn{height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--txt);font-size:11px;font-weight:500;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .summary{padding:12px 15px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#fff}
+  .table-wrap{overflow:auto;padding:12px 15px}
+  table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  th{background:#f7faf8;color:#687a70;font-size:11px;font-weight:600;text-align:right;padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:11px 10px;border-bottom:1px solid #edf2ee;background:#fff;font-size:11.7px;vertical-align:middle;color:var(--txt)}
+  tr:last-child td{border-bottom:0}
+  .day-title{font-weight:600;font-size:12.4px;color:var(--txt);line-height:1.7}
+  .date-line{font-size:10.5px;color:var(--mut);line-height:1.7}
+  .box-note{padding:9px 10px;border-radius:13px;border:1px solid var(--line);background:#fbfcfb;line-height:1.8}
+  .box-note.closed{background:#fffaf3;border-color:var(--warn-br);color:var(--warn)}
+  .muted{color:var(--mut2)}
+  @media(max-width:760px){.head,.summary{align-items:stretch}.chips .btn,.chips .chip{flex:1}.table-wrap table{min-width:850px}.table-wrap{padding:10px}}
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="prev-detail">
+  <div class="wrap">
+    <div class="card">
+      <div class="head">
+        <div>
+          <h1 class="title">تفاصيل خطة سابقة</h1>
+          <div class="sub">{{ week_label }} — المشرف: {{ sup.full_name }} — رقم الهوية: {{ sup.national_id }}</div>
+        </div>
+        <div class="chips">
+          {% if plan.status == 'approved' %}<span class="chip ok">{{ status_label }}</span>{% elif plan.status == 'unlock' %}<span class="chip warn">{{ status_label }}</span>{% else %}<span class="chip info">{{ status_label }}</span>{% endif %}
+          <a class="btn" href="{% url 'visits:supervisor_previous_plans' %}">عودة للخطط السابقة</a>
+          <a class="btn primary" href="{% url 'visits:plan_export' %}?week={{ week_obj.week_no }}">تصدير Excel</a>
+        </div>
+      </div>
+      <div class="summary">
+        <div class="chips">
+          <span class="chip">الفترة: <b>{{ week_obj.start_sunday|date:"Y-m-d" }} — {{ week_obj.end_thursday|date:"Y-m-d" }}</b></span>
+          <span class="chip info">أيام العمل: {{ counts.required_count }}</span>
+          <span class="chip {% if counts.filled_required_count >= counts.required_count %}ok{% else %}warn{% endif %}">المكتمل: {{ counts.filled_required_count }}/{{ counts.required_count }}</span>
+          <span class="chip warn">الأيام المغلقة: {{ counts.closed_count }}</span>
+        </div>
+        <div class="sub">هذه الصفحة للعرض والتصدير فقط، ولا تسمح بالتعديل. تعديل أي خطة سابقة يكون عبر طلب فك اعتماد وموافقة الإدارة.</div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:18%">اليوم والتاريخ</th>
+              <th style="width:18%">نوع اليوم</th>
+              <th style="width:38%">المدرسة / السبب</th>
+              <th style="width:26%">ملاحظة</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rows %}
+              <tr>
+                <td>
+                  <div class="day-title">{{ r.weekday_name }}</div>
+                  {% if r.date %}
+                    <div class="date-line">ميلادي: {{ r.date|date:"Y-m-d" }}</div>
+                    <div class="date-line">هجري: {{ r.date|to_hijri }}</div>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if r.is_closed %}<span class="chip warn">{{ r.type_label }}</span>{% elif r.is_filled %}<span class="chip ok">{{ r.type_label }}</span>{% else %}<span class="chip">{{ r.type_label }}</span>{% endif %}
+                </td>
+                <td>
+                  <div class="box-note {% if r.is_closed %}closed{% endif %}">{{ r.school_or_reason|default:"—" }}</div>
+                </td>
+                <td>
+                  <span class="muted">{{ r.note|default:"—" }}</span>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

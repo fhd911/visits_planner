@@ -11,13 +11,18 @@ from django.utils import timezone
 from django.utils.html import format_html
 
 from .models import (
+    AcademicYear,
     Assignment,
+    Semester,
     Plan,
+    PlanClosedDay,
     PlanDay,
     PlanWeek,
     Principal,
     School,
     Supervisor,
+    EmailNotificationLog,
+    EmailNotificationPreference,
     SupervisorNotification,
     UnlockRequest,
     WeeklyLetterLink,
@@ -232,15 +237,99 @@ class AssignmentAdmin(admin.ModelAdmin):
     ordering = ("supervisor__full_name", "school__name")
 
 
+
+# =============================================================================
+# Academic years / semesters / closed days
+# =============================================================================
+@admin.register(AcademicYear)
+class AcademicYearAdmin(admin.ModelAdmin):
+    list_display = ("name", "starts_at", "ends_at", "is_current", "is_active")
+    list_filter = ("is_current", "is_active")
+    search_fields = ("name",)
+    ordering = ("-starts_at", "-id")
+
+
+@admin.register(Semester)
+class SemesterAdmin(admin.ModelAdmin):
+    list_display = (
+        "academic_year",
+        "title",
+        "number",
+        "starts_at",
+        "ends_at",
+        "weeks_count",
+        "is_current",
+        "is_open",
+    )
+    list_filter = ("academic_year", "number", "is_current", "is_open")
+    search_fields = ("title", "academic_year__name")
+    autocomplete_fields = ("academic_year",)
+    ordering = ("academic_year", "number")
+
+
+@admin.register(PlanClosedDay)
+class PlanClosedDayAdmin(admin.ModelAdmin):
+    list_display = (
+        "week",
+        "weekday",
+        "date",
+        "reason_type",
+        "reason_title",
+        "count_as_completed",
+        "is_active",
+    )
+    list_filter = ("reason_type", "is_active", "count_as_completed", "week")
+    search_fields = ("reason_title", "week__title", "week__week_no")
+    autocomplete_fields = ("week",)
+    ordering = ("week__week_no", "weekday")
+
+
+class PlanClosedDayInline(admin.TabularInline):
+    model = PlanClosedDay
+    extra = 0
+    fields = ("weekday", "date", "reason_type", "reason_title", "count_as_completed", "is_active")
+    ordering = ("weekday",)
+
+
 # =============================================================================
 # Weeks / Plans
 # =============================================================================
 @admin.register(PlanWeek)
 class PlanWeekAdmin(admin.ModelAdmin):
-    list_display = ("week_no", "start_sunday", "end_thursday", "title", "break_badge")
-    list_filter = ("is_break",)
-    search_fields = ("week_no", "title")
+    list_display = (
+        "week_no",
+        "display_label_admin",
+        "academic_year",
+        "semester",
+        "semester_week_no",
+        "start_sunday",
+        "end_thursday",
+        "title",
+        "current_badge",
+        "open_badge",
+        "break_badge",
+    )
+    list_filter = ("academic_year", "semester", "is_current", "is_open_for_supervisors", "is_break")
+    search_fields = ("week_no", "title", "semester__title", "academic_year__name")
+    autocomplete_fields = ("academic_year", "semester")
     ordering = ("week_no",)
+    inlines = [PlanClosedDayInline]
+
+    @admin.display(description="العرض للمشرف")
+    def display_label_admin(self, obj: PlanWeek):
+        return getattr(obj, "display_label", f"الأسبوع {obj.week_no}")
+
+    @admin.display(description="الأسبوع الحالي")
+    def current_badge(self, obj: PlanWeek):
+        if getattr(obj, "is_current", False):
+            return _badge("✅ الحالي", bg="#dcfce7", color="#166534")
+        return _badge("—", bg="#f1f5f9", color="#475569", weight=600)
+
+    @admin.display(description="مفتوح للمشرفين")
+    def open_badge(self, obj: PlanWeek):
+        if getattr(obj, "is_open_for_supervisors", False):
+            return _badge("مفتوح", bg="#dbeafe", color="#1d4ed8")
+        return _badge("مغلق", bg="#f1f5f9", color="#475569", weight=600)
 
     @admin.display(description="نهاية الأسبوع (الخميس)")
     def end_thursday(self, obj: PlanWeek):
@@ -333,13 +422,24 @@ class PlanAdmin(admin.ModelAdmin):
     @admin.display(description="الامتلاء")
     def filled_badge(self, obj: Plan):
         try:
-            count = obj.days.filter(
-                models.Q(school__isnull=False) | models.Q(visit_type=PlanDay.VISIT_NONE)
-            ).count()
+            filled_weekdays = set(
+                obj.days.filter(
+                    models.Q(school__isnull=False) | models.Q(visit_type=PlanDay.VISIT_NONE)
+                ).values_list("weekday", flat=True)
+            )
+            if obj.week_id:
+                filled_weekdays.update(
+                    PlanClosedDay.objects.filter(
+                        week=obj.week,
+                        is_active=True,
+                        count_as_completed=True,
+                    ).values_list("weekday", flat=True)
+                )
+            count = len(filled_weekdays)
         except Exception:
             count = 0
 
-        if count == 5:
+        if count >= 5:
             return _badge("5/5", bg="#dcfce7", color="#166534")
         return _badge(f"{count}/5", bg="#fff7ed", color="#7c2d12")
 
@@ -681,3 +781,70 @@ if ControlFollowUpAction is not None:
         readonly_fields = ("created_at",)
         autocomplete_fields = ("followup", "actor_user", "actor_supervisor")
         ordering = ("-created_at",)
+
+
+
+@admin.register(EmailNotificationPreference)
+class EmailNotificationPreferenceAdmin(admin.ModelAdmin):
+    list_display = (
+        "supervisor",
+        "plan_approved",
+        "plan_returned",
+        "unlock_result",
+        "admin_alert",
+        "control_followup",
+        "incomplete_reminder",
+        "weekly_summary",
+        "updated_at",
+    )
+    list_filter = (
+        "plan_approved",
+        "plan_returned",
+        "unlock_result",
+        "admin_alert",
+        "control_followup",
+        "incomplete_reminder",
+        "weekly_summary",
+    )
+    search_fields = ("supervisor__full_name", "supervisor__national_id", "supervisor__email")
+    autocomplete_fields = ("supervisor",)
+
+
+@admin.register(EmailNotificationLog)
+class EmailNotificationLogAdmin(admin.ModelAdmin):
+    list_display = (
+        "created_at",
+        "supervisor",
+        "event_type",
+        "recipient_email",
+        "status",
+        "sent_at",
+    )
+    list_filter = ("event_type", "status", "created_at", "sent_at")
+    search_fields = (
+        "supervisor__full_name",
+        "supervisor__national_id",
+        "recipient_email",
+        "subject",
+        "error_message",
+    )
+    readonly_fields = (
+        "supervisor",
+        "plan",
+        "event_type",
+        "recipient_email",
+        "subject",
+        "body_preview",
+        "status",
+        "error_message",
+        "sent_at",
+        "created_at",
+    )
+    date_hierarchy = "created_at"
+    autocomplete_fields = ("supervisor", "plan")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False

@@ -1,0 +1,345 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}تعديل مدير/ة المدرسة{% endblock %}
+{% block page_messages %}{% endblock %}
+
+{% block header_title %}تعديل مدير/ة المدرسة{% endblock %}
+{% block header_subtitle %}تحديث بيانات مدير/ة المدرسة داخل لوحة الإدارة فقط{% endblock %}
+
+{% block extra_css %}
+<style>
+  .principal-edit-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+    --fw-title:600;
+    --fw-strong:500;
+    --fw-normal:400;
+    --txt:var(--vp-text);
+    --mut:var(--vp-text-soft);
+    --mut2:var(--vp-text-faint);
+    --line:var(--vp-line);
+    --line2:var(--vp-line-2);
+    --ok:var(--vp-ok-text);
+    --ok-bg:var(--vp-ok-bg);
+    --ok-br:var(--vp-ok-border);
+    --warn:var(--vp-warn-text);
+    --warn-bg:var(--vp-warn-bg);
+    --warn-br:var(--vp-warn-border);
+    display:grid;
+    gap:12px;
+    font-family:var(--ff);
+  }
+
+  .principal-edit-page *{
+    box-sizing:border-box;
+    font-family:var(--ff)!important;
+  }
+
+  .principal-edit-card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:20px;
+    box-shadow:0 8px 20px rgba(22,36,29,.038);
+  }
+
+  .principal-edit-summary{
+    padding:13px 15px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    flex-wrap:wrap;
+    background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(251,252,251,.98));
+  }
+
+  .principal-edit-note{
+    color:var(--mut);
+    font-size:11.3px;
+    line-height:1.9;
+    font-weight:var(--fw-normal);
+  }
+
+  .principal-edit-note b{
+    color:var(--txt);
+    font-weight:var(--fw-title);
+  }
+
+  .principal-edit-actions{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    flex-wrap:wrap;
+  }
+
+  .principal-edit-btn{
+    height:36px;
+    padding:0 14px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--txt);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    text-decoration:none;
+    cursor:pointer;
+    white-space:nowrap;
+    font-size:11px;
+    font-weight:var(--fw-strong);
+  }
+
+  .principal-edit-btn.primary{
+    background:var(--vp-primary);
+    border-color:var(--vp-primary);
+    color:#fff;
+  }
+
+  .principal-edit-btn.warn{
+    background:var(--warn-bg);
+    border-color:var(--warn-br);
+    color:var(--warn);
+  }
+
+  .principal-edit-form{
+    padding:14px;
+    display:grid;
+    gap:14px;
+  }
+
+  .principal-edit-section{
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:12px;
+    display:grid;
+    gap:10px;
+    background:#fff;
+  }
+
+  .principal-edit-section-title{
+    margin:0;
+    color:var(--txt);
+    font-size:13px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+  }
+
+  .principal-edit-section-note{
+    color:var(--mut);
+    font-size:10.8px;
+    line-height:1.8;
+  }
+
+  .principal-edit-grid{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px;
+  }
+
+  .principal-edit-grid.two{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .principal-edit-field label{
+    display:block;
+    margin-bottom:5px;
+    color:var(--mut);
+    font-size:10.7px;
+    font-weight:var(--fw-normal);
+  }
+
+  .principal-edit-input,
+  .principal-edit-select,
+  .principal-edit-textarea{
+    width:100%;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:#f9fbfa;
+    padding:0 12px;
+    outline:none;
+    color:var(--txt);
+    font-size:11.5px;
+    font-weight:var(--fw-strong);
+  }
+
+  .principal-edit-input,
+  .principal-edit-select{
+    height:38px;
+  }
+
+  .principal-edit-textarea{
+    min-height:78px;
+    padding-top:10px;
+    resize:vertical;
+    line-height:1.8;
+  }
+
+  .principal-edit-input:focus,
+  .principal-edit-select:focus,
+  .principal-edit-textarea:focus{
+    border-color:#c7d6ce;
+    box-shadow:0 0 0 4px rgba(47,98,80,.06);
+    background:#fff;
+  }
+
+  .principal-edit-help{
+    margin-top:4px;
+    color:var(--mut2);
+    font-size:10px;
+    line-height:1.7;
+  }
+
+  .principal-edit-alert{
+    padding:10px 12px;
+    border-radius:16px;
+    border:1px solid var(--warn-br);
+    background:var(--warn-bg);
+    color:var(--warn);
+    font-size:11px;
+    line-height:1.9;
+  }
+
+  @media(max-width:900px){
+    .principal-edit-grid,
+    .principal-edit-grid.two{
+      grid-template-columns:1fr;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="principal-edit-page">
+
+  <div class="principal-edit-card principal-edit-summary">
+    <div class="principal-edit-note">
+      تعديل بيانات: <b>{{ principal.full_name }}</b>
+      {% if principal.school %}
+        — {{ principal.school.name }}
+      {% endif %}
+    </div>
+
+    <div class="principal-edit-actions">
+      <a class="principal-edit-btn" href="{% url 'visits:admin_principal_list' %}">العودة لقادة المدارس</a>
+    </div>
+  </div>
+
+  <form class="principal-edit-card principal-edit-form" method="post">
+    {% csrf_token %}
+
+    <div class="principal-edit-alert">
+      هذه البيانات إدارية، وتشمل السجل المدني ورقم الجوال، لذلك لا تظهر في بوابة الاطلاع أو صفحة المدارس المختصرة.
+    </div>
+
+    <div class="principal-edit-section">
+      <div>
+        <h3 class="principal-edit-section-title">البيانات الأساسية</h3>
+        <div class="principal-edit-section-note">تحديث بيانات مدير/ة المدرسة وربطها بالمدرسة الصحيحة.</div>
+      </div>
+
+      <div class="principal-edit-grid">
+        <div class="principal-edit-field">
+          <label>اسم مدير/ة المدرسة</label>
+          <input class="principal-edit-input" type="text" name="full_name" value="{{ principal.full_name }}" required>
+        </div>
+
+        <div class="principal-edit-field">
+          <label>السجل المدني</label>
+          <input class="principal-edit-input" type="text" name="national_id" value="{{ principal.national_id|default:'' }}" maxlength="10" inputmode="numeric">
+          <div class="principal-edit-help">10 أرقام عند توفره.</div>
+        </div>
+
+        <div class="principal-edit-field">
+          <label>رقم الجوال</label>
+          <input class="principal-edit-input" type="text" name="mobile" value="{{ principal.mobile|default:'' }}" inputmode="numeric">
+        </div>
+
+        <div class="principal-edit-field">
+          <label>الجنس</label>
+          <select class="principal-edit-select" name="gender">
+            <option value="boys" {% if principal.gender == "boys" %}selected{% endif %}>بنين</option>
+            <option value="girls" {% if principal.gender == "girls" %}selected{% endif %}>بنات</option>
+          </select>
+        </div>
+
+        <div class="principal-edit-field">
+          <label>المدرسة</label>
+          <select class="principal-edit-select" name="school_id">
+            {% for school in schools %}
+              <option value="{{ school.id }}" {% if principal.school_id == school.id %}selected{% endif %}>
+                {{ school.name }} — {{ school.stat_code|default:"بدون رقم" }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="principal-edit-field">
+          <label>الحالة</label>
+          <select class="principal-edit-select" name="is_active">
+            <option value="1" {% if principal.is_active %}selected{% endif %}>نشط</option>
+            <option value="0" {% if not principal.is_active %}selected{% endif %}>غير نشط</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="principal-edit-section">
+      <div>
+        <h3 class="principal-edit-section-title">البيانات الوظيفية</h3>
+        <div class="principal-edit-section-note">بيانات مساندة للبحث والمراجعة داخل لوحة الإدارة.</div>
+      </div>
+
+      <div class="principal-edit-grid">
+        <div class="principal-edit-field">
+          <label>المرحلة</label>
+          <input class="principal-edit-input" type="text" name="stage" value="{{ principal.stage|default:'' }}" list="stageOptions">
+          <datalist id="stageOptions">
+            {% for item in stage_choices %}
+              <option value="{{ item }}">
+            {% endfor %}
+          </datalist>
+        </div>
+
+        <div class="principal-edit-field">
+          <label>العمل الحالي</label>
+          <input class="principal-edit-input" type="text" name="current_work" value="{{ principal.current_work|default:'' }}">
+        </div>
+
+        <div class="principal-edit-field">
+          <label>التخصص</label>
+          <input class="principal-edit-input" type="text" name="specialization" value="{{ principal.specialization|default:'' }}">
+        </div>
+
+        <div class="principal-edit-field">
+          <label>المؤهل</label>
+          <input class="principal-edit-input" type="text" name="qualification" value="{{ principal.qualification|default:'' }}">
+        </div>
+
+        <div class="principal-edit-field">
+          <label>الرتبة</label>
+          <input class="principal-edit-input" type="text" name="rank" value="{{ principal.rank|default:'' }}">
+        </div>
+      </div>
+    </div>
+
+    <div class="principal-edit-section">
+      <div>
+        <h3 class="principal-edit-section-title">ملاحظات</h3>
+        <div class="principal-edit-section-note">ملاحظة داخلية اختيارية.</div>
+      </div>
+
+      <div class="principal-edit-grid two">
+        <div class="principal-edit-field">
+          <label>ملاحظة</label>
+          <textarea class="principal-edit-textarea" name="note">{{ principal.note|default:'' }}</textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="principal-edit-actions">
+      <button class="principal-edit-btn primary" type="submit">حفظ التعديل</button>
+      <a class="principal-edit-btn warn" href="{% url 'visits:admin_principal_list' %}">إلغاء</a>
+    </div>
+  </form>
+
+</section>
+{% endblock %}

@@ -5,8 +5,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>
-    {% if site_setting.site_name %}{{ site_setting.site_name }}{% else %}نظام زيارات المشرفين{% endif %}
-    — الخدمة متوقفة مؤقتًا
+    {% if site_setting.site_name %}{{ site_setting.site_name }}{% else %}بوابة الزيارات{% endif %}
+    — صيانة
   </title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,475 +15,305 @@
 
   <style>
     :root{
-      --bg:#f5f7f6;
-      --bg-2:#eef3f0;
-
+      --bg:#f6f8f7;
       --card:#ffffff;
-      --card-soft:#fbfcfb;
-      --panel-soft:rgba(255,255,255,.82);
-
-      --line:#dde5e0;
-      --line-2:#e8eeea;
-      --line-strong:#d4ddd8;
-
-      --text:#1f2c25;
-      --text-soft:#67776d;
-      --text-faint:#8d9a92;
-
-      --primary:#1f4b3a;
-      --primary-2:#2f6250;
-      --primary-3:#3d7561;
-      --primary-soft:#f3f7f4;
-      --primary-soft-border:#dce7e0;
-
-      --ok-bg:#eef8f1;
-      --ok-border:#cfe6d7;
-      --ok-text:#1f6b3f;
-
-      --warn-bg:#fcf8f2;
-      --warn-border:#ead6b4;
-      --warn-text:#8b5c1f;
-
-      --info-bg:#f4f7f5;
-      --info-border:#dbe6df;
-      --info-text:#35584a;
-
-      --shadow:0 16px 42px rgba(22,36,29,.07);
-      --shadow-soft:0 10px 24px rgba(22,36,29,.05);
-
-      --radius-xl:34px;
-      --radius-lg:24px;
-      --radius-md:18px;
-      --radius-sm:14px;
+      --line:#dfe8e3;
+      --soft:#f1f6f3;
+      --text:#172b24;
+      --muted:#6b7a74;
+      --faint:#91a09a;
+      --primary:#1f5a4c;
+      --warning:#8a650f;
+      --warning-soft:#fff8e8;
+      --shadow:0 20px 45px rgba(18,44,36,.08);
     }
 
     *{
       box-sizing:border-box;
     }
 
-    html,body{
-      min-height:100%;
+    html,
+    body{
       margin:0;
-      padding:0;
+      min-height:100%;
     }
 
     body{
+      min-height:100vh;
       font-family:"Cairo",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
       color:var(--text);
       background:
-        radial-gradient(900px 420px at 8% 0%, rgba(47,98,80,.05), transparent 56%),
-        radial-gradient(760px 420px at 92% 8%, rgba(31,75,58,.04), transparent 58%),
-        linear-gradient(180deg, var(--bg), var(--bg-2) 42%, #f5f7f6);
-      padding:18px;
+        radial-gradient(520px 260px at 50% -130px, rgba(31,90,76,.08), transparent 70%),
+        linear-gradient(180deg,#fbfcfb 0%,var(--bg) 100%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:22px;
     }
 
-    .page{
-      max-width:980px;
-      margin:0 auto;
-    }
-
-    .shell{
-      background:var(--panel-soft);
-      border:1px solid rgba(141,154,146,.18);
-      border-radius:var(--radius-xl);
+    .maintenance{
+      width:min(540px,100%);
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:24px;
       box-shadow:var(--shadow);
-      backdrop-filter:blur(10px);
-      overflow:hidden;
-    }
-
-    .hero{
-      position:relative;
-      padding:34px 28px 28px;
-      background:
-        linear-gradient(180deg, rgba(31,75,58,.985), rgba(47,98,80,.96));
-      color:#fff;
-      border-bottom:1px solid rgba(255,255,255,.08);
-    }
-
-    .hero::after{
-      content:"";
-      position:absolute;
-      inset:auto auto -42px 50%;
-      transform:translateX(-50%);
-      width:116px;
-      height:116px;
-      border-radius:50%;
-      background:rgba(255,255,255,.05);
-      filter:blur(2px);
-      pointer-events:none;
+      padding:30px;
+      text-align:center;
     }
 
     .brand{
       display:flex;
+      justify-content:center;
       align-items:center;
-      justify-content:space-between;
-      gap:14px;
-      flex-wrap:wrap;
-      position:relative;
-      z-index:1;
-    }
-
-    .brand-right{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      min-width:0;
-    }
-
-    .logo{
-      width:54px;
-      height:54px;
-      border-radius:16px;
-      background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.07));
-      border:1px solid rgba(255,255,255,.16);
-      display:grid;
-      place-items:center;
-      font-size:20px;
-      font-weight:800;
-      flex:0 0 auto;
-      box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+      margin-bottom:20px;
     }
 
     .brand-text{
-      min-width:0;
+      text-align:center;
     }
 
-    .site-name{
+    .brand-title{
       margin:0;
-      font-size:15px;
+      font-size:18px;
+      line-height:1.45;
       font-weight:800;
-      line-height:1.4;
-      color:#fff;
+      color:var(--text);
     }
 
-    .site-sub{
-      margin:4px 0 0;
-      font-size:12.4px;
-      font-weight:500;
-      color:rgba(255,255,255,.84);
+    .brand-subtitle{
+      margin:3px 0 0;
+      font-size:12px;
       line-height:1.7;
+      color:var(--muted);
+      font-weight:500;
     }
 
-    .status-chip{
+    .chip{
       display:inline-flex;
       align-items:center;
-      gap:9px;
-      min-height:36px;
-      padding:8px 14px;
+      justify-content:center;
+      gap:7px;
+      min-height:32px;
+      padding:0 14px;
+      border:1px solid #ecd8a6;
       border-radius:999px;
-      background:rgba(255,255,255,.10);
-      border:1px solid rgba(255,255,255,.15);
-      color:#fff;
-      font-size:12.6px;
-      font-weight:700;
-      white-space:nowrap;
-      position:relative;
-      z-index:1;
+      background:var(--warning-soft);
+      color:var(--warning);
+      font-size:12px;
+      font-weight:800;
+      margin-bottom:18px;
     }
 
-    .status-chip::before{
+    .chip::before{
       content:"";
-      width:9px;
-      height:9px;
+      width:8px;
+      height:8px;
       border-radius:50%;
-      background:#f4c95d;
-      box-shadow:0 0 0 5px rgba(244,201,93,.12);
+      background:currentColor;
       flex:0 0 auto;
     }
 
-    .hero-body{
-      position:relative;
-      z-index:1;
-      margin-top:24px;
-      text-align:center;
-    }
-
-    .hero-title{
+    h1{
       margin:0;
-      font-size:clamp(28px, 4.8vw, 44px);
-      line-height:1.2;
+      font-size:clamp(24px,4.8vw,32px);
+      line-height:1.45;
       font-weight:800;
       letter-spacing:-.4px;
-      color:#fff;
-    }
-
-    .hero-subtitle{
-      max-width:700px;
-      margin:14px auto 0;
-      font-size:15.8px;
-      line-height:2;
-      font-weight:500;
-      color:rgba(255,255,255,.9);
-    }
-
-    .body{
-      padding:24px;
-    }
-
-    .notice{
-      background:linear-gradient(180deg, rgba(255,255,255,.98), rgba(251,252,251,.98));
-      border:1px solid var(--line);
-      border-radius:var(--radius-lg);
-      box-shadow:var(--shadow-soft);
-      padding:22px 20px;
-      text-align:center;
-    }
-
-    .notice-text{
-      margin:0;
-      color:var(--text-soft);
-      font-size:15px;
-      line-height:2;
-      font-weight:500;
-    }
-
-    .meta-grid{
-      margin-top:14px;
-      display:grid;
-      grid-template-columns:repeat(2, minmax(0,1fr));
-      gap:12px;
-    }
-
-    .meta-card{
-      background:var(--card);
-      border:1px solid var(--line);
-      border-radius:var(--radius-md);
-      box-shadow:var(--shadow-soft);
-      padding:18px 16px;
-      min-height:138px;
-      display:flex;
-      flex-direction:column;
-      justify-content:space-between;
-      gap:10px;
-    }
-
-    .meta-label{
-      color:var(--text-soft);
-      font-size:12px;
-      font-weight:700;
-      line-height:1.7;
-    }
-
-    .meta-main{
       color:var(--text);
+    }
+
+    .message{
+      margin:12px auto 0;
+      max-width:430px;
+      color:var(--muted);
+      font-size:14px;
+      line-height:2;
+      font-weight:500;
+    }
+
+    .return-box{
+      margin:22px auto 0;
+      max-width:410px;
+      border:1px solid var(--line);
+      border-radius:18px;
+      background:var(--soft);
+      padding:16px 18px;
+    }
+
+    .return-label{
+      margin:0 0 6px;
+      color:var(--muted);
+      font-size:12px;
+      font-weight:800;
+    }
+
+    .return-date{
+      margin:0;
+      color:var(--primary);
       font-size:19px;
       line-height:1.7;
       font-weight:800;
       word-break:break-word;
     }
 
-    .meta-sub{
-      color:var(--text-faint);
-      font-size:12.2px;
-      line-height:1.9;
-      font-weight:500;
-    }
-
-    .meta-empty{
-      color:var(--text-faint);
-    }
-
-    .info-row{
-      margin-top:14px;
-      display:grid;
-      gap:12px;
-    }
-
-    .info-box{
-      border:1px solid var(--info-border);
-      background:var(--info-bg);
-      color:var(--info-text);
-      border-radius:var(--radius-md);
-      padding:14px 16px;
-      line-height:1.9;
-      font-size:13.2px;
+    .return-hijri{
+      margin:2px 0 0;
+      color:var(--faint);
+      font-size:11.5px;
+      line-height:1.8;
       font-weight:600;
+      min-height:18px;
     }
 
-    .footer-note{
-      margin-top:14px;
-      text-align:center;
-      color:var(--text-faint);
-      font-size:12.6px;
+    .actions{
+      margin-top:20px;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .btn{
+      appearance:none;
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--primary);
+      border-radius:999px;
+      min-height:38px;
+      padding:0 18px;
+      font-family:inherit;
+      font-size:12.5px;
+      font-weight:800;
+      text-decoration:none;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .btn.primary{
+      background:var(--primary);
+      border-color:var(--primary);
+      color:#fff;
+    }
+
+    .note{
+      margin:18px 0 0;
+      color:var(--faint);
+      font-size:11.5px;
       line-height:1.8;
       font-weight:600;
     }
 
-    .admin-link{
-      margin-top:14px;
-      display:flex;
-      justify-content:center;
-    }
-
-    .admin-link a{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      min-height:38px;
-      padding:0 16px;
-      border-radius:999px;
-      border:1px solid var(--primary-soft-border);
-      background:var(--primary-soft);
-      color:var(--primary);
-      text-decoration:none;
-      font-size:12.6px;
-      font-weight:700;
-      transition:.16s ease;
-    }
-
-    .admin-link a:hover{
-      transform:translateY(-1px);
-      background:#edf3ef;
-    }
-
-    @media (max-width: 760px){
+    @media(max-width:520px){
       body{
-        padding:12px;
+        padding:14px;
       }
 
-      .hero{
-        padding:24px 18px 22px;
+      .maintenance{
+        padding:24px 18px;
+        border-radius:20px;
       }
 
-      .body{
-        padding:16px;
-      }
-
-      .meta-grid{
-        grid-template-columns:1fr;
-      }
-
-      .hero-subtitle,
-      .notice-text{
-        font-size:14px;
-      }
-
-      .meta-main{
+      .return-date{
         font-size:17px;
+      }
+
+      .actions{
+        align-items:stretch;
+        flex-direction:column;
+      }
+
+      .btn{
+        width:100%;
       }
     }
   </style>
 </head>
+
 <body>
-  <main class="page">
-    <section class="shell">
+  <main class="maintenance" role="status" aria-live="polite">
 
-      <header class="hero">
-        <div class="brand">
-          <div class="brand-right">
-            <div class="logo">ز</div>
+    <header class="brand">
+      <div class="brand-text">
+        <p class="brand-title">
+          {% if site_setting.site_name %}
+            {{ site_setting.site_name }}
+          {% else %}
+            بوابة الزيارات
+          {% endif %}
+        </p>
+        <p class="brand-subtitle">قسم الإدارة المدرسية — تعليم عسير</p>
+      </div>
+    </header>
 
-            <div class="brand-text">
-              <h2 class="site-name">
-                {% if site_setting.site_name %}
-                  {{ site_setting.site_name }}
-                {% else %}
-                  نظام زيارات المشرفين
-                {% endif %}
-              </h2>
+    <div class="chip">صيانة مجدولة</div>
 
-              <p class="site-sub">الخدمة غير متاحة مؤقتًا بسبب أعمال صيانة مجدولة</p>
-            </div>
-          </div>
+    <h1>الموقع مغلق مؤقتًا للصيانة</h1>
 
-          <div class="status-chip">الخدمة متوقفة مؤقتًا</div>
-        </div>
+    <p class="message">
+      نعتذر، البوابة غير متاحة حاليًا وسيتم فتحها بعد انتهاء أعمال الصيانة.
+    </p>
 
-        <div class="hero-body">
-          <h1 class="hero-title">توقف مؤقت للخدمة</h1>
-          <p class="hero-subtitle">
-            {{ maintenance_message|default:"يجري الآن تنفيذ أعمال صيانة وتحديثات مجدولة على البوابة، وسيتم استئناف الخدمة فور اكتمال الإجراء." }}
-          </p>
-        </div>
-      </header>
+    <section class="return-box" aria-label="العودة المتوقعة">
+      <p class="return-label">العودة المتوقعة</p>
 
-      <section class="body">
-        <div class="notice">
-          <p class="notice-text">
-            {% if expected_return_text %}
-              {{ expected_return_text }}
-            {% else %}
-              نعتذر عن التوقف المؤقت، وسيتم فتح البوابة مباشرة بعد انتهاء أعمال الصيانة.
-            {% endif %}
-          </p>
-        </div>
-
-        <div class="meta-grid">
-          <article class="meta-card">
-            <div class="meta-label">بداية الصيانة</div>
-
-            {% if maintenance_starts_at_gregorian %}
-              <div class="meta-main">{{ maintenance_starts_at_gregorian }}</div>
-              <div class="meta-sub" data-hijri-target data-iso="{{ maintenance_starts_at_iso|default:'' }}">—</div>
-            {% else %}
-              <div class="meta-main meta-empty">غير محدد</div>
-              <div class="meta-sub">سيتم الإعلان عند توفر الوقت</div>
-            {% endif %}
-          </article>
-
-          <article class="meta-card">
-            <div class="meta-label">العودة المتوقعة</div>
-
-            {% if maintenance_ends_at_gregorian %}
-              <div class="meta-main">{{ maintenance_ends_at_gregorian }}</div>
-              <div class="meta-sub" data-hijri-target data-iso="{{ maintenance_ends_at_iso|default:'' }}">—</div>
-            {% elif expected_return_text %}
-              <div class="meta-main">{{ expected_return_text }}</div>
-              <div class="meta-sub">الوقت التقريبي لعودة الخدمة</div>
-            {% else %}
-              <div class="meta-main meta-empty">عند اكتمال الإجراء</div>
-              <div class="meta-sub">سيتم فتح البوابة فور انتهاء الصيانة</div>
-            {% endif %}
-          </article>
-        </div>
-
-        <div class="info-row">
-          <div class="info-box">
-            يمكن للمستخدمين المحاولة لاحقًا بعد انتهاء الوقت المحدد، وفي حال استمرار المشكلة بعد العودة المتوقعة فيرجى التواصل مع إدارة النظام.
-          </div>
-        </div>
-
-        {% if request.user.is_staff %}
-          <div class="admin-link">
-            <a href="{% url 'visits:admin_dashboard' %}">العودة إلى لوحة الإدارة</a>
-          </div>
-        {% endif %}
-
-        <div class="footer-note">شكرًا لتفهمكم</div>
-      </section>
-
+      {% if maintenance_ends_at_gregorian %}
+        <p class="return-date">{{ maintenance_ends_at_gregorian }}</p>
+        <p class="return-hijri" data-hijri-target data-iso="{{ maintenance_ends_at_iso|default:'' }}">—</p>
+      {% elif expected_return_text %}
+        <p class="return-date">{{ expected_return_text }}</p>
+        <p class="return-hijri">الوقت التقريبي لعودة الخدمة</p>
+      {% else %}
+        <p class="return-date">بعد اكتمال الصيانة</p>
+        <p class="return-hijri">سيتم فتح البوابة تلقائيًا</p>
+      {% endif %}
     </section>
+
+    <div class="actions">
+      <button class="btn primary" type="button" onclick="window.location.reload()">تحديث الصفحة</button>
+
+      {% if request.user.is_staff %}
+        <a class="btn" href="{% url 'visits:admin_dashboard' %}">لوحة الإدارة</a>
+      {% endif %}
+    </div>
+
+    <p class="note">تعليم عسير — قسم الإدارة المدرسية</p>
+
   </main>
 
   <script>
     (function () {
-      const weekdayFmt = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', { weekday: 'long' });
+      const weekdayFmt = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', {
+        weekday: 'long'
+      });
+
       const hijriFmt = new Intl.DateTimeFormat('ar-SA-u-ca-islamic', {
         year: 'numeric',
         month: 'long',
         day: 'numeric'
       });
-      const timeFmt = new Intl.DateTimeFormat('ar-SA', {
-        hour: 'numeric',
-        minute: '2-digit'
-      });
 
       document.querySelectorAll('[data-hijri-target]').forEach(function (el) {
         const iso = el.getAttribute('data-iso');
+
         if (!iso) {
           el.textContent = '';
           return;
         }
 
         const dt = new Date(iso);
+
         if (Number.isNaN(dt.getTime())) {
           el.textContent = '';
           return;
         }
 
-        el.textContent = weekdayFmt.format(dt) + '، ' + hijriFmt.format(dt) + ' — ' + timeFmt.format(dt);
+        el.textContent = weekdayFmt.format(dt) + '، ' + hijriFmt.format(dt);
       });
     })();
   </script>
+
 </body>
 </html>

@@ -228,13 +228,30 @@ class School(models.Model):
 
 
 # =========================
-# مدير المدرسة
+# قائد/قائدة المدرسة
 # =========================
 class Principal(models.Model):
     class Meta:
-        verbose_name = "مدير مدرسة"
-        verbose_name_plural = "مديرو المدارس"
-        ordering = ["full_name"]
+        verbose_name = "قائد مدرسة"
+        verbose_name_plural = "قادة المدارس"
+        ordering = ["school__name", "full_name"]
+        indexes = [
+            models.Index(fields=["national_id"]),
+            models.Index(fields=["gender"]),
+            models.Index(fields=["stage"]),
+            models.Index(fields=["faris_status"]),
+            models.Index(fields=["current_work"]),
+            models.Index(fields=["is_active"]),
+            models.Index(fields=["last_imported_at"]),
+        ]
+
+    GENDER_BOYS = "boys"
+    GENDER_GIRLS = "girls"
+
+    GENDER_CHOICES = [
+        (GENDER_BOYS, "بنين"),
+        (GENDER_GIRLS, "بنات"),
+    ]
 
     school = models.OneToOneField(
         School,
@@ -242,22 +259,107 @@ class Principal(models.Model):
         related_name="principal",
         verbose_name="المدرسة",
     )
-    full_name = models.CharField("اسم المدير", max_length=255)
+
+    full_name = models.CharField("اسم القائد/ة", max_length=255)
+    national_id = models.CharField(
+        "السجل المدني",
+        max_length=20,
+        blank=True,
+        null=True,
+        db_index=True,
+        help_text="يحفظ داخليًا للمطابقة والتحقق، ولا يُعرض في بوابة الاطلاع.",
+    )
+
+    gender = models.CharField(
+        "الجنس",
+        max_length=10,
+        choices=GENDER_CHOICES,
+        blank=True,
+        null=True,
+    )
+
+    stage = models.CharField("المرحلة", max_length=120, blank=True, null=True)
+    faris_status = models.CharField("حالة فارس", max_length=120, blank=True, null=True)
+    current_work = models.CharField("العمل الحالي", max_length=160, blank=True, null=True)
+
+    specialization = models.CharField("التخصص", max_length=160, blank=True, null=True)
+    qualification = models.CharField("المؤهل", max_length=160, blank=True, null=True)
+    rank = models.CharField("الرتبة", max_length=160, blank=True, null=True)
+
     mobile = models.CharField("الجوال", max_length=20, blank=True, null=True)
 
+    source_filename = models.CharField(
+        "اسم ملف الاستيراد",
+        max_length=255,
+        blank=True,
+        null=True,
+    )
+    last_imported_at = models.DateTimeField("آخر استيراد", null=True, blank=True)
+
+    is_active = models.BooleanField("نشط", default=True)
+
+    note = models.CharField("ملاحظة", max_length=255, blank=True, null=True)
+
+    created_at = models.DateTimeField("تاريخ الإنشاء", auto_now_add=True)
+    updated_at = models.DateTimeField("آخر تحديث", auto_now=True)
+
     def __str__(self) -> str:
-        return f"{self.full_name} — {self.school.name}"
+        school_name = self.school.name if self.school_id else "بدون مدرسة"
+        return f"{self.full_name} — {school_name}"
+
+    @staticmethod
+    def normalize_gender(value: str | None) -> str | None:
+        value = _clean_text(value)
+        if not value:
+            return None
+
+        if value in {"بنين", "boys", "boy", "male", "ذكر"}:
+            return Principal.GENDER_BOYS
+
+        if value in {"بنات", "girls", "girl", "female", "أنثى"}:
+            return Principal.GENDER_GIRLS
+
+        return None
 
     def clean(self):
         super().clean()
+
         self.full_name = _clean_text(self.full_name)
+        self.national_id = _digits(self.national_id or "") or None
+        self.gender = self.normalize_gender(self.gender) or self.gender or None
+
+        self.stage = _clean_text(self.stage) or None
+        self.faris_status = _clean_text(self.faris_status) or None
+        self.current_work = _clean_text(self.current_work) or None
+        self.specialization = _clean_text(self.specialization) or None
+        self.qualification = _clean_text(self.qualification) or None
+        self.rank = _clean_text(self.rank) or None
         self.mobile = _clean_text(self.mobile) or None
+        self.source_filename = _clean_text(self.source_filename) or None
+        self.note = _clean_text(self.note) or None
 
         if self.mobile:
             self.mobile = _digits(self.mobile) or self.mobile
 
+        errors = {}
+
         if not self.full_name:
-            raise ValidationError({"full_name": "اسم المدير مطلوب."})
+            errors["full_name"] = "اسم القائد/ة مطلوب."
+
+        if self.national_id and len(self.national_id) != 10:
+            errors["national_id"] = "السجل المدني يجب أن يتكون من 10 أرقام."
+
+        if self.gender and self.gender not in dict(self.GENDER_CHOICES):
+            errors["gender"] = "الجنس غير صحيح."
+
+        if self.school_id and self.gender and self.school.gender and self.school.gender != self.gender:
+            errors["gender"] = "جنس القائد/ة لا يطابق نوع المدرسة."
+
+        if self.school_id and not self.school.is_active:
+            errors["school"] = "لا يمكن ربط قائد/ة بمدرسة غير نشطة."
+
+        if errors:
+            raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -523,6 +625,123 @@ class Assignment(models.Model):
         return super().save(*args, **kwargs)
 
 
+
+# =========================
+# العام الدراسي والفصول
+# =========================
+class AcademicYear(models.Model):
+    class Meta:
+        verbose_name = "عام دراسي"
+        verbose_name_plural = "الأعوام الدراسية"
+        ordering = ["-starts_at", "-id"]
+        indexes = [
+            models.Index(fields=["is_current"]),
+            models.Index(fields=["is_active"]),
+        ]
+
+    name = models.CharField("العام الدراسي", max_length=30, unique=True)
+    starts_at = models.DateField("تاريخ بداية العام", null=True, blank=True)
+    ends_at = models.DateField("تاريخ نهاية العام", null=True, blank=True)
+    is_current = models.BooleanField("العام الحالي", default=False)
+    is_active = models.BooleanField("نشط", default=True)
+    created_at = models.DateTimeField("تاريخ الإنشاء", auto_now_add=True)
+    updated_at = models.DateTimeField("آخر تحديث", auto_now=True)
+
+    def __str__(self) -> str:
+        return self.name
+
+    def clean(self):
+        super().clean()
+        self.name = _clean_text(self.name)
+        errors = {}
+
+        if not self.name:
+            errors["name"] = "اسم العام الدراسي مطلوب."
+
+        if self.starts_at and self.ends_at and self.ends_at <= self.starts_at:
+            errors["ends_at"] = "يجب أن يكون تاريخ نهاية العام بعد تاريخ بدايته."
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        result = super().save(*args, **kwargs)
+        if self.is_current:
+            AcademicYear.objects.exclude(pk=self.pk).update(is_current=False)
+        return result
+
+
+class Semester(models.Model):
+    class Meta:
+        verbose_name = "فصل دراسي"
+        verbose_name_plural = "الفصول الدراسية"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["academic_year", "number"],
+                name="uniq_semester_academic_year_number",
+            ),
+        ]
+        ordering = ["academic_year__starts_at", "number"]
+        indexes = [
+            models.Index(fields=["number"]),
+            models.Index(fields=["is_current"]),
+            models.Index(fields=["is_open"]),
+        ]
+
+    FIRST = 1
+    SECOND = 2
+
+    SEMESTER_CHOICES = [
+        (FIRST, "الفصل الدراسي الأول"),
+        (SECOND, "الفصل الدراسي الثاني"),
+    ]
+
+    academic_year = models.ForeignKey(
+        AcademicYear,
+        on_delete=models.CASCADE,
+        related_name="semesters",
+        verbose_name="العام الدراسي",
+    )
+    number = models.PositiveSmallIntegerField("الفصل الدراسي", choices=SEMESTER_CHOICES)
+    title = models.CharField("اسم الفصل", max_length=120, blank=True, null=True)
+    starts_at = models.DateField("تاريخ بداية الفصل")
+    ends_at = models.DateField("تاريخ نهاية الفصل", null=True, blank=True)
+    weeks_count = models.PositiveSmallIntegerField(
+        "عدد الأسابيع",
+        default=19,
+        validators=[MinValueValidator(1), MaxValueValidator(25)],
+    )
+    is_current = models.BooleanField("الفصل الحالي", default=False)
+    is_open = models.BooleanField("مفتوح", default=False)
+    created_at = models.DateTimeField("تاريخ الإنشاء", auto_now_add=True)
+    updated_at = models.DateTimeField("آخر تحديث", auto_now=True)
+
+    def __str__(self) -> str:
+        year = self.academic_year.name if self.academic_year_id else "—"
+        return f"{self.title or self.get_number_display()} — {year}"
+
+    def clean(self):
+        super().clean()
+        self.title = _clean_text(self.title) or None
+        errors = {}
+
+        if self.ends_at and self.starts_at and self.ends_at <= self.starts_at:
+            errors["ends_at"] = "يجب أن يكون تاريخ نهاية الفصل بعد تاريخ بدايته."
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        if not _clean_text(self.title):
+            self.title = self.get_number_display()
+        self.full_clean()
+        result = super().save(*args, **kwargs)
+        if self.is_current:
+            Semester.objects.exclude(pk=self.pk).update(is_current=False)
+        return result
+
+
 # =========================
 # جدول الأسابيع
 # =========================
@@ -534,6 +753,9 @@ class PlanWeek(models.Model):
         indexes = [
             models.Index(fields=["week_no"]),
             models.Index(fields=["is_break"]),
+            models.Index(fields=["is_current"]),
+            models.Index(fields=["is_open_for_supervisors"]),
+            models.Index(fields=["semester", "semester_week_no"]),
         ]
 
     week_no = models.PositiveSmallIntegerField(
@@ -541,18 +763,165 @@ class PlanWeek(models.Model):
         unique=True,
         validators=[MinValueValidator(1), MaxValueValidator(60)],
     )
+    academic_year = models.ForeignKey(
+        AcademicYear,
+        on_delete=models.SET_NULL,
+        related_name="weeks",
+        verbose_name="العام الدراسي",
+        null=True,
+        blank=True,
+    )
+    semester = models.ForeignKey(
+        Semester,
+        on_delete=models.SET_NULL,
+        related_name="weeks",
+        verbose_name="الفصل الدراسي",
+        null=True,
+        blank=True,
+    )
+    semester_week_no = models.PositiveSmallIntegerField(
+        "رقم الأسبوع داخل الفصل",
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(25)],
+    )
     start_sunday = models.DateField("بداية الأسبوع (الأحد)")
     title = models.CharField("ملاحظة/اسم", max_length=120, blank=True, null=True)
     is_break = models.BooleanField("إجازة/توقف؟", default=False)
+    is_current = models.BooleanField("الأسبوع الحالي للمشرفين", default=False)
+    is_open_for_supervisors = models.BooleanField("مفتوح للمشرفين", default=False)
 
     def __str__(self) -> str:
         extra = " (إجازة)" if self.is_break else ""
+        if self.semester_id and self.semester_week_no:
+            label = f"{self.semester} — الأسبوع {self.semester_week_no}"
+        else:
+            label = f"الأسبوع {self.week_no}"
         t = f" — {self.title}" if self.title else ""
-        return f"الأسبوع {self.week_no} يبدأ {self.start_sunday}{t}{extra}"
+        return f"{label} يبدأ {self.start_sunday}{t}{extra}"
+
+    @property
+    def end_thursday(self):
+        return self.start_sunday + timedelta(days=4)
+
+    @property
+    def display_label(self) -> str:
+        if self.semester_id and self.semester_week_no:
+            return f"{self.semester} — الأسبوع {self.semester_week_no}"
+        if self.title:
+            return f"الأسبوع {self.week_no} — {self.title}"
+        return f"الأسبوع {self.week_no}"
 
     def clean(self):
         super().clean()
         self.title = _clean_text(self.title) or None
+        errors = {}
+
+        if self.semester_id and not self.academic_year_id:
+            self.academic_year = self.semester.academic_year
+
+        if self.semester_id and self.academic_year_id:
+            if self.semester.academic_year_id != self.academic_year_id:
+                errors["semester"] = "الفصل الدراسي لا يتبع العام الدراسي المحدد."
+
+        if self.semester_week_no and self.semester_id:
+            if self.semester_week_no > self.semester.weeks_count:
+                errors["semester_week_no"] = "رقم الأسبوع داخل الفصل يتجاوز عدد أسابيع الفصل."
+
+        if self.is_break:
+            self.is_current = False
+            self.is_open_for_supervisors = False
+
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        result = super().save(*args, **kwargs)
+        if self.is_current:
+            PlanWeek.objects.exclude(pk=self.pk).update(is_current=False)
+        if self.is_open_for_supervisors:
+            PlanWeek.objects.exclude(pk=self.pk).update(is_open_for_supervisors=False)
+        return result
+
+
+
+# =========================
+# الأيام المغلقة داخل الأسبوع
+# =========================
+class PlanClosedDay(models.Model):
+    class Meta:
+        verbose_name = "يوم مغلق في الخطة"
+        verbose_name_plural = "الأيام المغلقة في الخطط"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["week", "weekday"],
+                name="uniq_plan_closed_day_week_weekday",
+            ),
+        ]
+        ordering = ["week__week_no", "weekday"]
+        indexes = [
+            models.Index(fields=["weekday"]),
+            models.Index(fields=["reason_type"]),
+            models.Index(fields=["is_active"]),
+        ]
+
+    NATIONAL_DAY = "national_day"
+    FOUNDATION_DAY = "foundation_day"
+    OFFICIAL_HOLIDAY = "official_holiday"
+    STUDY_SUSPENDED = "study_suspended"
+    OTHER = "other"
+
+    REASON_CHOICES = [
+        (NATIONAL_DAY, "اليوم الوطني"),
+        (FOUNDATION_DAY, "يوم التأسيس"),
+        (OFFICIAL_HOLIDAY, "إجازة رسمية"),
+        (STUDY_SUSPENDED, "تعليق دراسة"),
+        (OTHER, "أخرى"),
+    ]
+
+    WEEKDAY_CHOICES = [
+        (0, "الأحد"),
+        (1, "الإثنين"),
+        (2, "الثلاثاء"),
+        (3, "الأربعاء"),
+        (4, "الخميس"),
+    ]
+
+    week = models.ForeignKey(
+        PlanWeek,
+        on_delete=models.CASCADE,
+        related_name="closed_days",
+        verbose_name="الأسبوع",
+    )
+    weekday = models.PositiveSmallIntegerField("اليوم", choices=WEEKDAY_CHOICES)
+    date = models.DateField("التاريخ", null=True, blank=True)
+    reason_type = models.CharField(
+        "نوع الإغلاق",
+        max_length=30,
+        choices=REASON_CHOICES,
+        default=OFFICIAL_HOLIDAY,
+    )
+    reason_title = models.CharField("سبب الإغلاق", max_length=150, default="إجازة رسمية")
+    count_as_completed = models.BooleanField("يُحسب مكتملًا", default=True)
+    is_active = models.BooleanField("نشط", default=True)
+    created_at = models.DateTimeField("تاريخ الإنشاء", auto_now_add=True)
+    updated_at = models.DateTimeField("آخر تحديث", auto_now=True)
+
+    def __str__(self) -> str:
+        return f"{self.week.display_label} — {self.get_weekday_display()} — {self.reason_title}"
+
+    def clean(self):
+        super().clean()
+        self.reason_title = _clean_text(self.reason_title) or "إجازة رسمية"
+
+        if self.week_id and self.date is None:
+            self.date = self.week.start_sunday + timedelta(days=int(self.weekday or 0))
+
+        if self.week_id and self.date:
+            expected = self.week.start_sunday + timedelta(days=int(self.weekday or 0))
+            if self.date != expected:
+                raise ValidationError({"date": "تاريخ اليوم المغلق لا يوافق اليوم المحدد داخل الأسبوع."})
 
     def save(self, *args, **kwargs):
         self.full_clean()
@@ -639,6 +1008,14 @@ class Plan(models.Model):
             for d in self.days.all()
             if (d.school_id is not None) or (d.visit_type == PlanDay.VISIT_NONE)
         }
+        if self.week_id:
+            filled.update(
+                PlanClosedDay.objects.filter(
+                    week=self.week,
+                    is_active=True,
+                    count_as_completed=True,
+                ).values_list("weekday", flat=True)
+            )
         return needed.issubset(filled)
 
     def clean(self):
@@ -711,6 +1088,7 @@ class PlanDay(models.Model):
     REASON_TRAINING = "training"
     REASON_VISIT = "event"
     REASON_OFFICE = "office"
+    REASON_OFFICIAL_HOLIDAY = "official_holiday"
     REASON_OTHER = "other"
 
     NO_VISIT_REASON_CHOICES = [
@@ -718,6 +1096,7 @@ class PlanDay(models.Model):
         (REASON_TRAINING, "تدريب"),
         (REASON_VISIT, "لقاء/فعالية"),
         (REASON_OFFICE, "عمل مكتبي"),
+        (REASON_OFFICIAL_HOLIDAY, "إجازة رسمية / يوم مغلق"),
         (REASON_OTHER, "أخرى"),
     ]
 
@@ -1367,6 +1746,122 @@ class ControlFollowUpAction(models.Model):
         self.to_status = _clean_text(self.to_status) or None
         if self.metadata is None:
             self.metadata = {}
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+
+
+# =========================
+# تفضيلات وسجل التنبيهات البريدية
+# =========================
+class EmailNotificationPreference(models.Model):
+    class Meta:
+        verbose_name = "تفضيلات التنبيهات البريدية"
+        verbose_name_plural = "تفضيلات التنبيهات البريدية"
+        indexes = [
+            models.Index(fields=["supervisor"]),
+        ]
+
+    supervisor = models.OneToOneField(
+        Supervisor,
+        on_delete=models.CASCADE,
+        related_name="email_preferences",
+        verbose_name="المشرف",
+    )
+
+    plan_approved = models.BooleanField("تنبيه اعتماد الخطة", default=True)
+    plan_returned = models.BooleanField("تنبيه إرجاع الخطة للتعديل", default=True)
+    unlock_result = models.BooleanField("تنبيه نتيجة طلب فك الاعتماد", default=True)
+    admin_alert = models.BooleanField("التنبيهات الإدارية", default=True)
+    control_followup = models.BooleanField("الملاحظات الرقابية", default=True)
+    incomplete_reminder = models.BooleanField("تذكير عدم اكتمال الخطة", default=True)
+    weekly_summary = models.BooleanField("ملخص أسبوعي", default=False)
+
+    updated_at = models.DateTimeField("آخر تحديث", auto_now=True)
+
+    def __str__(self) -> str:
+        return f"تفضيلات البريد — {self.supervisor}"
+
+
+class EmailNotificationLog(models.Model):
+    class Meta:
+        verbose_name = "سجل بريد إلكتروني"
+        verbose_name_plural = "سجل البريد الإلكتروني"
+        ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["supervisor", "event_type"]),
+            models.Index(fields=["status"]),
+            models.Index(fields=["created_at"]),
+            models.Index(fields=["sent_at"]),
+        ]
+
+    EVENT_PLAN_APPROVED = "plan_approved"
+    EVENT_PLAN_RETURNED = "plan_returned"
+    EVENT_UNLOCK_REQUESTED = "unlock_requested"
+    EVENT_UNLOCK_APPROVED = "unlock_approved"
+    EVENT_UNLOCK_REJECTED = "unlock_rejected"
+    EVENT_ADMIN_ALERT = "admin_alert"
+    EVENT_CONTROL_FOLLOWUP = "control_followup"
+    EVENT_INCOMPLETE_REMINDER = "incomplete_reminder"
+    EVENT_WEEKLY_SUMMARY = "weekly_summary"
+
+    EVENT_CHOICES = [
+        (EVENT_PLAN_APPROVED, "اعتماد الخطة"),
+        (EVENT_PLAN_RETURNED, "إرجاع الخطة للتعديل"),
+        (EVENT_UNLOCK_REQUESTED, "طلب فك اعتماد"),
+        (EVENT_UNLOCK_APPROVED, "قبول فك الاعتماد"),
+        (EVENT_UNLOCK_REJECTED, "رفض فك الاعتماد"),
+        (EVENT_ADMIN_ALERT, "تنبيه إداري"),
+        (EVENT_CONTROL_FOLLOWUP, "ملاحظة رقابية"),
+        (EVENT_INCOMPLETE_REMINDER, "تذكير بعدم اكتمال الخطة"),
+        (EVENT_WEEKLY_SUMMARY, "ملخص أسبوعي"),
+    ]
+
+    STATUS_SENT = "sent"
+    STATUS_SKIPPED = "skipped"
+    STATUS_FAILED = "failed"
+
+    STATUS_CHOICES = [
+        (STATUS_SENT, "أُرسلت"),
+        (STATUS_SKIPPED, "لم تُرسل"),
+        (STATUS_FAILED, "فشل الإرسال"),
+    ]
+
+    supervisor = models.ForeignKey(
+        Supervisor,
+        on_delete=models.CASCADE,
+        related_name="email_logs",
+        verbose_name="المشرف",
+    )
+    plan = models.ForeignKey(
+        Plan,
+        on_delete=models.SET_NULL,
+        related_name="email_logs",
+        verbose_name="الخطة",
+        null=True,
+        blank=True,
+    )
+    event_type = models.CharField("نوع الرسالة", max_length=40, choices=EVENT_CHOICES)
+    recipient_email = models.EmailField("البريد المرسل إليه", blank=True, null=True)
+    subject = models.CharField("عنوان الرسالة", max_length=250)
+    body_preview = models.TextField("مختصر الرسالة", blank=True, null=True)
+    status = models.CharField("حالة الإرسال", max_length=20, choices=STATUS_CHOICES, default=STATUS_SKIPPED)
+    error_message = models.TextField("رسالة الخطأ", blank=True, null=True)
+    sent_at = models.DateTimeField("وقت الإرسال", null=True, blank=True)
+    created_at = models.DateTimeField("وقت الإنشاء", auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f"{self.get_event_type_display()} — {self.supervisor} — {self.get_status_display()}"
+
+    def clean(self):
+        super().clean()
+        self.subject = _clean_text(self.subject)
+        self.body_preview = _clean_text(self.body_preview) or None
+        self.error_message = _clean_text(self.error_message) or None
+        if self.recipient_email:
+            self.recipient_email = _clean_text(self.recipient_email).lower()
 
     def save(self, *args, **kwargs):
         self.full_clean()

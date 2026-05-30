@@ -32,7 +32,10 @@ from .forms import WeeklyLetterLinkForm
 from .models import (
     Assignment,
     EmailOTP,
+    EmailNotificationPreference,
+    EmailNotificationLog,
     Plan,
+    PlanClosedDay,
     PlanDay,
     PlanWeek,
     Principal,
@@ -45,6 +48,18 @@ from .models import (
     WeeklyLetterLink,
 )
 from .services.drive_service import list_files_in_folder
+
+from .services.email_notifications import (
+    get_or_create_email_preferences,
+    send_admin_alert_email,
+    send_control_followup_email,
+    send_incomplete_plan_reminders,
+    send_plan_approved_email,
+    send_plan_returned_email,
+    send_unlock_approved_email,
+    send_unlock_rejected_email,
+    send_unlock_request_received_email,
+)
 
 
 # =============================================================================
@@ -380,8 +395,16 @@ def admin_only_view(view_func):
 
 
 # =============================================================================
-# Site maintenance helpers
+# Maintenance / Operation Control Center
+# ضع هذا الجزء مكان قسم الصيانة الحالي في visits/views.py
+# من:
+#   # =============================================================================
+#   # Site maintenance helpers
+# إلى نهاية:
+#   admin_update_maintenance_message_view
+# ثم أضف الدوال الجديدة قبل قسم Google Drive helpers.
 # =============================================================================
+
 def _get_site_setting() -> SiteSetting:
     return SiteSetting.get_solo()
 
@@ -432,18 +455,8 @@ def _format_dt_ar_pretty(value: Optional[datetime]) -> str:
     dt = timezone.localtime(value)
     weekdays = ["الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت", "الأحد"]
     months = [
-        "يناير",
-        "فبراير",
-        "مارس",
-        "أبريل",
-        "مايو",
-        "يونيو",
-        "يوليو",
-        "أغسطس",
-        "سبتمبر",
-        "أكتوبر",
-        "نوفمبر",
-        "ديسمبر",
+        "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
+        "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر",
     ]
 
     weekday_name = weekdays[dt.weekday()]
@@ -453,18 +466,8 @@ def _format_dt_ar_pretty(value: Optional[datetime]) -> str:
     return f"{weekday_name} {dt.day} {month_name} {dt.year} — {hour12:02d}:{dt.minute:02d} {ampm}"
 
 
-def _visit_type_export_label(value: str) -> str:
-    if value == getattr(PlanDay, "VISIT_IN", "in"):
-        return "حضوري"
-    if value == getattr(PlanDay, "VISIT_REMOTE", "remote"):
-        return "عن بعد"
-    if value == getattr(PlanDay, "VISIT_NONE", "none"):
-        return "بدون زيارة"
-    return value or "—"
-
-
 def _maintenance_is_active(setting: SiteSetting, *, persist: bool = False) -> bool:
-    active = bool(setting.is_maintenance_mode)
+    active = bool(getattr(setting, "is_maintenance_mode", False))
     now = timezone.now()
 
     starts_at = getattr(setting, "maintenance_starts_at", None)
@@ -479,7 +482,10 @@ def _maintenance_is_active(setting: SiteSetting, *, persist: bool = False) -> bo
     if ends_at and now >= ends_at:
         if persist:
             setting.is_maintenance_mode = False
-            setting.save(update_fields=["is_maintenance_mode", "updated_at"])
+            update_fields = ["is_maintenance_mode"]
+            if _model_has_field(SiteSetting, "updated_at"):
+                update_fields.append("updated_at")
+            setting.save(update_fields=update_fields)
         return False
 
     return True
@@ -495,8 +501,8 @@ def _maintenance_context() -> dict[str, Any]:
     return {
         "site_setting": setting,
         "maintenance_message": _maintenance_message(setting),
-        "expected_return_text": setting.expected_return_text or "",
-        "allow_admin_only": setting.allow_admin_only,
+        "expected_return_text": getattr(setting, "expected_return_text", "") or "",
+        "allow_admin_only": bool(getattr(setting, "allow_admin_only", True)),
         "maintenance_is_active": active,
         "maintenance_starts_at": starts_at,
         "maintenance_ends_at": ends_at,
@@ -519,6 +525,7 @@ def _is_admin_user(request: HttpRequest) -> bool:
 
 
 def _maintenance_allowed_for_request(request: HttpRequest, setting: SiteSetting) -> bool:
+    """تستخدمها الـ Middleware أو أي نقطة دخول تريد فحص وضع الصيانة."""
     if not _maintenance_is_active(setting, persist=True):
         return True
 
@@ -531,13 +538,100 @@ def _maintenance_allowed_for_request(request: HttpRequest, setting: SiteSetting)
     return False
 
 
+def _operation_current_week() -> Optional[PlanWeek]:
+    qs = PlanWeek.objects.filter(is_break=False)
+
+    if _model_has_field(PlanWeek, "is_current"):
+        current_qs = qs.filter(is_current=True)
+        if _model_has_field(PlanWeek, "is_open_for_supervisors"):
+            open_week = current_qs.filter(is_open_for_supervisors=True).order_by("week_no").first()
+            if open_week:
+                return open_week
+        current_week = current_qs.order_by("week_no").first()
+        if current_week:
+            return current_week
+
+    return _current_week_obj() or qs.order_by("week_no").first()
+
+
+def _week_gate_supported() -> bool:
+    return _model_has_field(PlanWeek, "is_current") and _model_has_field(PlanWeek, "is_open_for_supervisors")
+
+
+def _closed_day_reason_choices() -> list[tuple[str, str]]:
+    try:
+        field = PlanClosedDay._meta.get_field("reason_type")
+        choices = list(getattr(field, "choices", []) or [])
+        if choices:
+            return [(str(value), str(label)) for value, label in choices]
+    except Exception:
+        pass
+
+    return [
+        ("official_holiday", "إجازة رسمية"),
+        ("suspended", "تعليق دراسة"),
+        ("training", "برنامج تدريبي"),
+        ("other", "أخرى"),
+    ]
+
+
+def _operation_week_context(request: HttpRequest) -> dict[str, Any]:
+    current_week = _operation_current_week()
+    selected_week_no = _safe_int(
+        request.GET.get("week") or getattr(current_week, "week_no", 0),
+        default=getattr(current_week, "week_no", 0) or 0,
+    )
+
+    selected_week = None
+    if selected_week_no:
+        selected_week = PlanWeek.objects.filter(week_no=selected_week_no).first()
+    if not selected_week:
+        selected_week = current_week
+
+    weeks = list(PlanWeek.objects.all().order_by("week_no"))
+
+    closed_days = []
+    if selected_week:
+        closed_days = list(
+            PlanClosedDay.objects.filter(week=selected_week)
+            .order_by("weekday", "-id")
+        )
+
+    plans_count = 0
+    completed_plans_count = 0
+    approved_plans_count = 0
+    if selected_week:
+        week_plans = Plan.objects.filter(week=selected_week)
+        plans_count = week_plans.count()
+        approved_plans_count = week_plans.filter(status=getattr(Plan, "STATUS_APPROVED", "approved")).count()
+        for plan in week_plans.prefetch_related("days"):
+            try:
+                if _plan_filled_count(plan) >= len(WEEKDAYS):
+                    completed_plans_count += 1
+            except Exception:
+                pass
+
+    return {
+        "operation_current_week": current_week,
+        "operation_selected_week": selected_week,
+        "operation_weeks": weeks,
+        "week_gate_supported": _week_gate_supported(),
+        "closed_days": closed_days,
+        "closed_day_reason_choices": _closed_day_reason_choices(),
+        "weekday_choices": WEEKDAYS,
+        "selected_week_plans_count": plans_count,
+        "selected_week_completed_plans_count": completed_plans_count,
+        "selected_week_approved_plans_count": approved_plans_count,
+    }
+
+
 # =============================================================================
 # Maintenance views
 # =============================================================================
 def maintenance_page_view(request: HttpRequest) -> HttpResponse:
     setting = _get_site_setting()
     if not _maintenance_is_active(setting, persist=True):
-        if request.user.is_authenticated and request.user.is_staff:
+        if getattr(request, "user", None) and request.user.is_authenticated and request.user.is_staff:
             return redirect("visits:admin_dashboard")
         return redirect("visits:login")
 
@@ -557,17 +651,17 @@ def maintenance_page_view(request: HttpRequest) -> HttpResponse:
 def admin_maintenance_settings_view(request: HttpRequest) -> HttpResponse:
     setting = _get_site_setting()
     _maintenance_is_active(setting, persist=True)
-    return render(
-        request,
-        "visits/admin_maintenance_settings.html",
-        {
-            "site_setting": setting,
-            "maintenance_starts_at_value": _format_dt_local(getattr(setting, "maintenance_starts_at", None)),
-            "maintenance_ends_at_value": _format_dt_local(getattr(setting, "maintenance_ends_at", None)),
-            "maintenance_window_label": getattr(setting, "maintenance_window_label", "غير محدد"),
-            "maintenance_is_active": _maintenance_is_active(setting, persist=False),
-        },
-    )
+
+    context = {
+        "site_setting": setting,
+        "maintenance_starts_at_value": _format_dt_local(getattr(setting, "maintenance_starts_at", None)),
+        "maintenance_ends_at_value": _format_dt_local(getattr(setting, "maintenance_ends_at", None)),
+        "maintenance_window_label": getattr(setting, "maintenance_window_label", "غير محدد"),
+        "maintenance_is_active": _maintenance_is_active(setting, persist=False),
+        "maintenance_now_gregorian": _format_dt_ar_pretty(timezone.now()),
+    }
+    context.update(_operation_week_context(request))
+    return render(request, "visits/admin_maintenance_settings.html", context)
 
 
 @admin_only_view
@@ -589,13 +683,15 @@ def admin_toggle_maintenance_view(request: HttpRequest) -> HttpResponse:
         setting.is_maintenance_mode = False
         msg = "تم إيقاف وضع الصيانة بنجاح."
     else:
-        setting.is_maintenance_mode = not setting.is_maintenance_mode
+        setting.is_maintenance_mode = not bool(getattr(setting, "is_maintenance_mode", False))
         msg = "تم تحديث حالة وضع الصيانة بنجاح."
 
-    setting.allow_admin_only = _bool_from_post(
-        request.POST.get("allow_admin_only"),
-        default=setting.allow_admin_only,
-    )
+    if _model_has_field(SiteSetting, "allow_admin_only"):
+        setting.allow_admin_only = _bool_from_post(
+            request.POST.get("allow_admin_only"),
+            default=getattr(setting, "allow_admin_only", True),
+        )
+
     setting.save()
     active = _maintenance_is_active(setting, persist=True)
 
@@ -604,9 +700,9 @@ def admin_toggle_maintenance_view(request: HttpRequest) -> HttpResponse:
             {
                 "ok": True,
                 "message": msg,
-                "is_maintenance_mode": setting.is_maintenance_mode,
+                "is_maintenance_mode": bool(getattr(setting, "is_maintenance_mode", False)),
                 "maintenance_is_active": active,
-                "allow_admin_only": setting.allow_admin_only,
+                "allow_admin_only": bool(getattr(setting, "allow_admin_only", True)),
                 "maintenance_window_label": getattr(setting, "maintenance_window_label", "غير محدد"),
             },
             status=200,
@@ -621,16 +717,8 @@ def admin_toggle_maintenance_view(request: HttpRequest) -> HttpResponse:
 def admin_update_maintenance_message_view(request: HttpRequest) -> HttpResponse:
     setting = _get_site_setting()
 
-    starts_at_raw = (
-        request.POST.get("maintenance_starts_at")
-        or request.POST.get("starts_at")
-        or ""
-    )
-    ends_at_raw = (
-        request.POST.get("maintenance_ends_at")
-        or request.POST.get("ends_at")
-        or ""
-    )
+    starts_at_raw = request.POST.get("maintenance_starts_at") or request.POST.get("starts_at") or ""
+    ends_at_raw = request.POST.get("maintenance_ends_at") or request.POST.get("ends_at") or ""
 
     starts_at = _parse_dt_local(starts_at_raw)
     ends_at = _parse_dt_local(ends_at_raw)
@@ -643,23 +731,39 @@ def admin_update_maintenance_message_view(request: HttpRequest) -> HttpResponse:
         messages.error(request, "صيغة تاريخ نهاية الصيانة غير صحيحة.")
         return redirect("visits:admin_maintenance_settings")
 
-    setting.site_name = (request.POST.get("site_name") or setting.site_name or "بوابة الزيارات").strip()
-    setting.maintenance_message = (
-        request.POST.get("maintenance_message")
-        or request.POST.get("message")
-        or ""
-    ).strip() or None
-    setting.expected_return_text = (
-        request.POST.get("expected_return_text")
-        or request.POST.get("expected_return")
-        or ""
-    ).strip() or None
-    setting.maintenance_starts_at = starts_at
-    setting.maintenance_ends_at = ends_at
-    setting.allow_admin_only = _bool_from_post(
-        request.POST.get("allow_admin_only"),
-        default=setting.allow_admin_only,
-    )
+    if starts_at and ends_at and ends_at <= starts_at:
+        messages.error(request, "يجب أن يكون وقت نهاية الصيانة بعد وقت البداية.")
+        return redirect("visits:admin_maintenance_settings")
+
+    if _model_has_field(SiteSetting, "site_name"):
+        setting.site_name = (request.POST.get("site_name") or getattr(setting, "site_name", "") or "بوابة الزيارات").strip()
+
+    if _model_has_field(SiteSetting, "maintenance_message"):
+        setting.maintenance_message = (
+            request.POST.get("maintenance_message")
+            or request.POST.get("message")
+            or ""
+        ).strip() or None
+
+    if _model_has_field(SiteSetting, "expected_return_text"):
+        setting.expected_return_text = (
+            request.POST.get("expected_return_text")
+            or request.POST.get("expected_return")
+            or ""
+        ).strip() or None
+
+    if _model_has_field(SiteSetting, "maintenance_starts_at"):
+        setting.maintenance_starts_at = starts_at
+
+    if _model_has_field(SiteSetting, "maintenance_ends_at"):
+        setting.maintenance_ends_at = ends_at
+
+    if _model_has_field(SiteSetting, "allow_admin_only"):
+        setting.allow_admin_only = _bool_from_post(
+            request.POST.get("allow_admin_only"),
+            default=getattr(setting, "allow_admin_only", True),
+        )
+
     setting.save()
     active = _maintenance_is_active(setting, persist=True)
 
@@ -670,14 +774,14 @@ def admin_update_maintenance_message_view(request: HttpRequest) -> HttpResponse:
             {
                 "ok": True,
                 "message": msg,
-                "site_name": setting.site_name,
-                "maintenance_message": setting.maintenance_message or "",
-                "expected_return_text": setting.expected_return_text or "",
-                "allow_admin_only": setting.allow_admin_only,
-                "is_maintenance_mode": setting.is_maintenance_mode,
+                "site_name": getattr(setting, "site_name", "") or "",
+                "maintenance_message": getattr(setting, "maintenance_message", "") or "",
+                "expected_return_text": getattr(setting, "expected_return_text", "") or "",
+                "allow_admin_only": bool(getattr(setting, "allow_admin_only", True)),
+                "is_maintenance_mode": bool(getattr(setting, "is_maintenance_mode", False)),
                 "maintenance_is_active": active,
-                "maintenance_starts_at": _format_dt_local(setting.maintenance_starts_at),
-                "maintenance_ends_at": _format_dt_local(setting.maintenance_ends_at),
+                "maintenance_starts_at": _format_dt_local(getattr(setting, "maintenance_starts_at", None)),
+                "maintenance_ends_at": _format_dt_local(getattr(setting, "maintenance_ends_at", None)),
                 "maintenance_window_label": getattr(setting, "maintenance_window_label", "غير محدد"),
             },
             status=200,
@@ -686,6 +790,117 @@ def admin_update_maintenance_message_view(request: HttpRequest) -> HttpResponse:
     messages.success(request, msg)
     return redirect("visits:admin_maintenance_settings")
 
+
+@admin_only_view
+@require_POST
+def admin_update_plan_week_gate_view(request: HttpRequest) -> HttpResponse:
+    """فتح/إغلاق إدخال الخطط للأسبوع المحدد من مركز التشغيل."""
+    if not _week_gate_supported():
+        messages.error(request, "حقول التحكم بالأسبوع الحالي وفتح الإدخال غير موجودة في PlanWeek.")
+        return redirect("visits:admin_maintenance_settings")
+
+    week_no = _safe_int(request.POST.get("week_no") or request.POST.get("week") or 0, default=0)
+    action = (request.POST.get("action") or "open").strip().lower()
+
+    week = PlanWeek.objects.filter(week_no=week_no).first()
+    if not week:
+        messages.error(request, "الأسبوع المحدد غير موجود.")
+        return redirect("visits:admin_maintenance_settings")
+
+    # أسبوع واحد فقط يكون الحالي.
+    PlanWeek.objects.exclude(id=week.id).update(is_current=False, is_open_for_supervisors=False)
+
+    week.is_current = True
+    if action in ("open", "enable", "1", "true"):
+        week.is_open_for_supervisors = True
+        msg = f"تم فتح إدخال الخطط للمشرفين في {_week_display_label(week)}."
+    elif action in ("close", "disable", "0", "false"):
+        week.is_open_for_supervisors = False
+        msg = f"تم إغلاق إدخال الخطط للمشرفين في {_week_display_label(week)}."
+    else:
+        msg = f"تم تعيين {_week_display_label(week)} كأسبوع حالي."
+
+    week.save(update_fields=["is_current", "is_open_for_supervisors"])
+    messages.success(request, msg)
+    return redirect(f"{reverse('visits:admin_maintenance_settings')}?week={week.week_no}")
+
+
+@admin_only_view
+@require_POST
+def admin_save_closed_day_view(request: HttpRequest) -> HttpResponse:
+    """إضافة أو تحديث يوم مغلق داخل أسبوع محدد."""
+    week_no = _safe_int(request.POST.get("week_no") or request.POST.get("week") or 0, default=0)
+    weekday = _safe_int(request.POST.get("weekday"), default=-1)
+    closed_day_id = _safe_int(request.POST.get("closed_day_id") or 0, default=0)
+
+    week = PlanWeek.objects.filter(week_no=week_no).first()
+    if not week:
+        messages.error(request, "الأسبوع المحدد غير موجود.")
+        return redirect("visits:admin_maintenance_settings")
+
+    if weekday not in dict(WEEKDAYS):
+        messages.error(request, "اليوم المحدد غير صحيح.")
+        return redirect(f"{reverse('visits:admin_maintenance_settings')}?week={week.week_no}")
+
+    reason_type = (request.POST.get("reason_type") or "official_holiday").strip()
+    reason_title = (request.POST.get("reason_title") or "").strip() or "يوم مغلق"
+
+    defaults = {
+        "weekday": weekday,
+        "reason_title": reason_title,
+    }
+
+    if _model_has_field(PlanClosedDay, "reason_type"):
+        defaults["reason_type"] = reason_type
+
+    if _model_has_field(PlanClosedDay, "count_as_completed"):
+        defaults["count_as_completed"] = _bool_from_post(request.POST.get("count_as_completed"), default=True)
+
+    if _model_has_field(PlanClosedDay, "is_active"):
+        defaults["is_active"] = _bool_from_post(request.POST.get("is_active"), default=True)
+
+    if closed_day_id:
+        closed_day = get_object_or_404(PlanClosedDay, id=closed_day_id, week=week)
+        for field, value in defaults.items():
+            setattr(closed_day, field, value)
+        closed_day.save()
+        msg = "تم تحديث اليوم المغلق بنجاح."
+    else:
+        closed_day, created = PlanClosedDay.objects.update_or_create(
+            week=week,
+            weekday=weekday,
+            defaults=defaults,
+        )
+        msg = "تم إضافة اليوم المغلق بنجاح." if created else "تم تحديث اليوم المغلق بنجاح."
+
+    # تثبيت اليوم المغلق على الخطط الحالية لهذا الأسبوع حتى لا تظهر ناقصة.
+    for plan in Plan.objects.filter(week=week).prefetch_related("days"):
+        try:
+            _sync_plan_closed_days(plan)
+        except Exception:
+            pass
+
+    messages.success(request, msg)
+    return redirect(f"{reverse('visits:admin_maintenance_settings')}?week={week.week_no}")
+
+
+@admin_only_view
+@require_POST
+def admin_toggle_closed_day_view(request: HttpRequest, closed_day_id: int) -> HttpResponse:
+    """تعطيل/تفعيل اليوم المغلق بدون حذف السجل نهائيًا."""
+    closed_day = get_object_or_404(PlanClosedDay.objects.select_related("week"), id=closed_day_id)
+    week_no = closed_day.week.week_no
+
+    if _model_has_field(PlanClosedDay, "is_active"):
+        closed_day.is_active = not bool(getattr(closed_day, "is_active", True))
+        closed_day.save(update_fields=["is_active"])
+        msg = "تم تفعيل اليوم المغلق." if closed_day.is_active else "تم تعطيل اليوم المغلق."
+    else:
+        closed_day.delete()
+        msg = "تم حذف اليوم المغلق."
+
+    messages.success(request, msg)
+    return redirect(f"{reverse('visits:admin_maintenance_settings')}?week={week_no}")
 
 # =============================================================================
 # Google Drive helpers
@@ -752,9 +967,7 @@ def _build_week_choices(active_only: bool = True) -> list[tuple[int, str]]:
     qs = _get_active_weeks_qs() if active_only else _get_all_weeks_qs()
     out: list[tuple[int, str]] = []
     for w in qs:
-        label = f"الأسبوع {w.week_no}"
-        if getattr(w, "title", ""):
-            label += f" — {w.title}"
+        label = _week_display_label(w) if "_week_display_label" in globals() else f"الأسبوع {w.week_no}"
         if getattr(w, "is_break", False):
             label += " (إجازة)"
         out.append((w.week_no, label))
@@ -779,6 +992,112 @@ def _current_week_obj() -> Optional[PlanWeek]:
         .order_by("-start_sunday", "-week_no")
         .first()
     )
+
+
+def _model_has_field(model, field_name: str) -> bool:
+    try:
+        model._meta.get_field(field_name)
+        return True
+    except Exception:
+        return False
+
+
+def _week_display_label(week_obj: PlanWeek) -> str:
+    if getattr(week_obj, "semester_id", None) and getattr(week_obj, "semester_week_no", None):
+        return f"{week_obj.semester} — الأسبوع {week_obj.semester_week_no}"
+    if getattr(week_obj, "title", ""):
+        return f"الأسبوع {week_obj.week_no} — {week_obj.title}"
+    return f"الأسبوع {week_obj.week_no}"
+
+
+def _get_supervisor_current_week_obj() -> Optional[PlanWeek]:
+    """يعيد الأسبوع الوحيد المتاح للمشرف لإدخال الخطة.
+
+    بعد إضافة حقول إدارة الخطة الدراسية، لا يظهر للمشرف إلا الأسبوع
+    المحدد كحالي والمفتوح للمشرفين. ولا نعود تلقائيًا لأسبوع التاريخ
+    إذا كانت الحقول الجديدة موجودة ولم يتم فتح أسبوع؛ حتى لا تظهر أسابيع
+    غير مقصودة للمشرفين.
+    """
+    qs = PlanWeek.objects.filter(is_break=False)
+
+    has_current = _model_has_field(PlanWeek, "is_current")
+    has_open = _model_has_field(PlanWeek, "is_open_for_supervisors")
+
+    if has_current and has_open:
+        return qs.filter(
+            is_current=True,
+            is_open_for_supervisors=True,
+        ).order_by("week_no").first()
+
+    if has_open:
+        return qs.filter(is_open_for_supervisors=True).order_by("week_no").first()
+
+    if has_current:
+        return qs.filter(is_current=True).order_by("week_no").first()
+
+    return _current_week_obj()
+
+
+def _build_supervisor_week_choices() -> list[tuple[int, str]]:
+    week_obj = _get_supervisor_current_week_obj()
+    if not week_obj:
+        return []
+    return [(week_obj.week_no, _week_display_label(week_obj))]
+
+
+def _closed_days_map_for_week(week_obj: PlanWeek | None) -> dict[int, PlanClosedDay]:
+    if not week_obj:
+        return {}
+    return {
+        item.weekday: item
+        for item in PlanClosedDay.objects.filter(week=week_obj, is_active=True)
+    }
+
+
+def _closed_day_label(closed_day: PlanClosedDay | None) -> str:
+    if not closed_day:
+        return ""
+    title = getattr(closed_day, "reason_title", "") or "يوم مغلق"
+    try:
+        reason = closed_day.get_reason_type_display()
+    except Exception:
+        reason = ""
+    return title if title == reason or not reason else f"{reason} — {title}"
+
+
+def _closed_day_no_visit_reason() -> str:
+    return getattr(PlanDay, "REASON_OFFICIAL_HOLIDAY", getattr(PlanDay, "REASON_OTHER", "other"))
+
+
+def _sync_plan_closed_days(plan: Plan) -> None:
+    """يثبت الأيام المغلقة داخل خطة المشرف كأيام مكتملة بدون زيارة."""
+    closed_map = _closed_days_map_for_week(plan.week)
+    if not closed_map:
+        return
+
+    none_value = getattr(PlanDay, "VISIT_NONE", "none")
+    reason_value = _closed_day_no_visit_reason()
+
+    for wd, closed_day in closed_map.items():
+        note = f"يوم مغلق: {_closed_day_label(closed_day)}"
+        PlanDay.objects.update_or_create(
+            plan=plan,
+            weekday=wd,
+            defaults={
+                "visit_type": none_value,
+                "school_id": None,
+                "no_visit_reason": reason_value,
+                "note": note,
+                "visited": False,
+                "visited_at": None,
+                "visit_note": None,
+            },
+        )
+
+
+def _plan_is_fully_filled(plan: Plan) -> bool:
+    _sync_plan_closed_days(plan)
+    return _plan_filled_count(plan) >= len(WEEKDAYS)
 
 
 def _plan_url(week_no: int) -> str:
@@ -877,20 +1196,64 @@ def _login_page_context() -> dict:
 # =============================================================================
 # Status helpers
 # =============================================================================
-def _status_label(plan: Plan) -> str:
+def _plan_started(plan: Plan, filled: int | None = None) -> bool:
+    """هل بدأ المشرف فعليًا في تسجيل الخطة؟"""
+    if filled is None:
+        filled = _plan_filled_count(plan)
+
+    # saved_at هو المؤشر الإداري الأوضح للحفظ.
+    if getattr(plan, "saved_at", None):
+        return True
+
+    # لا نعتمد على visit_type وحده؛ لأنه قد يكون قيمة افتراضية "حضوري"
+    # حتى لو لم يختر المشرف مدرسة ولم يحفظ خطة فعلية.
+    try:
+        days = list(plan.days.all())
+    except Exception:
+        days = []
+
+    for day in days:
+        if _day_is_filled(day):
+            return True
+        if getattr(day, "note", None):
+            return True
+        if getattr(day, "no_visit_reason", None):
+            return True
+
+    return bool(filled)
+
+
+def _plan_display_status(plan: Plan, filled: int | None = None) -> tuple[str, str]:
+    """
+    حالة عرض إدارية لا تغيّر قيمة plan.status في قاعدة البيانات.
+    تفرّق بين: لم يبدأ، مسودة، جاهزة للاعتماد، معتمدة، طلب فك اعتماد.
+    """
+    if filled is None:
+        filled = _plan_filled_count(plan)
+
+    needed = len(WEEKDAYS)
+
     if plan.status == Plan.STATUS_APPROVED:
-        return "معتمدة"
+        return "approved", "معتمدة"
+
     if plan.status == Plan.STATUS_UNLOCK_REQUESTED:
-        return "طلب فك اعتماد"
-    return "مسودة"
+        return "unlock", "طلب فك اعتماد"
+
+    if filled >= needed:
+        return "ready", "جاهزة للاعتماد"
+
+    if filled <= 0 and not _plan_started(plan, filled):
+        return "not-started", "لم يبدأ"
+
+    return "draft", "مسودة"
+
+
+def _status_label(plan: Plan) -> str:
+    return _plan_display_status(plan)[1]
 
 
 def _status_code(plan: Plan) -> str:
-    if plan.status == Plan.STATUS_APPROVED:
-        return "approved"
-    if plan.status == Plan.STATUS_UNLOCK_REQUESTED:
-        return "unlock"
-    return "draft"
+    return _plan_display_status(plan)[0]
 
 
 def _status_css(plan: Plan) -> str:
@@ -902,12 +1265,25 @@ def _day_is_filled(d: Optional[PlanDay]) -> bool:
         return False
     if getattr(d, "school_id", None):
         return True
-    return getattr(d, "visit_type", "") == getattr(PlanDay, "VISIT_NONE", "none")
+    if getattr(d, "visit_type", "") == getattr(PlanDay, "VISIT_NONE", "none"):
+        # الأيام المفتوحة من نوع (بدون زيارة) لا تُعد مكتملة إلا بسبب محدد.
+        return bool(getattr(d, "no_visit_reason", None))
+    return False
 
 
 def _plan_filled_count(plan: Plan) -> int:
     day_map = {d.weekday: d for d in plan.days.all()}
-    return sum(1 for wd, _ in WEEKDAYS if _day_is_filled(day_map.get(wd)))
+    closed_map = _closed_days_map_for_week(getattr(plan, "week", None))
+
+    total = 0
+    for wd, _ in WEEKDAYS:
+        closed_day = closed_map.get(wd)
+        if closed_day and getattr(closed_day, "count_as_completed", True):
+            total += 1
+            continue
+        if _day_is_filled(day_map.get(wd)):
+            total += 1
+    return total
 
 
 def _plan_visit_counts(plan: Plan) -> dict[str, int]:
@@ -1008,18 +1384,18 @@ def _parse_admin_action_state(request: HttpRequest) -> dict[str, Any]:
 
 def _build_plan_action_meta(plan: Plan) -> dict[str, Any]:
     filled = _plan_filled_count(plan)
-    status_code = _status_code(plan)
+    status_code, status_label = _plan_display_status(plan, filled)
     return {
         "plan_id": plan.id,
         "week_no": plan.week.week_no,
         "status_code": status_code,
-        "status_css": _status_css(plan),
-        "status_label": _status_label(plan),
+        "status_css": status_code,
+        "status_label": status_label,
         "admin_note": plan.admin_note or "",
         "filled": filled,
-        "is_full": filled == 5,
-        "can_approve": status_code != "approved" and filled == 5,
-        "can_back_to_draft": status_code != "draft",
+        "is_full": filled == len(WEEKDAYS),
+        "can_approve": status_code != "approved" and filled == len(WEEKDAYS),
+        "can_back_to_draft": plan.status != Plan.STATUS_DRAFT,
         "can_unlock_approve": status_code == "unlock",
         "can_unlock_reject": status_code == "unlock",
     }
@@ -2196,7 +2572,7 @@ def supervisor_dashboard_view(request: HttpRequest) -> HttpResponse:
     except Supervisor.DoesNotExist:
         return redirect("visits:login")
 
-    week_obj = _current_week_obj()
+    week_obj = _get_supervisor_current_week_obj()
     if not week_obj:
         default_week_no = _get_default_week_no()
         week_obj = PlanWeek.objects.filter(week_no=default_week_no).first()
@@ -2206,6 +2582,114 @@ def supervisor_dashboard_view(request: HttpRequest) -> HttpResponse:
     assignment_count = len(_supervisor_school_ids(supervisor))
     unread_count = supervisor.notifications.filter(is_read=False).count()
     control_followup_count = _supervisor_open_control_followups_count(supervisor)
+    email_preferences = get_or_create_email_preferences(supervisor)
+    last_email_log = supervisor.email_logs.order_by("-created_at").first()
+
+    # =========================================================
+    # وضع الخطة الحالية في بوابة المشرف
+    # يعرض أرقامًا جاهزة كنصوص حتى لا يظهر للمشرف مثل: 5 / 0 أيام عمل.
+    # القاعدة:
+    # - أيام العمل = أيام الأسبوع الخمسة ناقص الأيام المغلقة النشطة.
+    # - اليوم المغلق لا يحسب كنقص.
+    # - أيام "بدون زيارة" لا تعد مكتملة إلا إذا وُجد سبب.
+    # =========================================================
+    current_plan = None
+    current_week_label = _week_display_label(week_obj) if week_obj else "—"
+
+    current_plan_status_label = "لا يوجد أسبوع مفتوح"
+    current_plan_status_css = "info"
+    current_plan_action_label = "بانتظار فتح الأسبوع من الإدارة"
+    current_plan_action_css = "info"
+    current_plan_completion_label = "—"
+    current_plan_filled_required_count = 0
+    current_plan_required_count = 0
+    current_plan_closed_count = 0
+    current_plan_missing_count = 0
+
+    if week_obj:
+        closed_map = _closed_days_map_for_week(week_obj)
+        current_plan_closed_count = len(closed_map)
+        open_weekday_numbers = [wd for wd, _name in WEEKDAYS if wd not in closed_map]
+        current_plan_required_count = len(open_weekday_numbers)
+
+        # حماية إضافية: إن لم يكن الأسبوع إجازة كاملة، فلا نسمح بأن تظهر أيام العمل = 0 بسبب بيانات غير متزامنة.
+        if current_plan_required_count <= 0 and not getattr(week_obj, "is_break", False):
+            current_plan_required_count = len(WEEKDAYS)
+            open_weekday_numbers = [wd for wd, _name in WEEKDAYS]
+
+        current_plan = (
+            Plan.objects.filter(supervisor=supervisor, week=week_obj)
+            .prefetch_related("days")
+            .first()
+        )
+
+        if current_plan:
+            days_map = {day.weekday: day for day in current_plan.days.all()}
+            current_plan_filled_required_count = sum(
+                1
+                for wd in open_weekday_numbers
+                if _day_is_filled(days_map.get(wd))
+            )
+            current_plan_filled_required_count = min(
+                current_plan_filled_required_count,
+                current_plan_required_count,
+            )
+
+            if current_plan.status == Plan.STATUS_APPROVED:
+                current_plan_status_label = "معتمدة"
+                current_plan_status_css = "approved"
+                current_plan_action_label = "الخطة معتمدة"
+                current_plan_action_css = "ok"
+            elif current_plan.status == Plan.STATUS_UNLOCK_REQUESTED:
+                current_plan_status_label = "طلب فك اعتماد"
+                current_plan_status_css = "unlock"
+                current_plan_action_label = "بانتظار موافقة الإدارة على فك الاعتماد"
+                current_plan_action_css = "warn"
+            elif current_plan_required_count <= 0:
+                current_plan_status_label = "لا يتطلب إدخال"
+                current_plan_status_css = "info"
+                current_plan_action_label = "لا يوجد إدخال مطلوب لهذا الأسبوع"
+                current_plan_action_css = "ok"
+            elif current_plan_filled_required_count >= current_plan_required_count:
+                current_plan_status_label = "جاهزة للاعتماد"
+                current_plan_status_css = "ready"
+                current_plan_action_label = "اعتماد الخطة أو مراجعتها"
+                current_plan_action_css = "ok"
+            elif current_plan_filled_required_count <= 0:
+                current_plan_status_label = "لم يبدأ"
+                current_plan_status_css = "not-started"
+                current_plan_action_label = "ابدأ بإدخال خطة الأسبوع"
+                current_plan_action_css = "warn"
+            else:
+                current_plan_status_label = "مسودة"
+                current_plan_status_css = "draft"
+                current_plan_action_label = "استكمال الأيام الناقصة"
+                current_plan_action_css = "warn"
+        else:
+            if current_plan_required_count <= 0:
+                current_plan_status_label = "لا يتطلب إدخال"
+                current_plan_status_css = "info"
+                current_plan_action_label = "لا يوجد إدخال مطلوب لهذا الأسبوع"
+                current_plan_action_css = "ok"
+            else:
+                current_plan_status_label = "لم يبدأ"
+                current_plan_status_css = "not-started"
+                current_plan_action_label = "ابدأ بإدخال خطة الأسبوع"
+                current_plan_action_css = "warn"
+
+        current_plan_missing_count = max(
+            current_plan_required_count - current_plan_filled_required_count,
+            0,
+        )
+
+        if current_plan_required_count <= 0:
+            current_plan_completion_label = "لا توجد أيام عمل مطلوبة"
+        else:
+            current_plan_completion_label = f"{current_plan_filled_required_count} / {current_plan_required_count} أيام عمل"
+
+        if current_plan_missing_count > 0 and current_plan_status_css not in ("approved", "unlock"):
+            current_plan_action_label = f"استكمال {current_plan_missing_count} يوم/أيام عمل"
+            current_plan_action_css = "warn"
 
     return render(
         request,
@@ -2215,11 +2699,252 @@ def supervisor_dashboard_view(request: HttpRequest) -> HttpResponse:
             "week": current_week_no,
             "current_week": current_week_no,
             "week_obj": week_obj,
+            "current_week_label": current_week_label,
             "assignment_count": assignment_count,
             "unread_count": unread_count,
             "control_followup_count": control_followup_count,
             "supervisor_email": _supervisor_email_value(supervisor),
             "email_notifications_enabled": _supervisor_email_notifications_enabled(supervisor),
+            "email_preferences": email_preferences,
+            "last_email_log": last_email_log,
+            "current_plan": current_plan,
+            "current_plan_status_label": current_plan_status_label,
+            "current_plan_status_css": current_plan_status_css,
+            "current_plan_action_label": current_plan_action_label,
+            "current_plan_action_css": current_plan_action_css,
+            "current_plan_completion_label": current_plan_completion_label,
+            "current_plan_filled_required_count": current_plan_filled_required_count,
+            "current_plan_required_count": current_plan_required_count,
+            "current_plan_closed_count": current_plan_closed_count,
+            "current_plan_missing_count": current_plan_missing_count,
+        },
+    )
+
+# =============================================================================
+# Supervisor previous plans (read-only)
+# =============================================================================
+def _previous_plan_work_counts(plan: Plan) -> dict[str, int]:
+    """إحصاءات خطة سابقة مع احتساب الأيام المغلقة ضمن الاكتمال."""
+    days_map = {d.weekday: d for d in plan.days.all()}
+    closed_map = _closed_days_map_for_week(plan.week)
+    closed_count = len(closed_map)
+    required_count = max(len(WEEKDAYS) - closed_count, 0)
+    filled_required_count = sum(
+        1
+        for wd, _name in WEEKDAYS
+        if wd not in closed_map and _day_is_filled(days_map.get(wd))
+    )
+    filled_total = filled_required_count + sum(
+        1
+        for closed_day in closed_map.values()
+        if getattr(closed_day, "count_as_completed", True)
+    )
+    return {
+        "closed_count": closed_count,
+        "required_count": required_count,
+        "filled_required_count": filled_required_count,
+        "filled_total": filled_total,
+    }
+
+
+def _previous_plan_rows(plan: Plan) -> list[dict[str, Any]]:
+    days_map = {d.weekday: d for d in plan.days.all().select_related("school")}
+    day_dates = _build_day_dates_from_week(plan.week)
+    closed_map = _closed_days_map_for_week(plan.week)
+    rows: list[dict[str, Any]] = []
+
+    for wd, wd_name in WEEKDAYS:
+        day = days_map.get(wd)
+        closed_day = closed_map.get(wd)
+        is_closed = bool(closed_day)
+        is_filled = True if is_closed and getattr(closed_day, "count_as_completed", True) else _day_is_filled(day)
+
+        if is_closed:
+            type_label = "مغلق"
+            school_or_reason = _closed_day_label(closed_day) or "يوم مغلق"
+            note = "لا يتطلب إدخال زيارة لهذا اليوم."
+        elif day:
+            if day.visit_type == getattr(PlanDay, "VISIT_NONE", "none"):
+                type_label = "بدون زيارة"
+                try:
+                    reason_display = day.get_no_visit_reason_display()
+                except Exception:
+                    reason_display = day.no_visit_reason or "—"
+                school_or_reason = reason_display or "—"
+                note = day.note or "—"
+            else:
+                try:
+                    type_label = day.get_visit_type_display()
+                except Exception:
+                    type_label = day.visit_type or "—"
+                school_or_reason = day.school.name if day.school_id else "—"
+                note = day.note or "—"
+        else:
+            type_label = "غير مدخل"
+            school_or_reason = "—"
+            note = "لم يتم إدخال بيانات لهذا اليوم."
+
+        rows.append(
+            {
+                "weekday": wd,
+                "weekday_name": wd_name,
+                "date": day_dates.get(wd),
+                "day": day,
+                "is_closed": is_closed,
+                "closed_day": closed_day,
+                "is_filled": is_filled,
+                "type_label": type_label,
+                "school_or_reason": school_or_reason,
+                "note": note,
+            }
+        )
+
+    return rows
+
+
+def _previous_plan_status_label(plan: Plan) -> str:
+    try:
+        return plan.get_status_display()
+    except Exception:
+        if plan.status == getattr(Plan, "STATUS_APPROVED", "approved"):
+            return "معتمدة"
+        if plan.status == getattr(Plan, "STATUS_UNLOCK_REQUESTED", "unlock"):
+            return "طلب فك اعتماد"
+        if plan.status == getattr(Plan, "STATUS_UNLOCKED", "unlocked"):
+            return "مفكوكة للتعديل"
+        return "مسودة"
+
+
+def _previous_plans_base_qs(supervisor: Supervisor):
+    qs = (
+        Plan.objects.filter(supervisor=supervisor)
+        .select_related("week", "week__academic_year", "week__semester")
+        .prefetch_related("days", "week__closed_days")
+        .order_by("-week__start_sunday", "-week__week_no", "-id")
+    )
+
+    current_week = _get_supervisor_current_week_obj()
+    if current_week:
+        qs = qs.exclude(week=current_week)
+
+    # لا نعرض خططًا أنشئت آليًا ولم تُحفظ ولم يدخل فيها أي يوم.
+    qs = qs.filter(
+        Q(saved_at__isnull=False)
+        | Q(approved_at__isnull=False)
+        | Q(status__in=[Plan.STATUS_APPROVED, Plan.STATUS_UNLOCK_REQUESTED, getattr(Plan, "STATUS_UNLOCKED", "unlocked")])
+        | Q(days__isnull=False)
+    ).distinct()
+    return qs
+
+
+def supervisor_previous_plans_view(request: HttpRequest) -> HttpResponse:
+    """يعرض خطط المشرف السابقة للاطلاع والتصدير فقط."""
+    setting = _get_site_setting()
+    if _maintenance_is_active(setting, persist=True) and not _maintenance_allowed_for_request(request, setting):
+        return redirect("visits:maintenance_page")
+
+    try:
+        supervisor = _require_supervisor(request)
+    except Supervisor.DoesNotExist:
+        return redirect("visits:login")
+
+    qs = _previous_plans_base_qs(supervisor)
+
+    status = (request.GET.get("status") or "all").strip()
+    if status and status != "all":
+        qs = qs.filter(status=status)
+
+    year_id = _safe_int(request.GET.get("year") or 0, default=0)
+    semester_id = _safe_int(request.GET.get("semester") or 0, default=0)
+    if year_id:
+        qs = qs.filter(week__academic_year_id=year_id)
+    if semester_id:
+        qs = qs.filter(week__semester_id=semester_id)
+
+    paginator = Paginator(qs, _safe_int(request.GET.get("ps") or 10, default=10))
+    page_obj = paginator.get_page(request.GET.get("page") or 1)
+
+    rows: list[dict[str, Any]] = []
+    for plan in page_obj.object_list:
+        counts = _previous_plan_work_counts(plan)
+        rows.append(
+            {
+                "plan": plan,
+                "week": plan.week,
+                "week_label": _week_display_label(plan.week),
+                "status_label": _previous_plan_status_label(plan),
+                "counts": counts,
+            }
+        )
+
+    years = (
+        PlanWeek.objects.filter(plans__supervisor=supervisor, academic_year__isnull=False)
+        .select_related("academic_year")
+        .values("academic_year_id", "academic_year__name")
+        .distinct()
+        .order_by("-academic_year__name")
+    )
+    semesters = (
+        PlanWeek.objects.filter(plans__supervisor=supervisor, semester__isnull=False)
+        .select_related("semester")
+        .values("semester_id", "semester__title", "semester__number", "semester__academic_year__name")
+        .distinct()
+        .order_by("semester__academic_year__name", "semester__number")
+    )
+
+    return render(
+        request,
+        "visits/supervisor_previous_plans.html",
+        {
+            "sup": supervisor,
+            "rows": rows,
+            "page_obj": page_obj,
+            "status": status,
+            "year_id": year_id,
+            "semester_id": semester_id,
+            "years": years,
+            "semesters": semesters,
+            "current_week_obj": _get_supervisor_current_week_obj(),
+        },
+    )
+
+
+def supervisor_previous_plan_detail_view(request: HttpRequest, plan_id: int) -> HttpResponse:
+    """عرض خطة سابقة للمشرف بصيغة قراءة فقط."""
+    setting = _get_site_setting()
+    if _maintenance_is_active(setting, persist=True) and not _maintenance_allowed_for_request(request, setting):
+        return redirect("visits:maintenance_page")
+
+    try:
+        supervisor = _require_supervisor(request)
+    except Supervisor.DoesNotExist:
+        return redirect("visits:login")
+
+    plan = get_object_or_404(
+        Plan.objects.select_related("supervisor", "week", "week__academic_year", "week__semester").prefetch_related("days__school", "week__closed_days"),
+        pk=plan_id,
+        supervisor=supervisor,
+    )
+
+    current_week = _get_supervisor_current_week_obj()
+    if current_week and plan.week_id == current_week.id:
+        messages.info(request, "الأسبوع الحالي يتم تعديله من صفحة خطة الأسبوع الحالية.")
+        return redirect(_plan_url(current_week.week_no))
+
+    rows = _previous_plan_rows(plan)
+    counts = _previous_plan_work_counts(plan)
+
+    return render(
+        request,
+        "visits/supervisor_previous_plan_detail.html",
+        {
+            "sup": supervisor,
+            "plan": plan,
+            "week_obj": plan.week,
+            "week_label": _week_display_label(plan.week),
+            "rows": rows,
+            "counts": counts,
+            "status_label": _previous_plan_status_label(plan),
         },
     )
 
@@ -2407,14 +3132,24 @@ def plan_view(request: HttpRequest) -> HttpResponse:
     except Supervisor.DoesNotExist:
         return redirect("visits:login")
 
-    week_no = _safe_int(request.GET.get("week") or request.POST.get("week") or _get_default_week_no(), default=_get_default_week_no())
+    week_obj = _get_supervisor_current_week_obj()
+    if not week_obj:
+        messages.warning(request, "لا يوجد أسبوع مفتوح حاليًا لإدخال الخطة.")
+        return redirect("visits:supervisor_dashboard")
+
+    week_no = week_obj.week_no
+    requested_week_no = _safe_int(
+        request.GET.get("week") or request.POST.get("week") or week_no,
+        default=week_no,
+    )
+    if requested_week_no != week_no:
+        messages.info(request, "يظهر للمشرف الأسبوع الحالي المفتوح فقط لإدخال الخطة.")
+        return redirect(_plan_url(week_no))
 
     if _supervisor_needs_email_prompt(supervisor):
         messages.info(request, "يرجى تسجيل بريدك الإلكتروني أولًا وتأكيده برمز تحقق لتصلك التنبيهات والإشعارات.")
         settings_url = reverse("visits:supervisor_email_settings")
         return redirect(f"{settings_url}?next={_plan_url(week_no)}")
-
-    week_obj = _resolve_week_or_404(week_no, allow_inactive=False)
 
     plan, _ = Plan.objects.get_or_create(supervisor=supervisor, week=week_obj)
     _inject_week_no(plan)
@@ -2422,8 +3157,32 @@ def plan_view(request: HttpRequest) -> HttpResponse:
     schools = _supervisor_schools_qs(supervisor)
     allowed_school_ids = _supervisor_school_ids(supervisor)
     days_map = {d.weekday: d for d in plan.days.all().select_related("school")}
-    week_choices = _build_week_choices(active_only=True)
+    week_choices = _build_supervisor_week_choices()
     day_dates = _build_day_dates_from_week(week_obj)
+    closed_days_map = _closed_days_map_for_week(week_obj)
+    days_rows = []
+    for wd, wd_name in WEEKDAYS:
+        closed_day = closed_days_map.get(wd)
+        days_rows.append(
+            {
+                "weekday": wd,
+                "weekday_name": wd_name,
+                "date": day_dates.get(wd),
+                "day": days_map.get(wd),
+                "is_closed": bool(closed_day),
+                "closed_day": closed_day,
+                "closed_reason": _closed_day_label(closed_day),
+            }
+        )
+
+    closed_days_count = len(closed_days_map)
+    required_days_count = max(len(WEEKDAYS) - closed_days_count, 0)
+    filled_available_days_count = sum(
+        1
+        for wd, _wd_name in WEEKDAYS
+        if wd not in closed_days_map and _day_is_filled(days_map.get(wd))
+    )
+
     notifications = supervisor.notifications.select_related("plan").order_by("-created_at")[:8]
     unread_count = supervisor.notifications.filter(is_read=False).count()
     week_letter = WeeklyLetterLink.objects.filter(week=week_obj, is_active=True).first()
@@ -2436,19 +3195,47 @@ def plan_view(request: HttpRequest) -> HttpResponse:
         action = (request.POST.get("action") or "save").strip()
 
         for wd, _ in WEEKDAYS:
+            closed_day = closed_days_map.get(wd)
+            if closed_day:
+                PlanDay.objects.update_or_create(
+                    plan=plan,
+                    weekday=wd,
+                    defaults={
+                        "visit_type": getattr(PlanDay, "VISIT_NONE", "none"),
+                        "school_id": None,
+                        "no_visit_reason": _closed_day_no_visit_reason(),
+                        "note": f"يوم مغلق: {_closed_day_label(closed_day)}",
+                        "visited": False,
+                        "visited_at": None,
+                        "visit_note": None,
+                    },
+                )
+                continue
+
             sid = _safe_int((request.POST.get(f"school_{wd}") or "").strip(), default=0)
-            vtype = (request.POST.get(f"visit_{wd}") or getattr(PlanDay, "VISIT_IN", "in")).strip()
+            raw_vtype = (request.POST.get(f"visit_{wd}") or "").strip()
 
             allowed_visit_types = {
                 getattr(PlanDay, "VISIT_IN", "in"),
                 getattr(PlanDay, "VISIT_REMOTE", "remote"),
                 getattr(PlanDay, "VISIT_NONE", "none"),
             }
-            if vtype not in allowed_visit_types:
-                vtype = getattr(PlanDay, "VISIT_IN", "in")
+            if raw_vtype not in allowed_visit_types:
+                raw_vtype = ""
 
             reason = (request.POST.get(f"reason_{wd}") or "").strip() or None
             note = (request.POST.get(f"note_{wd}") or "").strip() or None
+
+            # إذا لم يختر المشرف نوع اليوم ولم يختر مدرسة أو سببًا، يبقى اليوم غير مكتمل.
+            # إذا اختار مدرسة فقط، نعتمدها زيارة حضورية افتراضيًا لحماية البيانات من الفقد.
+            if not raw_vtype:
+                if sid:
+                    vtype = getattr(PlanDay, "VISIT_IN", "in")
+                else:
+                    PlanDay.objects.filter(plan=plan, weekday=wd).delete()
+                    continue
+            else:
+                vtype = raw_vtype
 
             if vtype == getattr(PlanDay, "VISIT_NONE", "none"):
                 sid = 0
@@ -2489,10 +3276,11 @@ def plan_view(request: HttpRequest) -> HttpResponse:
 
             PlanDay.objects.update_or_create(plan=plan, weekday=wd, defaults=defaults)
 
+        _sync_plan_closed_days(plan)
         plan.saved_at = timezone.now()
 
         if action == "approve":
-            if plan.is_fully_filled():
+            if _plan_is_fully_filled(plan):
                 plan.status = Plan.STATUS_APPROVED
                 plan.approved_at = timezone.now()
                 plan.admin_note = None
@@ -2500,7 +3288,7 @@ def plan_view(request: HttpRequest) -> HttpResponse:
                 messages.success(request, "تم اعتماد الخطة بنجاح.")
             else:
                 plan.save(update_fields=["saved_at"])
-                messages.warning(request, "تم الحفظ، لكن لا يمكن الاعتماد قبل اكتمال جميع الأيام.")
+                messages.warning(request, "تم الحفظ، لكن لا يمكن الاعتماد قبل اكتمال أيام العمل المتاحة في الأسبوع.")
         else:
             plan.save(update_fields=["saved_at"])
             messages.success(request, "تم حفظ الخطة بنجاح.")
@@ -2520,7 +3308,14 @@ def plan_view(request: HttpRequest) -> HttpResponse:
             "sup": supervisor,
             "weekdays": WEEKDAYS,
             "days_map": days_map,
+            "days_rows": days_rows,
+            "closed_days_map": closed_days_map,
+            "closed_weekdays": set(closed_days_map.keys()),
+            "closed_days_count": closed_days_count,
+            "required_days_count": required_days_count,
+            "filled_available_days_count": filled_available_days_count,
             "week_choices": week_choices,
+            "week_display_label": _week_display_label(week_obj),
             "day_dates": day_dates,
             "today": timezone.localdate(),
             "notifications": notifications,
@@ -2927,6 +3722,101 @@ def toggle_day_visited_view(request: HttpRequest, day_id: int) -> HttpResponse:
 # =============================================================================
 # Notifications
 # =============================================================================
+def _notification_email_event_type(notif_type: str) -> str:
+    mapping = {
+        getattr(SupervisorNotification, "TYPE_APPROVED", "approved"): getattr(EmailNotificationLog, "EVENT_PLAN_APPROVED", "plan_approved"),
+        getattr(SupervisorNotification, "TYPE_RETURNED", "returned"): getattr(EmailNotificationLog, "EVENT_PLAN_RETURNED", "plan_returned"),
+        getattr(SupervisorNotification, "TYPE_UNLOCK_APPROVED", "unlock_approved"): getattr(EmailNotificationLog, "EVENT_UNLOCK_APPROVED", "unlock_approved"),
+        getattr(SupervisorNotification, "TYPE_UNLOCK_REJECTED", "unlock_rejected"): getattr(EmailNotificationLog, "EVENT_UNLOCK_REJECTED", "unlock_rejected"),
+        getattr(SupervisorNotification, "TYPE_ADMIN_ALERT", "admin_alert"): getattr(EmailNotificationLog, "EVENT_ADMIN_ALERT", "admin_alert"),
+    }
+    return mapping.get(notif_type, getattr(EmailNotificationLog, "EVENT_ADMIN_ALERT", "admin_alert"))
+
+
+def _notification_kind_label(notif_type: str) -> str:
+    labels = {
+        getattr(SupervisorNotification, "TYPE_APPROVED", "approved"): "اعتماد",
+        getattr(SupervisorNotification, "TYPE_RETURNED", "returned"): "إعادة للمراجعة",
+        getattr(SupervisorNotification, "TYPE_UNLOCK_APPROVED", "unlock_approved"): "قبول فك الاعتماد",
+        getattr(SupervisorNotification, "TYPE_UNLOCK_REJECTED", "unlock_rejected"): "رفض فك الاعتماد",
+        getattr(SupervisorNotification, "TYPE_ADMIN_ALERT", "admin_alert"): "تنبيه إداري",
+    }
+    return labels.get(notif_type, "إشعار")
+
+
+def _notification_action_meta(notification: SupervisorNotification) -> dict[str, str | bool]:
+    """يبني زرًا ذكيًا بحسب نوع الإشعار بدل زر ثابت باسم فتح الأسبوع."""
+    notif_type = notification.notif_type
+    plan = getattr(notification, "plan", None)
+
+    if not plan:
+        return {"show": False, "label": "", "url": ""}
+
+    week_no = getattr(getattr(plan, "week", None), "week_no", None)
+    plan_url = f"{reverse('visits:plan')}?week={week_no or _get_default_week_no()}"
+
+    try:
+        previous_url = reverse("visits:supervisor_previous_plan_detail", args=[plan.id])
+    except Exception:
+        previous_url = plan_url
+
+    week = getattr(plan, "week", None)
+    is_current_open = bool(
+        week
+        and getattr(week, "is_current", False)
+        and getattr(week, "is_open_for_supervisors", False)
+    )
+
+    if notif_type == getattr(SupervisorNotification, "TYPE_RETURNED", "returned"):
+        return {"show": True, "label": "فتح الخطة للتعديل", "url": plan_url}
+
+    if notif_type == getattr(SupervisorNotification, "TYPE_UNLOCK_APPROVED", "unlock_approved"):
+        return {"show": True, "label": "فتح الخطة", "url": plan_url}
+
+    if notif_type == getattr(SupervisorNotification, "TYPE_ADMIN_ALERT", "admin_alert"):
+        return {"show": True, "label": "عرض الخطة" if not is_current_open else "فتح الأسبوع", "url": plan_url if is_current_open else previous_url}
+
+    return {"show": True, "label": "عرض الخطة", "url": plan_url if is_current_open else previous_url}
+
+
+def _notification_email_meta(supervisor: Supervisor, notification: SupervisorNotification) -> dict[str, str]:
+    """يعرض حالة البريد لهذا الإشعار دون الادعاء بالإرسال إذا لم يوجد سجل."""
+    email_value = _supervisor_email_value(supervisor)
+    email_enabled = _supervisor_email_notifications_enabled(supervisor)
+
+    if not email_value:
+        return {"label": "بلا بريد", "css": "muted", "title": "لم يتم تسجيل بريد إلكتروني."}
+
+    if not email_enabled:
+        return {"label": "داخلي فقط", "css": "muted", "title": "التنبيهات البريدية متوقفة."}
+
+    event_type = _notification_email_event_type(notification.notif_type)
+    qs = EmailNotificationLog.objects.filter(
+        supervisor=supervisor,
+        event_type=event_type,
+    )
+    if notification.plan_id:
+        qs = qs.filter(plan_id=notification.plan_id)
+
+    # نربط الإشعار بأقرب سجل بريد حول وقت إنشائه. وإن لم يوجد سجل نعرض داخلي فقط.
+    window_start = notification.created_at - timedelta(days=2)
+    window_end = notification.created_at + timedelta(days=2)
+    log = qs.filter(created_at__gte=window_start, created_at__lte=window_end).order_by("-created_at", "-id").first()
+    if log is None:
+        log = qs.order_by("-created_at", "-id").first()
+
+    if not log:
+        return {"label": "داخلي فقط", "css": "muted", "title": "لم يتم العثور على سجل بريد مرتبط بهذا الإشعار."}
+
+    if log.status == getattr(EmailNotificationLog, "STATUS_SENT", "sent"):
+        return {"label": "بريد مرسل", "css": "sent", "title": f"أُرسل إلى: {log.recipient_email or email_value}"}
+
+    if log.status == getattr(EmailNotificationLog, "STATUS_FAILED", "failed"):
+        return {"label": "فشل البريد", "css": "failed", "title": log.error_message or "تعذر إرسال البريد."}
+
+    return {"label": "داخلي فقط", "css": "muted", "title": log.error_message or "لم يُرسل بريد لهذا الإشعار."}
+
+
 def notifications_view(request: HttpRequest) -> HttpResponse:
     setting = _get_site_setting()
     if _maintenance_is_active(setting, persist=True) and not _maintenance_allowed_for_request(request, setting):
@@ -2945,21 +3835,40 @@ def notifications_view(request: HttpRequest) -> HttpResponse:
     page_obj = paginator.get_page(page)
 
     unread_count = supervisor.notifications.filter(is_read=False).count()
+    total_notifications = supervisor.notifications.count()
+
+    notification_rows = []
+    for notification in page_obj.object_list:
+        notification_rows.append(
+            {
+                "notification": notification,
+                "kind_label": _notification_kind_label(notification.notif_type),
+                "email_meta": _notification_email_meta(supervisor, notification),
+                "action": _notification_action_meta(notification),
+            }
+        )
+
+    email_sent_count = EmailNotificationLog.objects.filter(
+        supervisor=supervisor,
+        status=getattr(EmailNotificationLog, "STATUS_SENT", "sent"),
+    ).count()
 
     return render(
         request,
         "visits/notifications.html",
         {
             "notifications": page_obj.object_list,
+            "notification_rows": notification_rows,
             "page_obj": page_obj,
             "sup": supervisor,
             "unread_count": unread_count,
+            "total_notifications": total_notifications,
+            "email_sent_count": email_sent_count,
             "week": week_no,
             "supervisor_email": _supervisor_email_value(supervisor),
             "email_notifications_enabled": _supervisor_email_notifications_enabled(supervisor),
         },
     )
-
 
 @require_POST
 def mark_notification_read_view(request: HttpRequest, notif_id: int) -> HttpResponse:
@@ -3059,6 +3968,195 @@ def export_supervisor_assignments_excel(request: HttpRequest) -> HttpResponse:
     return _excel_response(wb, filename)
 
 
+
+
+# =============================================================================
+# Admin principals
+# =============================================================================
+@admin_only_view
+def admin_principal_list_view(request: HttpRequest) -> HttpResponse:
+    q = _cell_str(request.GET.get("q"))
+    gender = _cell_str(request.GET.get("gender"))
+    sector_id = _safe_int(request.GET.get("sector") or 0, default=0)
+    stage = _cell_str(request.GET.get("stage"))
+    active = _cell_str(request.GET.get("active") or "all")
+    quality = _cell_str(request.GET.get("quality") or "all")
+
+    if active not in ("all", "1", "0"):
+        active = "all"
+
+    if quality not in ("all", "no_mobile", "no_school"):
+        quality = "all"
+
+    qs = (
+        Principal.objects
+        .select_related("school", "school__sector")
+        .order_by("school__name", "full_name")
+    )
+
+    if q:
+        qs = qs.filter(
+            Q(full_name__icontains=q)
+            | Q(national_id__icontains=q)
+            | Q(mobile__icontains=q)
+            | Q(school__name__icontains=q)
+            | Q(school__stat_code__icontains=q)
+        )
+
+    if gender in ("boys", "girls"):
+        qs = qs.filter(gender=gender)
+
+    if sector_id:
+        qs = qs.filter(school__sector_id=sector_id)
+
+    if stage:
+        qs = qs.filter(stage=stage)
+
+    if active == "1":
+        qs = qs.filter(is_active=True)
+    elif active == "0":
+        qs = qs.filter(is_active=False)
+
+    kpi_qs = qs
+
+    kpi_total = kpi_qs.count()
+    kpi_boys = kpi_qs.filter(gender="boys").count()
+    kpi_girls = kpi_qs.filter(gender="girls").count()
+    kpi_no_mobile = kpi_qs.filter(Q(mobile__isnull=True) | Q(mobile="")).count()
+    kpi_no_school = kpi_qs.filter(school__isnull=True).count()
+
+    if quality == "no_mobile":
+        qs = qs.filter(Q(mobile__isnull=True) | Q(mobile=""))
+    elif quality == "no_school":
+        qs = qs.filter(school__isnull=True)
+
+    sectors = Sector.objects.filter(is_active=True).order_by("name")
+
+    stage_choices = (
+        Principal.objects
+        .exclude(stage__isnull=True)
+        .exclude(stage="")
+        .values_list("stage", flat=True)
+        .distinct()
+        .order_by("stage")
+    )
+
+    paginator = Paginator(qs, 30)
+    page_obj = paginator.get_page(_safe_int(request.GET.get("page") or 1, default=1))
+
+    return render(
+        request,
+        "visits/admin_principal_list.html",
+        {
+            "rows": list(page_obj.object_list),
+            "page_obj": page_obj,
+            "q": q,
+            "gender": gender,
+            "sector_id": sector_id,
+            "stage": stage,
+            "active": active,
+            "quality": quality,
+            "sectors": sectors,
+            "stage_choices": stage_choices,
+            "kpi_total": kpi_total,
+            "kpi_boys": kpi_boys,
+            "kpi_girls": kpi_girls,
+            "kpi_no_mobile": kpi_no_mobile,
+            "kpi_no_school": kpi_no_school,
+        },
+    )
+
+
+
+@admin_only_view
+def admin_principal_edit_view(request: HttpRequest, principal_id: int) -> HttpResponse:
+    principal = get_object_or_404(
+        Principal.objects.select_related("school", "school__sector"),
+        pk=principal_id,
+    )
+
+    schools = School.objects.filter(is_active=True).select_related("sector").order_by("name")
+    stage_choices = (
+        Principal.objects
+        .exclude(stage__isnull=True)
+        .exclude(stage="")
+        .values_list("stage", flat=True)
+        .distinct()
+        .order_by("stage")
+    )
+
+    if request.method == "POST":
+        full_name = _cell_str(request.POST.get("full_name"))
+        national_id = _digits(request.POST.get("national_id") or "")
+        mobile = _digits(request.POST.get("mobile") or "")
+        gender = _cell_str(request.POST.get("gender"))
+        stage = _cell_str(request.POST.get("stage"))
+        current_work = _cell_str(request.POST.get("current_work"))
+        specialization = _cell_str(request.POST.get("specialization"))
+        qualification = _cell_str(request.POST.get("qualification"))
+        rank = _cell_str(request.POST.get("rank"))
+        note = _cell_str(request.POST.get("note"))
+        is_active = request.POST.get("is_active") == "1"
+        school_id = _safe_int(request.POST.get("school_id") or 0, default=0)
+
+        errors: list[str] = []
+
+        if not full_name:
+            errors.append("اسم المدير/ة مطلوب.")
+
+        if national_id and len(national_id) != 10:
+            errors.append("السجل المدني يجب أن يتكون من 10 أرقام.")
+
+        if mobile and len(mobile) < 9:
+            errors.append("رقم الجوال غير مكتمل.")
+
+        if gender not in ("boys", "girls"):
+            gender = principal.gender or None
+
+        school = None
+        if school_id:
+            school = School.objects.filter(id=school_id, is_active=True).first()
+            if not school:
+                errors.append("المدرسة المحددة غير صحيحة أو غير نشطة.")
+
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+        else:
+            principal.full_name = full_name
+            principal.national_id = national_id or None
+            principal.mobile = mobile or None
+            principal.gender = gender or None
+            principal.stage = stage or None
+            principal.current_work = current_work or None
+            principal.specialization = specialization or None
+            principal.qualification = qualification or None
+            principal.rank = rank or None
+            principal.note = note or None
+            principal.is_active = is_active
+
+            if school is not None:
+                principal.school = school
+
+            try:
+                principal.save()
+            except Exception as exc:
+                messages.error(request, f"تعذر حفظ بيانات مدير/ة المدرسة: {exc}")
+            else:
+                messages.success(request, "تم تحديث بيانات مدير/ة المدرسة بنجاح.")
+                return redirect("visits:admin_principal_list")
+
+    return render(
+        request,
+        "visits/admin_principal_edit.html",
+        {
+            "principal": principal,
+            "schools": schools,
+            "stage_choices": stage_choices,
+        },
+    )
+
+
 # =============================================================================
 # Admin schools
 # =============================================================================
@@ -3073,7 +4171,7 @@ def admin_school_list_view(request: HttpRequest) -> HttpResponse:
     if assignment_status not in ("all", "assigned", "unassigned"):
         assignment_status = "all"
 
-    base_qs = School.objects.select_related("sector").order_by("name")
+    base_qs = School.objects.select_related("sector", "principal").order_by("name")
 
     if only_active:
         base_qs = base_qs.filter(is_active=True)
@@ -3849,6 +4947,7 @@ def request_unlock_view(request: HttpRequest) -> HttpResponse:
 
     plan.status = Plan.STATUS_UNLOCK_REQUESTED
     plan.save(update_fields=["status"])
+    send_unlock_request_received_email(plan, request=request)
 
     messages.success(request, "تم إرسال طلب فك الاعتماد.")
     return redirect(_plan_url(plan.week.week_no))
@@ -4297,7 +5396,7 @@ def admin_dashboard_view(request: HttpRequest) -> HttpResponse:
     week_obj = _resolve_week_or_404(week_no, allow_inactive=show_all)
     q = (request.GET.get("q") or "").strip()
     status = (request.GET.get("status") or "all").strip().lower()
-    if status not in ("all", "approved", "draft", "unlock", "not_full"):
+    if status not in ("all", "approved", "not_started", "draft", "ready", "unlock", "not_full"):
         status = "all"
 
     page_sizes = [10, 20, 30, 50]
@@ -4335,33 +5434,61 @@ def admin_dashboard_view(request: HttpRequest) -> HttpResponse:
             .values_list("supervisor_id", "c")
         )
 
+    plan_state: dict[int, dict[str, Any]] = {}
+    for p in plans_all:
+        filled = _plan_filled_count(p)
+        status_code, status_label = _plan_display_status(p, filled)
+        plan_state[p.id] = {
+            "filled": filled,
+            "status_code": status_code,
+            "status_label": status_label,
+            "is_full": filled == len(WEEKDAYS),
+        }
+
+        # خصائص مساعدة لأي قالب يستخدم p مباشرة.
+        p.display_status_code = status_code
+        p.display_status_label = status_label
+        p.status_code = status_code
+        p.status_label = status_label
+        p.filled_count = filled
+        p.is_full = filled == len(WEEKDAYS)
+
     kpi_total = len(plans_all)
-    kpi_approved = sum(1 for p in plans_all if p.status == Plan.STATUS_APPROVED)
-    kpi_drafts = sum(1 for p in plans_all if p.status == Plan.STATUS_DRAFT)
-    kpi_unlock = sum(1 for p in plans_all if p.status == Plan.STATUS_UNLOCK_REQUESTED)
-    kpi_filled = sum(1 for p in plans_all if p.is_fully_filled())
+    kpi_approved = sum(1 for s in plan_state.values() if s["status_code"] == "approved")
+    kpi_not_started = sum(1 for s in plan_state.values() if s["status_code"] == "not-started")
+    kpi_drafts = sum(1 for s in plan_state.values() if s["status_code"] == "draft")
+    kpi_ready = sum(1 for s in plan_state.values() if s["status_code"] == "ready")
+    kpi_unlock = sum(1 for s in plan_state.values() if s["status_code"] == "unlock")
+    kpi_filled = sum(1 for s in plan_state.values() if s["is_full"])
     kpi_not_filled = kpi_total - kpi_filled
 
     plans_filtered = plans_all
     if status == "approved":
-        plans_filtered = [p for p in plans_all if p.status == Plan.STATUS_APPROVED]
+        plans_filtered = [p for p in plans_all if plan_state[p.id]["status_code"] == "approved"]
+    elif status == "not_started":
+        plans_filtered = [p for p in plans_all if plan_state[p.id]["status_code"] == "not-started"]
     elif status == "draft":
-        plans_filtered = [p for p in plans_all if p.status == Plan.STATUS_DRAFT]
+        plans_filtered = [p for p in plans_all if plan_state[p.id]["status_code"] == "draft"]
+    elif status == "ready":
+        plans_filtered = [p for p in plans_all if plan_state[p.id]["status_code"] == "ready"]
     elif status == "unlock":
-        plans_filtered = [p for p in plans_all if p.status == Plan.STATUS_UNLOCK_REQUESTED]
+        plans_filtered = [p for p in plans_all if plan_state[p.id]["status_code"] == "unlock"]
     elif status == "not_full":
-        plans_filtered = [p for p in plans_all if not p.is_fully_filled()]
+        plans_filtered = [p for p in plans_all if not plan_state[p.id]["is_full"]]
 
     rows = []
     for p in plans_filtered:
         day_map = {d.weekday: d for d in p.days.all()}
-        filled = sum(1 for wd, _ in WEEKDAYS if _day_is_filled(day_map.get(wd)))
+        state = plan_state[p.id]
         rows.append(
             {
                 "plan": p,
                 "sup": p.supervisor,
-                "filled": filled,
-                "is_full": filled == 5,
+                "filled": state["filled"],
+                "is_full": state["is_full"],
+                "status_code": state["status_code"],
+                "status_css": state["status_code"],
+                "status_label": state["status_label"],
                 "day_map": day_map,
                 "assignment_count": assignment_counts.get(p.supervisor_id, 0),
             }
@@ -4390,7 +5517,9 @@ def admin_dashboard_view(request: HttpRequest) -> HttpResponse:
             "week_choices": week_choices,
             "kpi_total": kpi_total,
             "kpi_approved": kpi_approved,
+            "kpi_not_started": kpi_not_started,
             "kpi_drafts": kpi_drafts,
+            "kpi_ready": kpi_ready,
             "kpi_unlock": kpi_unlock,
             "kpi_filled": kpi_filled,
             "kpi_not_filled": kpi_not_filled,
@@ -4705,7 +5834,6 @@ def admin_export_all_plans_excel(request: HttpRequest) -> HttpResponse:
     if q:
         plans_qs = plans_qs.filter(
             Q(supervisor__full_name__icontains=q)
-            | Q(supervisor__national_id__icontains=q)
             | Q(days__school__name__icontains=q)
             | Q(days__school__stat_code__icontains=q)
         ).distinct()
@@ -4713,7 +5841,7 @@ def admin_export_all_plans_excel(request: HttpRequest) -> HttpResponse:
     plans = list(plans_qs)
 
     if status == "not_full":
-        plans = [plan for plan in plans if not plan.is_fully_filled()]
+        plans = [plan for plan in plans if not _plan_is_fully_filled(plan)]
 
     if not plans:
         messages.warning(request, "لا توجد خطط مطابقة لمعايير التصدير.")
@@ -5201,7 +6329,6 @@ def admin_control_followups_view(request: HttpRequest) -> HttpResponse:
     if q:
         qs = qs.filter(
             Q(supervisor__full_name__icontains=q)
-            | Q(supervisor__national_id__icontains=q)
             | Q(title__icontains=q)
             | Q(description__icontains=q)
             | Q(supervisor_response__icontains=q)
@@ -5321,13 +6448,15 @@ def admin_control_followup_notify_view(request: HttpRequest, pk: int) -> HttpRes
     obj = get_object_or_404(qs, pk=pk)
     note = _cell_str(request.POST.get("note")) or obj.admin_note or obj.description
 
+    followup_title = f"تنبيه رقابي: {_control_followup_type_label(obj.issue_type)}"
     _notify_supervisor(
         supervisor=obj.supervisor,
         plan=obj.plan,
         notif_type=SupervisorNotification.TYPE_ADMIN_ALERT,
-        title=f"تنبيه رقابي: {_control_followup_type_label(obj.issue_type)}",
+        title=followup_title,
         message=note,
     )
+    send_control_followup_email(obj.supervisor, title=followup_title, message=note, plan=obj.plan, request=request)
     obj.status = "notified"
     obj.notification_count = (obj.notification_count or 0) + 1
     obj.last_notification_at = timezone.now()
@@ -5462,6 +6591,70 @@ def supervisor_control_followup_respond_view(request: HttpRequest, pk: int) -> H
     return redirect("visits:supervisor_control_followups")
 
 
+
+# =============================================================================
+# Supervisor email notification preferences
+# =============================================================================
+def supervisor_email_preferences_view(request: HttpRequest) -> HttpResponse:
+    try:
+        supervisor = _require_supervisor(request)
+    except Supervisor.DoesNotExist:
+        return redirect("visits:login")
+
+    preferences = get_or_create_email_preferences(supervisor)
+
+    if request.method == "POST":
+        supervisor.email_notifications_enabled = _bool_from_post(request.POST.get("email_notifications_enabled"), default=False)
+        supervisor.save(update_fields=["email_notifications_enabled"])
+
+        preferences.plan_approved = _bool_from_post(request.POST.get("plan_approved"), default=False)
+        preferences.plan_returned = _bool_from_post(request.POST.get("plan_returned"), default=False)
+        preferences.unlock_result = _bool_from_post(request.POST.get("unlock_result"), default=False)
+        preferences.admin_alert = _bool_from_post(request.POST.get("admin_alert"), default=False)
+        preferences.control_followup = _bool_from_post(request.POST.get("control_followup"), default=False)
+        preferences.incomplete_reminder = _bool_from_post(request.POST.get("incomplete_reminder"), default=False)
+        preferences.weekly_summary = _bool_from_post(request.POST.get("weekly_summary"), default=False)
+        preferences.save()
+
+        messages.success(request, "تم حفظ تفضيلات التنبيهات البريدية.")
+        return redirect("visits:supervisor_email_preferences")
+
+    recent_email_logs = supervisor.email_logs.order_by("-created_at")[:10]
+    return render(
+        request,
+        "visits/supervisor_email_preferences.html",
+        {
+            "sup": supervisor,
+            "supervisor_email": _supervisor_email_value(supervisor),
+            "email_notifications_enabled": _supervisor_email_notifications_enabled(supervisor),
+            "preferences": preferences,
+            "recent_email_logs": recent_email_logs,
+        },
+    )
+
+
+@admin_only_view
+@require_POST
+def admin_send_incomplete_email_reminders_view(request: HttpRequest) -> HttpResponse:
+    week_no = _safe_int(request.POST.get("week") or 0, default=0)
+    week_obj = None
+    if week_no:
+        week_obj = PlanWeek.objects.filter(week_no=week_no).first()
+    if week_obj is None:
+        week_obj = PlanWeek.objects.filter(is_current=True, is_open_for_supervisors=True, is_break=False).first()
+
+    result = send_incomplete_plan_reminders(week=week_obj, request=request)
+    if not week_obj:
+        messages.warning(request, "لا يوجد أسبوع مفتوح لإرسال تذكيرات عدم الاكتمال.")
+        return redirect("visits:admin_dashboard")
+
+    messages.success(
+        request,
+        f"تمت معالجة تذكيرات البريد: أُرسل {result.get('sent', 0)}، لم يُرسل {result.get('skipped', 0)}، فشل {result.get('failed', 0)}.",
+    )
+    return redirect(f"{reverse('visits:admin_dashboard')}?week={week_obj.week_no}")
+
+
 # =============================================================================
 # Admin actions
 # =============================================================================
@@ -5491,8 +6684,9 @@ def admin_plan_approve_view(request: HttpRequest, plan_id: int) -> HttpResponse:
         messages.info(request, msg)
         return redirect(return_url)
 
-    if not plan.is_fully_filled():
-        msg = "لا يمكن اعتماد الخطة قبل اكتمال جميع الأيام (5/5)."
+    _sync_plan_closed_days(plan)
+    if not _plan_is_fully_filled(plan):
+        msg = "لا يمكن اعتماد الخطة قبل اكتمال أيام العمل المتاحة في الأسبوع."
         ajax_response = _admin_json_response(request, plan=plan, message=msg, ok=False, http_status=400, errors=[msg])
         if ajax_response:
             return ajax_response
@@ -5512,6 +6706,7 @@ def admin_plan_approve_view(request: HttpRequest, plan_id: int) -> HttpResponse:
         title="تم اعتماد خطتك",
         message=f"تم اعتماد خطة الأسبوع {plan.week.week_no} بنجاح.",
     )
+    send_plan_approved_email(plan, request=request)
 
     msg = "تم اعتماد الخطة."
     ajax_response = _admin_json_response(request, plan=plan, message=msg, ok=True, http_status=200)
@@ -5562,6 +6757,7 @@ def admin_plan_back_to_draft_view(request: HttpRequest, plan_id: int) -> HttpRes
         title="تمت إعادة الخطة للمراجعة",
         message=f"تمت إعادة خطة الأسبوع {plan.week.week_no} للمراجعة." + (f" الملاحظة: {note}" if note else ""),
     )
+    send_plan_returned_email(plan, note=note, request=request)
 
     msg = "تم إرجاع الخطة إلى مسودة."
     ajax_response = _admin_json_response(request, plan=plan, message=msg, ok=True, http_status=200)
@@ -5608,6 +6804,7 @@ def admin_send_notification_view(request: HttpRequest, plan_id: int) -> HttpResp
         title=title,
         message=note,
     )
+    send_admin_alert_email(plan, title=title, message=note, request=request)
 
     msg = "تم إرسال التنبيه إلى المشرف."
     ajax_response = _admin_json_response(request, plan=plan, message=msg, ok=True, http_status=200)
@@ -5671,7 +6868,7 @@ def admin_send_notification_all_view(request: HttpRequest) -> HttpResponse:
     elif status_filter == "unlock":
         plans = [p for p in plans if p.status == Plan.STATUS_UNLOCK_REQUESTED]
     elif status_filter == "not_full":
-        plans = [p for p in plans if not p.is_fully_filled()]
+        plans = [p for p in plans if not _plan_is_fully_filled(p)]
 
     sent_count = 0
     touched_supervisor_ids: set[int] = set()
@@ -5743,6 +6940,7 @@ def admin_unlock_approve_view(request: HttpRequest, plan_id: int) -> HttpRespons
         title="تمت الموافقة على فك اعتماد الخطة",
         message=f"تمت الموافقة على فك اعتماد خطة الأسبوع {plan.week.week_no}. يمكنك التعديل الآن.",
     )
+    send_unlock_approved_email(plan, request=request)
 
     msg = "تمت الموافقة على فك الاعتماد وإرجاع الخطة إلى مسودة."
     ajax_response = _admin_json_response(request, plan=plan, message=msg, ok=True, http_status=200)
@@ -5796,6 +6994,7 @@ def admin_unlock_reject_view(request: HttpRequest, plan_id: int) -> HttpResponse
         title="تم رفض طلب فك اعتماد الخطة",
         message=f"تم رفض طلب فك اعتماد خطة الأسبوع {plan.week.week_no}." + (f" الملاحظة: {note}" if note else ""),
     )
+    send_unlock_rejected_email(plan, note=note, request=request)
 
     msg = "تم رفض طلب فك الاعتماد."
     ajax_response = _admin_json_response(request, plan=plan, message=msg, ok=True, http_status=200)
@@ -6714,11 +7913,12 @@ def _assignments_qs_for_scope(scope: ReadOnlyScope):
 
 def _plan_row(plan: Plan) -> dict[str, Any]:
     filled = _plan_filled_count(plan)
+    status_code, status_label = _plan_display_status(plan, filled)
     return {
         "plan": plan,
         "filled": filled,
-        "status_label": _status_label(plan),
-        "status_code": _status_code(plan),
+        "status_label": status_label,
+        "status_code": status_code,
         "is_full": filled == len(WEEKDAYS),
     }
 
@@ -6834,21 +8034,23 @@ def readonly_plans_view(request: HttpRequest) -> HttpResponse:
     qs = _plans_qs_for_scope(scope, week_obj=week_obj)
 
     if q:
-        qs = qs.filter(
-            Q(supervisor__full_name__icontains=q)
-            | Q(supervisor__national_id__icontains=q)
-            | Q(days__school__name__icontains=q)
-        ).distinct()
+        # بوابة الاطلاع: لا نعرض السجل المدني، لكن نسمح بالبحث الداخلي عند إدخال رقم كامل من 10 خانات.
+        if q.isdigit() and len(q) == 10:
+            qs = qs.filter(supervisor__national_id=q)
+        else:
+            qs = qs.filter(
+                Q(supervisor__full_name__icontains=q)
+                | Q(days__school__name__icontains=q)
+            ).distinct()
 
-    if status in ("approved", "draft", "unlock"):
+    if status in ("approved", "unlock"):
         mapping = {
             "approved": Plan.STATUS_APPROVED,
-            "draft": Plan.STATUS_DRAFT,
             "unlock": Plan.STATUS_UNLOCK_REQUESTED,
         }
         qs = qs.filter(status=mapping[status])
-    elif status == "not_full":
-        # تتم فلترة غير المكتملة بعد بناء الصفوف لأن اكتمال الخطة يعتمد على الأيام.
+    elif status in ("not_started", "draft", "ready", "not_full"):
+        # تتم الفلترة بعد بناء الصفوف لأن الحالة الجديدة تعتمد على أيام الخطة.
         pass
 
     if sector_id:
@@ -6865,7 +8067,13 @@ def readonly_plans_view(request: HttpRequest) -> HttpResponse:
         row = _plan_row(p)
         row["sector_names"] = _plan_sector_names_for_scope(p, scope)
         rows.append(row)
-    if status == "not_full":
+    if status == "not_started":
+        rows = [r for r in rows if r["status_code"] == "not-started"]
+    elif status == "draft":
+        rows = [r for r in rows if r["status_code"] == "draft"]
+    elif status == "ready":
+        rows = [r for r in rows if r["status_code"] == "ready"]
+    elif status == "not_full":
         rows = [r for r in rows if not r["is_full"]]
 
     paginator = Paginator(rows, _safe_int(request.GET.get("ps") or 25, default=25))
@@ -6941,12 +8149,15 @@ def readonly_assignments_view(request: HttpRequest) -> HttpResponse:
         qs = qs.filter(Q(is_active=False) | Q(school__is_active=False))
 
     if q:
-        qs = qs.filter(
-            Q(supervisor__full_name__icontains=q)
-            | Q(supervisor__national_id__icontains=q)
-            | Q(school__name__icontains=q)
-            | Q(school__stat_code__icontains=q)
-        )
+        # بوابة الاطلاع: لا نعرض السجل المدني، لكن نسمح بالبحث الداخلي عند إدخال رقم كامل من 10 خانات.
+        if q.isdigit() and len(q) == 10:
+            qs = qs.filter(supervisor__national_id=q)
+        else:
+            qs = qs.filter(
+                Q(supervisor__full_name__icontains=q)
+                | Q(school__name__icontains=q)
+                | Q(school__stat_code__icontains=q)
+            )
 
     if sector_id:
         if not scope.all_scope and sector_id not in scope.sector_ids:
@@ -7535,22 +8746,56 @@ def _ro_week_choices():
     return out
 
 
-def _ro_plan_status_label(plan) -> str:
+def _ro_plan_started(plan, filled: int | None = None) -> bool:
+    if filled is None:
+        filled = _ro_plan_filled_count(plan)
+
+    if getattr(plan, "saved_at", None):
+        return True
+
+    # لا نعتمد على visit_type وحده؛ لأنه قد يكون قيمة افتراضية "حضوري"
+    # حتى لو لم يختر المشرف مدرسة ولم يحفظ خطة فعلية.
+    try:
+        days = list(getattr(plan, "days").all())
+    except Exception:
+        days = []
+
+    for day in days:
+        if _ro_day_is_filled(day):
+            return True
+        if getattr(day, "note", None):
+            return True
+        if getattr(day, "no_visit_reason", None):
+            return True
+
+    return bool(filled)
+
+
+def _ro_plan_display_status(plan, filled: int | None = None) -> tuple[str, str]:
+    if filled is None:
+        filled = _ro_plan_filled_count(plan)
+
     status = getattr(plan, "status", "") or ""
     if status == getattr(_RoPlan, "STATUS_APPROVED", "approved"):
-        return "معتمدة"
+        return "approved", "معتمدة"
     if status == getattr(_RoPlan, "STATUS_UNLOCK_REQUESTED", "unlock_requested"):
-        return "طلب فك اعتماد بانتظار الإدارة"
-    return "مسودة"
+        return "unlock", "طلب فك اعتماد بانتظار الإدارة"
+
+    if filled >= 5:
+        return "ready", "جاهزة للاعتماد"
+
+    if filled <= 0 and not _ro_plan_started(plan, filled):
+        return "not-started", "لم يبدأ"
+
+    return "draft", "مسودة"
+
+
+def _ro_plan_status_label(plan) -> str:
+    return _ro_plan_display_status(plan)[1]
 
 
 def _ro_plan_status_code(plan) -> str:
-    status = getattr(plan, "status", "") or ""
-    if status == getattr(_RoPlan, "STATUS_APPROVED", "approved"):
-        return "approved"
-    if status == getattr(_RoPlan, "STATUS_UNLOCK_REQUESTED", "unlock_requested"):
-        return "unlock"
-    return "draft"
+    return _ro_plan_display_status(plan)[0]
 
 
 def _ro_day_is_filled(day) -> bool:
@@ -7722,12 +8967,13 @@ def _ro_plan_rows(plans, profile: dict) -> list[dict]:
     rows = []
     for plan in plans:
         filled = _ro_plan_filled_count(plan)
+        status_code, status_label = _ro_plan_display_status(plan, filled)
         rows.append({
             "plan": plan,
             "supervisor": plan.supervisor,
             "sector_names": sector_map.get(plan.supervisor_id, "—"),
-            "status_label": _ro_plan_status_label(plan),
-            "status_code": _ro_plan_status_code(plan),
+            "status_label": status_label,
+            "status_code": status_code,
             "filled": filled,
             "filled_label": f"{filled}/5",
             "is_full": filled == 5,
@@ -8056,10 +9302,11 @@ def readonly_plans_view(request):
     )
 
     if q:
-        plans_qs = plans_qs.filter(
-            _RoQ(supervisor__full_name__icontains=q)
-            | _RoQ(supervisor__national_id__icontains=q)
-        )
+        # بوابة الاطلاع: لا نعرض السجل المدني، لكن نسمح بالبحث الداخلي عند إدخال رقم كامل من 10 خانات.
+        if q.isdigit() and len(q) == 10:
+            plans_qs = plans_qs.filter(supervisor__national_id=q)
+        else:
+            plans_qs = plans_qs.filter(_RoQ(supervisor__full_name__icontains=q))
 
     approved_status = getattr(_RoPlan, "STATUS_APPROVED", "approved")
     draft_status = getattr(_RoPlan, "STATUS_DRAFT", "draft")
@@ -8154,8 +9401,8 @@ def readonly_plan_detail_view(request, plan_id: int):
     context.update({
         "plan": plan,
         "sector_names": sector_map.get(plan.supervisor_id, "—"),
-        "status_label": _ro_plan_status_label(plan),
-        "status_code": _ro_plan_status_code(plan),
+        "status_label": _ro_plan_display_status(plan, filled)[1],
+        "status_code": _ro_plan_display_status(plan, filled)[0],
         "filled": filled,
         "filled_label": f"{filled}/5",
         "is_full": filled == 5,
@@ -8181,12 +9428,15 @@ def readonly_assignments_view(request):
 
     assignments = _ro_scoped_assignments_qs(scoped_profile)
     if q:
-        assignments = assignments.filter(
-            _RoQ(supervisor__full_name__icontains=q)
-            | _RoQ(supervisor__national_id__icontains=q)
-            | _RoQ(school__name__icontains=q)
-            | _RoQ(school__stat_code__icontains=q)
-        )
+        # بوابة الاطلاع: لا نعرض السجل المدني، لكن نسمح بالبحث الداخلي عند إدخال رقم كامل من 10 خانات.
+        if q.isdigit() and len(q) == 10:
+            assignments = assignments.filter(supervisor__national_id=q)
+        else:
+            assignments = assignments.filter(
+                _RoQ(supervisor__full_name__icontains=q)
+                | _RoQ(school__name__icontains=q)
+                | _RoQ(school__stat_code__icontains=q)
+            )
 
     paginator = _RoPaginator(assignments, 25)
     page_obj = paginator.get_page(request.GET.get("page") or 1)
@@ -8441,10 +9691,11 @@ def _ro_scoped_plans_for_export(request, profile: dict):
     )
 
     if q:
-        plans_qs = plans_qs.filter(
-            _RoQ(supervisor__full_name__icontains=q)
-            | _RoQ(supervisor__national_id__icontains=q)
-        )
+        # التصدير يتبع الفلتر نفسه دون إظهار السجل المدني داخل الملف.
+        if q.isdigit() and len(q) == 10:
+            plans_qs = plans_qs.filter(supervisor__national_id=q)
+        else:
+            plans_qs = plans_qs.filter(_RoQ(supervisor__full_name__icontains=q))
 
     plans_list = list(plans_qs)
     approved_status = getattr(_RoPlan, "STATUS_APPROVED", "approved")
@@ -8499,12 +9750,15 @@ def readonly_export_assignments_view(request):
 
     assignments = _ro_scoped_assignments_qs(scoped_profile)
     if q:
-        assignments = assignments.filter(
-            _RoQ(supervisor__full_name__icontains=q)
-            | _RoQ(supervisor__national_id__icontains=q)
-            | _RoQ(school__name__icontains=q)
-            | _RoQ(school__stat_code__icontains=q)
-        )
+        # التصدير يتبع الفلتر نفسه دون إظهار السجل المدني داخل الملف.
+        if q.isdigit() and len(q) == 10:
+            assignments = assignments.filter(supervisor__national_id=q)
+        else:
+            assignments = assignments.filter(
+                _RoQ(supervisor__full_name__icontains=q)
+                | _RoQ(school__name__icontains=q)
+                | _RoQ(school__stat_code__icontains=q)
+            )
 
     wb = _ro_build_assignments_export_workbook(assignments=list(assignments), profile=scoped_profile)
     return _excel_response(wb, "readonly-assignments.xlsx")
@@ -8679,3 +9933,545 @@ def _ro_supervisor_sector_map(supervisor_ids: list[int], profile: dict) -> dict[
         for sid, names in result.items()
     }
 
+
+# =========================================================
+# الإدارة - استيراد بيانات قادة المدارس
+# مدمج داخل views.py حتى لا يحتاج ملف views_principals.py مستقل
+# =========================================================
+
+from dataclasses import dataclass
+from io import BytesIO
+from typing import Any
+
+from django.apps import apps
+from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
+from django.db import IntegrityError, transaction
+from django.db.models import Q
+from django.http import HttpRequest, HttpResponse
+from django.shortcuts import redirect, render
+from django.utils import timezone
+
+from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.utils import get_column_letter
+
+
+EXPECTED_HEADERS = {
+    "sector": "القطاع التعليمي",
+    "gender": "الجنس",
+    "stage": "المرحلة",
+    "faris_status": "حالة فارس",
+    "school_name": "اسم المدرسة",
+    "stat_code": "الرقم الوزاري",
+    "full_name": "الاسم الرباعي",
+    "national_id": "السجل المدني",
+    "specialization": "التخصص",
+    "qualification": "المؤهل",
+    "rank": "الرتبة",
+    "current_work": "العمل الحالي",
+}
+
+
+@dataclass
+class PrincipalImportIssue:
+    row_no: int
+    stat_code: str
+    school_name: str
+    principal_name: str
+    issue_type: str
+    message: str
+
+
+@dataclass
+class PrincipalImportStats:
+    total_rows: int = 0
+    imported: int = 0
+    created: int = 0
+    updated: int = 0
+    dry_matched: int = 0
+    skipped: int = 0
+    unmatched: int = 0
+    duplicates: int = 0
+    conflicts: int = 0
+    invalid: int = 0
+    sectors_would_update: int = 0
+    sectors_updated: int = 0
+
+
+def _model(name: str):
+    return apps.get_model("visits", name)
+
+
+def _cell_str(value: Any) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value)).strip()
+    return str(value).strip()
+
+
+def _digits(value: Any) -> str:
+    return "".join(ch for ch in _cell_str(value) if ch.isdigit())
+
+
+def _normalize_header(value: Any) -> str:
+    return _cell_str(value).replace("\u00a0", " ").strip()
+
+
+def _gender_code(value: str) -> str:
+    v = _cell_str(value)
+    if "بنات" in v:
+        return "girls"
+    if "بنين" in v:
+        return "boys"
+    return ""
+
+
+def _gender_label(value: str) -> str:
+    if value == "boys":
+        return "بنين"
+    if value == "girls":
+        return "بنات"
+    return "—"
+
+
+def _model_field_names(model) -> set[str]:
+    return {f.name for f in model._meta.get_fields() if hasattr(f, "attname")}
+
+
+def _set_if_field(data: dict[str, Any], model, field: str, value: Any) -> None:
+    if field in _model_field_names(model):
+        data[field] = value
+
+
+def _sector_name_clean(name: str) -> str:
+    name = _cell_str(name)
+    # مثال: أبها (عسير) -> أبها
+    if "(" in name:
+        name = name.split("(", 1)[0].strip()
+    return name
+
+
+def _find_sector(sector_name: str):
+    Sector = _model("Sector")
+    raw = _cell_str(sector_name)
+    clean = _sector_name_clean(raw)
+    if not raw and not clean:
+        return None
+
+    sector = Sector.objects.filter(name__iexact=raw).first()
+    if sector:
+        return sector
+    if clean:
+        sector = Sector.objects.filter(name__iexact=clean).first()
+        if sector:
+            return sector
+        return Sector.objects.filter(name__icontains=clean).first()
+    return None
+
+
+def _get_or_create_sector_from_principal_file(sector_name: str, *, commit: bool):
+    """يعيد القطاع من ملف قادة المدارس، وينشئه عند التنفيذ الفعلي إذا لم يكن موجودًا."""
+    Sector = _model("Sector")
+    raw = _cell_str(sector_name)
+    clean = _sector_name_clean(raw)
+    target_name = clean or raw
+
+    if not target_name:
+        return None, False
+
+    sector = _find_sector(raw)
+    if sector:
+        return sector, False
+
+    if not commit:
+        return None, True
+
+    create_data: dict[str, Any] = {"name": target_name}
+    if "is_active" in _model_field_names(Sector):
+        create_data["is_active"] = True
+
+    try:
+        return Sector.objects.create(**create_data), True
+    except IntegrityError:
+        return _find_sector(target_name), False
+
+
+def _maybe_update_school_empty_sector_from_principal_row(*, school, row: dict[str, str], commit: bool) -> str:
+    """يحدث قطاع المدرسة من ملف قادة المدارس فقط إذا كان قطاع المدرسة فارغًا."""
+    School = _model("School")
+
+    if not school or "sector" not in _model_field_names(School):
+        return "ignored"
+
+    if getattr(school, "sector_id", None):
+        return "kept"
+
+    sector_name = row.get("sector", "")
+    if not _cell_str(sector_name):
+        return "missing_sector_name"
+
+    sector, _created = _get_or_create_sector_from_principal_file(sector_name, commit=commit)
+
+    if not commit:
+        return "would_update"
+
+    if sector:
+        school.sector = sector
+        school.save(update_fields=["sector"])
+        return "updated"
+
+    return "missing_sector"
+
+
+def _find_school(stat_code: str, gender: str):
+    School = _model("School")
+    qs = School.objects.filter(stat_code=stat_code)
+    total = qs.count()
+    if total == 0:
+        return None, "missing"
+    if total == 1:
+        return qs.first(), "ok"
+
+    if gender:
+        gender_qs = qs.filter(gender=gender)
+        if gender_qs.count() == 1:
+            return gender_qs.first(), "ok"
+
+    return None, "multiple"
+
+
+def _create_missing_school(row: dict[str, str], sector, commit: bool):
+    School = _model("School")
+    gender = _gender_code(row.get("gender", ""))
+    create_data: dict[str, Any] = {
+        "name": row["school_name"],
+        "stat_code": row["stat_code"],
+    }
+
+    school_fields = _model_field_names(School)
+    if "gender" in school_fields and gender:
+        create_data["gender"] = gender
+    if "stage" in school_fields:
+        create_data["stage"] = row.get("stage", "")
+    if "is_active" in school_fields:
+        create_data["is_active"] = True
+    if sector and "sector" in school_fields:
+        create_data["sector"] = sector
+
+    if not commit:
+        return None
+    return School.objects.create(**create_data)
+
+
+def _principal_defaults(row: dict[str, str], school, source_filename: str) -> dict[str, Any]:
+    Principal = _model("Principal")
+    defaults: dict[str, Any] = {}
+
+    faris_status = row.get("faris_status", "")
+    gender = _gender_code(row.get("gender", ""))
+
+    _set_if_field(defaults, Principal, "full_name", row.get("full_name", ""))
+    _set_if_field(defaults, Principal, "national_id", row.get("national_id", ""))
+    _set_if_field(defaults, Principal, "gender", gender)
+    _set_if_field(defaults, Principal, "stage", row.get("stage", ""))
+    _set_if_field(defaults, Principal, "faris_status", faris_status)
+    _set_if_field(defaults, Principal, "specialization", row.get("specialization", ""))
+    _set_if_field(defaults, Principal, "qualification", row.get("qualification", ""))
+    _set_if_field(defaults, Principal, "rank", row.get("rank", ""))
+    _set_if_field(defaults, Principal, "current_work", row.get("current_work", ""))
+    _set_if_field(defaults, Principal, "school_name_in_file", row.get("school_name", ""))
+    _set_if_field(defaults, Principal, "sector_name_in_file", row.get("sector", ""))
+    _set_if_field(defaults, Principal, "source_filename", source_filename)
+    _set_if_field(defaults, Principal, "imported_at", timezone.now())
+    _set_if_field(defaults, Principal, "last_imported_at", timezone.now())
+    _set_if_field(defaults, Principal, "is_active", faris_status == "على رأس العمل")
+
+    return defaults
+
+
+def _read_principal_file(uploaded_file) -> tuple[list[dict[str, str]], list[str]]:
+    wb = load_workbook(uploaded_file, data_only=True, read_only=True)
+    ws = wb.active
+
+    header_values = [_normalize_header(c.value) for c in ws[1]]
+    header_index = {name: idx for idx, name in enumerate(header_values)}
+
+    missing_headers = [label for label in EXPECTED_HEADERS.values() if label not in header_index]
+    if missing_headers:
+        return [], missing_headers
+
+    rows: list[dict[str, str]] = []
+    for row_no, row_values in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+        record = {key: _cell_str(row_values[header_index[label]]) for key, label in EXPECTED_HEADERS.items()}
+        record["row_no"] = row_no
+        record["stat_code"] = _digits(record["stat_code"])
+        record["national_id"] = _digits(record["national_id"])
+        rows.append(record)
+    return rows, []
+
+
+def _import_principals_from_rows(
+    *,
+    rows: list[dict[str, str]],
+    source_filename: str,
+    create_missing_schools: bool,
+    update_empty_school_sector: bool,
+    dry_run: bool,
+) -> tuple[PrincipalImportStats, list[PrincipalImportIssue]]:
+    Principal = _model("Principal")
+    stats = PrincipalImportStats(total_rows=len(rows))
+    issues: list[PrincipalImportIssue] = []
+    seen_codes: set[str] = set()
+    commit = not dry_run
+
+    for row in rows:
+        row_no = int(row.get("row_no") or 0)
+        stat_code = row.get("stat_code", "")
+        school_name = row.get("school_name", "")
+        principal_name = row.get("full_name", "")
+        gender = _gender_code(row.get("gender", ""))
+
+        if not stat_code or not school_name or not principal_name:
+            stats.invalid += 1
+            issues.append(PrincipalImportIssue(row_no, stat_code, school_name, principal_name, "invalid", "بيانات أساسية ناقصة: الرقم الوزاري أو اسم المدرسة أو اسم المدير/ة."))
+            continue
+
+        if stat_code in seen_codes:
+            stats.duplicates += 1
+            issues.append(PrincipalImportIssue(row_no, stat_code, school_name, principal_name, "duplicate", "تكرار الرقم الوزاري داخل الملف؛ تم تجاهل هذا السطر للمراجعة."))
+            continue
+        seen_codes.add(stat_code)
+
+        school, status = _find_school(stat_code, gender)
+        if status == "multiple":
+            stats.conflicts += 1
+            issues.append(PrincipalImportIssue(row_no, stat_code, school_name, principal_name, "multiple_schools", "يوجد أكثر من مدرسة بنفس الرقم الوزاري داخل النظام، وتحتاج مراجعة."))
+            continue
+
+        if school is None:
+            if create_missing_schools:
+                sector, _sector_created = _get_or_create_sector_from_principal_file(row.get("sector", ""), commit=commit)
+                try:
+                    school = _create_missing_school(row, sector, commit=commit)
+                except Exception as exc:
+                    stats.unmatched += 1
+                    issues.append(PrincipalImportIssue(row_no, stat_code, school_name, principal_name, "create_school_failed", f"تعذر إنشاء المدرسة غير الموجودة: {exc}"))
+                    continue
+                if dry_run:
+                    stats.unmatched += 1
+                    issues.append(PrincipalImportIssue(row_no, stat_code, school_name, principal_name, "would_create_school", "المدرسة غير موجودة، وسيتم إنشاؤها عند تعطيل وضع المعاينة."))
+                    continue
+            else:
+                stats.unmatched += 1
+                issues.append(PrincipalImportIssue(row_no, stat_code, school_name, principal_name, "unmatched", "لم يتم العثور على مدرسة مطابقة بالرقم الوزاري."))
+                continue
+
+        if update_empty_school_sector:
+            sector_update_state = _maybe_update_school_empty_sector_from_principal_row(
+                school=school,
+                row=row,
+                commit=commit,
+            )
+            if sector_update_state == "would_update":
+                stats.sectors_would_update += 1
+            elif sector_update_state == "updated":
+                stats.sectors_updated += 1
+
+        defaults = _principal_defaults(row, school, source_filename)
+
+        if dry_run:
+            stats.dry_matched += 1
+            continue
+
+        try:
+            with transaction.atomic():
+                obj, created = Principal.objects.update_or_create(
+                    school=school,
+                    defaults=defaults,
+                )
+        except IntegrityError as exc:
+            stats.conflicts += 1
+            issues.append(PrincipalImportIssue(row_no, stat_code, school_name, principal_name, "integrity_error", f"تعارض في الحفظ: {exc}"))
+            continue
+        except Exception as exc:
+            stats.conflicts += 1
+            issues.append(PrincipalImportIssue(row_no, stat_code, school_name, principal_name, "save_error", f"تعذر حفظ بيانات المدير/ة: {exc}"))
+            continue
+
+        stats.imported += 1
+        if created:
+            stats.created += 1
+        else:
+            stats.updated += 1
+
+    stats.skipped = stats.invalid + stats.unmatched + stats.duplicates + stats.conflicts
+    return stats, issues
+
+
+@staff_member_required(login_url="visits:admin_login")
+def admin_principals_import_view(request: HttpRequest) -> HttpResponse:
+    context: dict[str, Any] = {
+        "result": None,
+        "issues": [],
+        "missing_headers": [],
+        "dry_run": True,
+        "create_missing_schools": False,
+        "update_empty_school_sector": True,
+    }
+
+    if request.method == "POST":
+        uploaded_file = request.FILES.get("file")
+        dry_run = request.POST.get("dry_run") == "1"
+        create_missing_schools = request.POST.get("create_missing_schools") == "1"
+        update_empty_school_sector = request.POST.get("update_empty_school_sector") == "1"
+        context["dry_run"] = dry_run
+        context["create_missing_schools"] = create_missing_schools
+        context["update_empty_school_sector"] = update_empty_school_sector
+
+        if not uploaded_file:
+            messages.error(request, "يرجى اختيار ملف Excel.")
+            return render(request, "visits/admin_principals_import.html", context)
+
+        try:
+            rows, missing_headers = _read_principal_file(uploaded_file)
+        except Exception as exc:
+            messages.error(request, f"تعذر قراءة الملف: {exc}")
+            return render(request, "visits/admin_principals_import.html", context)
+
+        if missing_headers:
+            context["missing_headers"] = missing_headers
+            messages.error(request, "بنية الملف غير مطابقة؛ توجد أعمدة مفقودة.")
+            return render(request, "visits/admin_principals_import.html", context)
+
+        stats, issues = _import_principals_from_rows(
+            rows=rows,
+            source_filename=getattr(uploaded_file, "name", "principals.xlsx"),
+            create_missing_schools=create_missing_schools,
+            update_empty_school_sector=update_empty_school_sector,
+            dry_run=dry_run,
+        )
+        context["result"] = stats
+        context["issues"] = issues[:300]
+        context["issues_count"] = len(issues)
+
+        if dry_run:
+            messages.info(request, "تمت المعاينة دون حفظ البيانات. أزل خيار المعاينة لتنفيذ الاستيراد.")
+        else:
+            messages.success(request, f"تم حفظ بيانات قادة المدارس: جديد {stats.created}، تحديث {stats.updated}، تحديث قطاعات {stats.sectors_updated}.")
+
+    return render(request, "visits/admin_principals_import.html", context)
+
+
+@staff_member_required(login_url="visits:admin_login")
+def admin_principals_template_view(request: HttpRequest) -> HttpResponse:
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "قادة المدارس"
+    ws.sheet_view.rightToLeft = True
+
+    headers = list(EXPECTED_HEADERS.values())
+    header_fill = PatternFill("solid", fgColor="E8F5E9")
+    bold_font = Font(name="Cairo", bold=True)
+    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    thin = Side(style="thin", color="CBD5E1")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=1, column=col, value=header)
+        cell.fill = header_fill
+        cell.font = bold_font
+        cell.alignment = center
+        cell.border = border
+        ws.column_dimensions[get_column_letter(col)].width = max(16, len(header) + 6)
+
+    sample = [
+        "أبها (عسير)", "بنين", "ابتدائي", "على رأس العمل", "ابتدائية مثال", "12345",
+        "اسم المدير الرباعي", "1012345678", "تخصص", "بكالوريوس جامعي", "ممارس", "مدير المدرسة",
+    ]
+    for col, value in enumerate(sample, start=1):
+        ws.cell(row=2, column=col, value=value).alignment = center
+
+    stream = BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    response = HttpResponse(stream.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = 'attachment; filename="principals_import_template.xlsx"'
+    return response
+
+
+@staff_member_required(login_url="visits:admin_login")
+def admin_principals_export_view(request: HttpRequest) -> HttpResponse:
+    Principal = _model("Principal")
+    principals = Principal.objects.select_related("school", "school__sector").order_by("school__name")
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "قادة المدارس"
+    ws.sheet_view.rightToLeft = True
+
+    headers = [
+        "م", "الرقم الوزاري", "اسم المدرسة", "الجنس", "القطاع", "اسم المدير/ة", "السجل المدني",
+        "المرحلة", "حالة فارس", "التخصص", "المؤهل", "الرتبة", "العمل الحالي",
+    ]
+    header_fill = PatternFill("solid", fgColor="F1F5F9")
+    title_fill = PatternFill("solid", fgColor="E8F5E9")
+    title_font = Font(name="Cairo", bold=True, size=14)
+    bold_font = Font(name="Cairo", bold=True, size=12)
+    normal_font = Font(name="Cairo", size=11)
+    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    right = Alignment(horizontal="right", vertical="center", wrap_text=True)
+    thin = Side(style="thin", color="CBD5E1")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(headers))
+    ws.cell(row=1, column=1, value="بيانات قادة المدارس").fill = title_fill
+    ws.cell(row=1, column=1).font = title_font
+    ws.cell(row=1, column=1).alignment = center
+
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=3, column=col, value=header)
+        cell.fill = header_fill
+        cell.font = bold_font
+        cell.alignment = center
+        cell.border = border
+
+    def val(obj, field: str) -> str:
+        return getattr(obj, field, "") or "—"
+
+    for row_idx, principal in enumerate(principals, start=4):
+        school = getattr(principal, "school", None)
+        sector = getattr(school, "sector", None) if school else None
+        gender = getattr(principal, "gender", "") or getattr(school, "gender", "") if school else getattr(principal, "gender", "")
+        values = [
+            row_idx - 3,
+            getattr(school, "stat_code", "") or "—",
+            getattr(school, "name", "") or val(principal, "school_name_in_file"),
+            _gender_label(gender),
+            getattr(sector, "name", "") or val(principal, "sector_name_in_file"),
+            val(principal, "full_name"),
+            val(principal, "national_id"),
+            val(principal, "stage"),
+            val(principal, "faris_status"),
+            val(principal, "specialization"),
+            val(principal, "qualification"),
+            val(principal, "rank"),
+            val(principal, "current_work"),
+        ]
+        for col, value in enumerate(values, start=1):
+            cell = ws.cell(row=row_idx, column=col, value=value)
+            cell.font = normal_font
+            cell.border = border
+            cell.alignment = center if col in (1, 2, 4, 7) else right
+
+    widths = {1: 7, 2: 15, 3: 36, 4: 10, 5: 20, 6: 30, 7: 16, 8: 18, 9: 18, 10: 22, 11: 20, 12: 14, 13: 18}
+    for col, width in widths.items():
+        ws.column_dimensions[get_column_letter(col)].width = width
+
+    stream = BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    response = HttpResponse(stream.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = 'attachment; filename="school_principals.xlsx"'
+    return response

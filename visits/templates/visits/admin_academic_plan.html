@@ -1,0 +1,962 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}إدارة الخطة الدراسية — بوابة الزيارات{% endblock %}
+{% block page_messages %}{% endblock %}
+
+{% block header_title %}إدارة الخطة الدراسية{% endblock %}
+{% block header_subtitle %}تشغيل الأسبوع الحالي وإدارة الفصول والأسابيع والأيام المغلقة{% endblock %}
+
+{% block topbar_actions %}{% endblock %}
+{% block page_actions %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .academic-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+    --card:#fff;
+    --soft:#f7f9f8;
+    --soft2:#fbfcfb;
+    --txt:var(--vp-text,#21362d);
+    --mut:var(--vp-text-soft,#6f7f76);
+    --mut2:var(--vp-text-faint,#8a9690);
+    --line:var(--vp-line,#dfe8e2);
+    --line2:var(--vp-line-2,#edf2ee);
+    --primary:var(--vp-primary,#215b49);
+    --primary-2:var(--vp-primary-2,#174d3d);
+    --primary-soft:var(--vp-primary-soft,#edf5f1);
+    --primary-soft-br:var(--vp-primary-soft-border,#cfe3d8);
+    --ok:var(--vp-ok-text,#166534);
+    --ok-bg:var(--vp-ok-bg,#ecfdf3);
+    --ok-br:var(--vp-ok-border,#bbf7d0);
+    --warn:var(--vp-warn-text,#92400e);
+    --warn-bg:var(--vp-warn-bg,#fff7ed);
+    --warn-br:var(--vp-warn-border,#fed7aa);
+    --danger:var(--vp-danger-text,#991b1b);
+    --danger-bg:var(--vp-danger-bg,#fef2f2);
+    --danger-br:var(--vp-danger-border,#fecaca);
+    --blue:#245fd6;
+    --blue-bg:rgba(37,99,235,.08);
+    --blue-br:rgba(37,99,235,.16);
+    --shadow:var(--vp-shadow,0 10px 30px rgba(15,23,42,.06));
+    --shadow2:var(--vp-shadow-soft,0 7px 18px rgba(15,23,42,.045));
+    direction:rtl;
+    font-family:var(--ff);
+    color:var(--txt);
+    display:grid;
+    gap:10px;
+  }
+
+  .academic-page *{box-sizing:border-box;font-family:var(--ff)!important;}
+
+  .academic-page .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:20px;
+    box-shadow:var(--shadow2);
+    overflow:hidden;
+  }
+
+  .academic-page .head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+    padding:12px 14px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#fcfdfc,#f8fbf9);
+  }
+
+  .academic-page .head.tight{padding:10px 12px;}
+  .academic-page .card-pad{padding:13px 14px;}
+  .academic-page .title{margin:0;font-size:13px;font-weight:700;color:var(--txt);line-height:1.7;}
+  .academic-page .sub{color:var(--mut);font-size:11px;line-height:1.8;margin-top:2px;}
+  .academic-page .micro{color:var(--mut2);font-size:10.2px;line-height:1.65;font-weight:500;}
+
+  .academic-page .actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;}
+  .academic-page .btn{
+    min-height:32px;
+    padding:0 12px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--txt);
+    font-size:10.8px;
+    font-weight:700;
+    text-decoration:none;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    transition:.14s ease;
+    white-space:nowrap;
+  }
+  .academic-page .btn:hover{transform:translateY(-1px);background:#fcfdfc;text-decoration:none;}
+  .academic-page .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;}
+  .academic-page .btn.primary:hover{background:var(--primary-2);border-color:var(--primary-2);}
+  .academic-page .btn.soft{background:var(--primary-soft);border-color:var(--primary-soft-br);color:var(--primary);}
+  .academic-page .btn.warn{background:var(--warn-bg);border-color:var(--warn-br);color:var(--warn);}
+  .academic-page .btn.danger{background:var(--danger-bg);border-color:var(--danger-br);color:var(--danger);}
+  .academic-page .btn.blue{background:var(--blue-bg);border-color:var(--blue-br);color:var(--blue);}
+  .academic-page .btn:disabled{opacity:.55;cursor:not-allowed;transform:none;}
+
+  .academic-page .pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    min-height:25px;
+    padding:3px 9px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--mut);
+    font-size:10.3px;
+    font-weight:700;
+    white-space:nowrap;
+  }
+  .academic-page .pill.ok{background:var(--ok-bg);border-color:var(--ok-br);color:var(--ok);}
+  .academic-page .pill.warn{background:var(--warn-bg);border-color:var(--warn-br);color:var(--warn);}
+  .academic-page .pill.danger{background:var(--danger-bg);border-color:var(--danger-br);color:var(--danger);}
+  .academic-page .pill.primary{background:var(--primary-soft);border-color:var(--primary-soft-br);color:var(--primary);}
+  .academic-page .pill.blue{background:var(--blue-bg);border-color:var(--blue-br);color:var(--blue);}
+
+  .academic-page .summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;}
+  .academic-page .metric{
+    min-height:70px;
+    border:1px solid var(--line);
+    border-radius:17px;
+    background:linear-gradient(180deg,#fff,#fbfcfb);
+    padding:10px 12px;
+    display:grid;
+    gap:3px;
+  }
+  .academic-page .metric .label{font-size:10.6px;color:var(--mut);font-weight:600;line-height:1.6;}
+  .academic-page .metric .value{font-size:14px;color:var(--txt);font-weight:800;line-height:1.6;}
+  .academic-page .metric .note{font-size:10.3px;color:var(--mut2);line-height:1.6;}
+
+  .academic-page .notice{
+    border:1px solid var(--warn-br);
+    background:var(--warn-bg);
+    color:var(--warn);
+    border-radius:16px;
+    padding:10px 12px;
+    font-size:11.2px;
+    line-height:1.9;
+    font-weight:700;
+  }
+  .academic-page .notice.ok{background:var(--ok-bg);border-color:var(--ok-br);color:var(--ok);}
+
+  .academic-page .operation-grid{display:grid;grid-template-columns:.95fr 1.05fr;gap:10px;align-items:stretch;}
+  .academic-page .operation-box{
+    border:1px solid var(--line);
+    border-radius:18px;
+    background:linear-gradient(180deg,#fff,#fbfcfb);
+    padding:12px;
+    display:grid;
+    gap:10px;
+  }
+
+  .academic-page .form-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;align-items:end;}
+  .academic-page .form-grid.three{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .academic-page .form-grid.two{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .academic-page .form-grid.one{grid-template-columns:1fr;}
+  .academic-page .field label{display:block;color:var(--mut);font-size:10px;font-weight:600;margin-bottom:4px;}
+  .academic-page .input,.academic-page .select{
+    width:100%;
+    height:34px;
+    border:1px solid var(--line);
+    border-radius:13px;
+    background:#f9fbfa;
+    padding:0 11px;
+    color:var(--txt);
+    font-size:11px;
+    font-weight:700;
+    outline:none;
+  }
+  .academic-page .input:focus,.academic-page .select:focus{border-color:#c7d6ce;background:#fff;box-shadow:0 0 0 4px rgba(47,98,80,.06);}
+  .academic-page .check{display:flex;align-items:center;gap:7px;min-height:34px;color:var(--mut);font-size:10.8px;font-weight:700;}
+  .academic-page .check input{accent-color:var(--primary);}
+
+  .academic-page .current-week-card{
+    border:1px solid var(--primary-soft-br);
+    background:var(--primary-soft);
+    border-radius:18px;
+    padding:12px;
+    display:grid;
+    gap:8px;
+  }
+  .academic-page .week-title{font-size:15px;font-weight:800;color:var(--txt);line-height:1.7;}
+  .academic-page .week-sub{font-size:11px;color:var(--mut);line-height:1.8;font-weight:600;}
+
+  .academic-page .day-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;}
+  .academic-page .day-card{
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:10px;
+    background:linear-gradient(180deg,#fff,#fbfcfb);
+    display:grid;
+    gap:7px;
+    min-height:126px;
+  }
+  .academic-page .day-card.closed{background:var(--warn-bg);border-color:var(--warn-br);}
+  .academic-page .day-name{font-size:12px;font-weight:800;color:var(--txt);line-height:1.55;}
+  .academic-page .day-date{font-size:10.4px;font-weight:600;color:var(--mut);line-height:1.55;}
+  .academic-page .day-note{font-size:10.4px;color:var(--mut);line-height:1.75;}
+
+  .academic-page .table-wrap{overflow:auto;}
+  .academic-page table{width:100%;border-collapse:separate;border-spacing:0;}
+  .academic-page th{background:#f7faf8;color:#65776e;font-size:10.8px;font-weight:800;border-bottom:1px solid var(--line);padding:8px;text-align:right;white-space:nowrap;}
+  .academic-page td{border-bottom:1px solid var(--line2);padding:8px;font-size:11.2px;color:var(--txt);vertical-align:middle;background:#fff;}
+  .academic-page tr:nth-child(even) td{background:#fcfdfc;}
+  .academic-page .mini-form{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap;margin:2px 0;}
+  .academic-page .empty{padding:16px;color:var(--mut);font-size:11.2px;line-height:1.8;text-align:center;}
+
+  .academic-page .messages{display:grid;gap:7px;}
+  .academic-page .msg{border-radius:14px;padding:9px 11px;border:1px solid var(--line);background:#fff;font-size:11px;font-weight:700;color:var(--txt);}
+  .academic-page .msg.success{background:var(--ok-bg);border-color:var(--ok-br);color:var(--ok);}
+  .academic-page .msg.error{background:var(--danger-bg);border-color:var(--danger-br);color:var(--danger);}
+  .academic-page .msg.warning{background:var(--warn-bg);border-color:var(--warn-br);color:var(--warn);}
+
+  .academic-page details.advanced{border:1px solid var(--line);border-radius:20px;background:#fff;box-shadow:var(--shadow2);overflow:hidden;}
+  .academic-page details.advanced summary{list-style:none;cursor:pointer;}
+  .academic-page details.advanced summary::-webkit-details-marker{display:none;}
+  .academic-page .advanced-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:12px 14px;background:linear-gradient(180deg,#fcfdfc,#f8fbf9);}
+  .academic-page .advanced-body{padding:12px 14px;display:grid;gap:10px;border-top:1px solid var(--line);}
+  .academic-page .section-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:10px;}
+  .academic-page .sub-card{border:1px solid var(--line);border-radius:18px;background:#fff;overflow:hidden;}
+  .academic-page .sub-card .head{border-radius:0;box-shadow:none;}
+
+
+
+  /* إعداد سريع واضح لإضافة العام والفصل وتوليد الأسابيع */
+  .academic-page .quick-setup-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    align-items:stretch;
+  }
+  .academic-page .setup-card{
+    border:1px solid var(--line);
+    border-radius:18px;
+    background:linear-gradient(180deg,#fff,#fbfcfb);
+    padding:12px;
+    display:grid;
+    gap:10px;
+    min-height:100%;
+  }
+  .academic-page .setup-card.recommended{
+    border-color:var(--primary-soft-br);
+    background:linear-gradient(180deg,#ffffff,var(--primary-soft));
+  }
+  .academic-page .setup-head{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .academic-page .step-tag{
+    width:28px;
+    height:28px;
+    border-radius:11px;
+    display:grid;
+    place-items:center;
+    flex:0 0 auto;
+    border:1px solid var(--primary-soft-br);
+    background:var(--primary-soft);
+    color:var(--primary);
+    font-size:12px;
+    font-weight:900;
+  }
+  .academic-page .setup-title{
+    margin:0;
+    font-size:12.4px;
+    font-weight:800;
+    line-height:1.7;
+    color:var(--txt);
+  }
+  .academic-page .setup-note{
+    margin-top:2px;
+    color:var(--mut);
+    font-size:10.5px;
+    line-height:1.75;
+    font-weight:600;
+  }
+  .academic-page .setup-divider{
+    height:1px;
+    background:var(--line2);
+    margin:2px 0;
+  }
+  .academic-page .jump-actions{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    flex-wrap:wrap;
+    padding-top:8px;
+    border-top:1px solid var(--line2);
+    margin-top:10px;
+  }
+  .academic-page .hint-list{
+    display:grid;
+    gap:5px;
+    color:var(--mut);
+    font-size:10.4px;
+    line-height:1.75;
+    font-weight:600;
+  }
+  .academic-page .hint-list b{color:var(--primary);font-weight:800;}
+
+  @media (max-width:1180px){
+    .academic-page .summary-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+    .academic-page .operation-grid,.academic-page .section-grid,.academic-page .quick-setup-grid{grid-template-columns:1fr;}
+    .academic-page .day-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+  }
+  @media (max-width:760px){
+    .academic-page .summary-grid,.academic-page .form-grid,.academic-page .form-grid.three,.academic-page .form-grid.two{grid-template-columns:1fr;}
+    .academic-page .day-grid{grid-template-columns:1fr;}
+    .academic-page .actions .btn{flex:1 1 auto;}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="academic-page">
+
+  {% if messages %}
+    <div class="messages">
+      {% for message in messages %}
+        <div class="msg {{ message.tags|default:'' }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="head">
+      <div>
+        <h2 class="title">سياق الخطة الحالية</h2>
+        <div class="sub">هذه البطاقة تعرض ما سيظهر للمشرفين: العام الحالي، الفصل الحالي، والأسبوع المفتوح فقط.</div>
+      </div>
+      <div class="actions">
+        <a class="btn primary" href="#advanced-settings">إعداد العام والفصول</a>
+        <a class="btn soft" href="#current-run">تشغيل الأسبوع</a>
+        <a class="btn soft" href="{% url 'visits:admin_dashboard' %}">العودة للوحة الإدارة</a>
+      </div>
+    </div>
+    <div class="card-pad">
+      <div class="summary-grid">
+        <div class="metric">
+          <div class="label">العام الدراسي الحالي</div>
+          <div class="value">{{ current_year.name|default:"غير محدد" }}</div>
+          <div class="note">يُستخدم لتجميع الفصول والأسابيع.</div>
+        </div>
+        <div class="metric">
+          <div class="label">الفصل الحالي</div>
+          <div class="value">{{ current_semester.title|default:"غير محدد" }}</div>
+          <div class="note">لا يظهر للمشرف إلا الفصل الحالي.</div>
+        </div>
+        <div class="metric">
+          <div class="label">الأسبوع الحالي للمشرفين</div>
+          <div class="value">
+            {% if current_week %}
+              الأسبوع {{ current_week.semester_week_no|default:current_week.week_no }}
+            {% else %}
+              غير محدد
+            {% endif %}
+          </div>
+          <div class="note">هو الأسبوع الوحيد المتاح للتشغيل.</div>
+        </div>
+        <div class="metric">
+          <div class="label">حالة الأسبوع</div>
+          <div class="value">
+            {% if current_week and current_week.is_open_for_supervisors %}
+              <span class="pill ok">مفتوح للمشرفين</span>
+            {% elif current_week %}
+              <span class="pill warn">حالي لكنه مغلق</span>
+            {% else %}
+              <span class="pill danger">غير محدد</span>
+            {% endif %}
+          </div>
+          <div class="note">يفضل فتح أسبوع واحد فقط.</div>
+        </div>
+        <div class="metric">
+          <div class="label">الأيام المغلقة</div>
+          <div class="value">
+            {% if current_week %}
+              {{ current_week_closed_count|default:"0" }}
+            {% else %}
+              —
+            {% endif %}
+          </div>
+          <div class="note">عدد الأيام المغلقة في الأسبوع الحالي.</div>
+        </div>
+      </div>
+
+      {% if not current_year or not current_semester or not current_week %}
+        <div class="notice" style="margin-top:10px">
+          لم يتم ضبط الخطة الحالية بالكامل. افتح قسم إعداد العام والفصول أسفل الصفحة لإنشاء العام أو ربط الأسابيع، ثم عيّن الأسبوع الحالي وافتحه للمشرفين.
+        </div>
+      {% else %}
+        <div class="notice ok" style="margin-top:10px">
+          الخطة الحالية مضبوطة. المشرفون لن يظهر لهم إلا الأسبوع الحالي المفتوح، والأيام المغلقة تظهر كمعلومة ولا تتطلب إدخال زيارة.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+
+  
+
+<div class="card" id="current-run">
+    <div class="head">
+      <div>
+        <h2 class="title">تشغيل الأسبوع الحالي</h2>
+        <div class="sub">هذا هو القسم التشغيلي اليومي: اختر الأسبوع، اجعله الحالي، وافتحه أو أغلقه للمشرفين.</div>
+      </div>
+      <div class="actions">
+        {% if selected_week %}
+          <span class="pill primary">المحدد: الأسبوع {{ selected_week.semester_week_no|default:selected_week.week_no }}</span>
+        {% else %}
+          <span class="pill warn">لا يوجد أسبوع محدد</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card-pad operation-grid">
+      <div class="operation-box">
+        <div>
+          <h3 class="title">اختيار النطاق</h3>
+          <div class="sub">اختر العام والفصل والأسبوع ثم اضغط عرض. لا يتم فتح الأسبوع إلا من زر التشغيل.</div>
+        </div>
+
+        <form method="get" class="form-grid one">
+          <div class="field">
+            <label>العام الدراسي</label>
+            <select class="select" name="year" onchange="this.form.submit()">
+              <option value="">اختر العام الدراسي</option>
+              {% for year in years %}
+                <option value="{{ year.id }}" {% if selected_year and selected_year.id == year.id %}selected{% endif %}>{{ year.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="field">
+            <label>الفصل الدراسي</label>
+            <select class="select" name="semester" onchange="this.form.submit()">
+              <option value="">اختر الفصل</option>
+              {% for semester in semesters %}
+                <option value="{{ semester.id }}" {% if selected_semester and selected_semester.id == semester.id %}selected{% endif %}>{{ semester.title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="field">
+            <label>الأسبوع</label>
+            <select class="select" name="week_id">
+              <option value="">اختر الأسبوع</option>
+              {% for row in week_rows %}
+                {% with week=row.week %}
+                  <option value="{{ week.id }}" {% if selected_week and selected_week.id == week.id %}selected{% endif %}>
+                    الأسبوع {{ week.semester_week_no|default:week.week_no }} — {{ week.start_sunday }} إلى {{ week.end_thursday }}
+                  </option>
+                {% endwith %}
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="actions">
+            <button class="btn soft" type="submit">عرض الأسبوع</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="current-week-card">
+        <div>
+          <div class="week-title">
+            {% if selected_week %}
+              {{ selected_week.display_label }}
+            {% else %}
+              لم يتم اختيار أسبوع
+            {% endif %}
+          </div>
+          <div class="week-sub">
+            {% if selected_week %}
+              الفترة: {{ selected_week.start_sunday }} — {{ selected_week.end_thursday }}
+              {% if selected_week.is_break %} — أسبوع إجازة/توقف{% endif %}
+            {% else %}
+              اختر أسبوعًا من القائمة لتشغيله أو إدارته.
+            {% endif %}
+          </div>
+        </div>
+
+        {% if selected_week %}
+          <div class="actions">
+            {% if selected_week.is_current %}
+              <span class="pill ok">الأسبوع الحالي للمشرفين</span>
+            {% else %}
+              <span class="pill">ليس الأسبوع الحالي</span>
+            {% endif %}
+
+            {% if selected_week.is_open_for_supervisors %}
+              <span class="pill ok">مفتوح</span>
+            {% else %}
+              <span class="pill warn">مغلق</span>
+            {% endif %}
+
+            {% if selected_week.is_break %}
+              <span class="pill danger">أسبوع إجازة</span>
+            {% endif %}
+          </div>
+
+          <div class="actions">
+            <form method="post" class="mini-form" data-confirm="سيتم جعل هذا الأسبوع هو الأسبوع الحالي وفتحه للمشرفين، وسيتم إغلاق بقية الأسابيع تلقائيًا. هل تريد المتابعة؟">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="set_current_week">
+              <input type="hidden" name="week_id" value="{{ selected_week.id }}">
+              <input type="hidden" name="open_for_supervisors" value="1">
+              <button class="btn primary" type="submit">جعله الحالي وفتحه</button>
+            </form>
+
+            <form method="post" class="mini-form" data-confirm="سيتم تغيير حالة فتح هذا الأسبوع للمشرفين. عند الفتح سيصبح هو الأسبوع الحالي وتُغلق بقية الأسابيع. هل تريد المتابعة؟">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="toggle_week_open">
+              <input type="hidden" name="week_id" value="{{ selected_week.id }}">
+              {% if selected_week.is_open_for_supervisors %}
+                <button class="btn warn" type="submit">إغلاق الأسبوع</button>
+              {% else %}
+                <button class="btn soft" type="submit">فتح الأسبوع فقط</button>
+              {% endif %}
+            </form>
+
+            <form method="post" class="mini-form" data-confirm="سيتم تغيير حالة الأسبوع كإجازة/توقف. إذا أصبح أسبوع إجازة فسيُغلق عن المشرفين. هل تريد المتابعة؟">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="toggle_week_break">
+              <input type="hidden" name="week_id" value="{{ selected_week.id }}">
+              {% if selected_week.is_break %}
+                <button class="btn soft" type="submit">إلغاء أسبوع الإجازة</button>
+              {% else %}
+                <button class="btn danger" type="submit">جعله أسبوع إجازة</button>
+              {% endif %}
+            </form>
+          </div>
+
+          <div class="micro">
+            عند جعله الحالي وفتحه سيغلق النظام بقية الأسابيع تلقائيًا، حتى لا يظهر للمشرف إلا أسبوع واحد.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  
+
+<div class="card" id="semester-weeks">
+    <div class="head">
+      <div>
+        <h2 class="title">أسابيع الفصل الحالي</h2>
+        <div class="sub">جدول متابعة مختصر. الإجراءات الأساسية موجودة في قسم تشغيل الأسبوع، وهذا الجدول للعرض السريع.</div>
+      </div>
+      <div class="actions">
+        {% if selected_semester %}<span class="pill primary">{{ selected_semester.title }}</span>{% endif %}
+      </div>
+    </div>
+
+    <div class="card-pad">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>الأسبوع</th>
+              <th>الفترة</th>
+              <th>الحالة</th>
+              <th>الأيام المغلقة</th>
+              <th>إجراء مختصر</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in week_rows %}
+              {% with week=row.week %}
+              <tr>
+                <td>
+                  <b>الأسبوع {{ week.semester_week_no|default:week.week_no }}</b><br>
+                  <span class="micro">رقم داخلي: {{ week.week_no }}</span>
+                </td>
+                <td>{{ week.start_sunday }} — {{ week.end_thursday }}</td>
+                <td>
+                  {% if week.is_current %}<span class="pill ok">حالي</span>{% endif %}
+                  {% if week.is_break %}
+                    <span class="pill danger">إجازة</span>
+                  {% elif week.is_open_for_supervisors %}
+                    <span class="pill ok">مفتوح</span>
+                  {% else %}
+                    <span class="pill warn">مغلق</span>
+                  {% endif %}
+                </td>
+                <td>{{ row.active_closed_count }}</td>
+                <td>
+                  <a class="btn" href="?year={{ week.academic_year_id }}&semester={{ week.semester_id }}&week_id={{ week.id }}">عرض</a>
+                  {% if not week.is_current or not week.is_open_for_supervisors %}
+                    <form method="post" class="mini-form">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="set_current_week">
+                      <input type="hidden" name="week_id" value="{{ week.id }}">
+                      <input type="hidden" name="open_for_supervisors" value="1">
+                      <button class="btn soft" type="submit">جعله الحالي وفتحه</button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endwith %}
+            {% empty %}
+              <tr><td colspan="5" class="empty">لا توجد أسابيع لهذا الفصل. افتح الإعدادات المتقدمة لتوليد الأسابيع.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  
+
+<div class="card" id="closed-days">
+    <div class="head">
+      <div>
+        <h2 class="title">الأيام المغلقة داخل الأسبوع</h2>
+        <div class="sub">استخدمها لإغلاق يوم وطني أو يوم تأسيس أو تعليق دراسة داخل أسبوع مفتوح، ويُحسب هذا اليوم مكتملًا للمشرف.</div>
+      </div>
+      <div class="actions">
+        {% if selected_week %}<span class="pill primary">الأسبوع {{ selected_week.semester_week_no|default:selected_week.week_no }}</span>{% endif %}
+      </div>
+    </div>
+
+    <div class="card-pad">
+      {% if selected_week %}
+        <form method="post" class="form-grid" style="margin-bottom:12px" data-confirm="سيتم إغلاق هذا اليوم داخل الأسبوع واحتسابه كمكتمل دون مطالبة المشرف بإدخال زيارة. هل تريد المتابعة؟">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="close_day">
+          <input type="hidden" name="week_id" value="{{ selected_week.id }}">
+
+          <div class="field">
+            <label>اليوم</label>
+            <select class="select" name="weekday">
+              {% for day in day_rows %}
+                <option value="{{ day.weekday }}">{{ day.weekday_name }} — {{ day.date }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="field">
+            <label>نوع الإغلاق</label>
+            <select class="select" name="reason_type">
+              {% for value,label in reason_choices %}
+                <option value="{{ value }}">{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="field">
+            <label>وصف الإغلاق</label>
+            <input class="input" type="text" name="reason_title" placeholder="مثال: يوم التأسيس">
+          </div>
+
+          <div class="field">
+            <label>التاريخ اختياري</label>
+            <input class="input" type="date" name="date">
+          </div>
+
+          <div class="actions">
+            <button class="btn primary" type="submit">إغلاق اليوم</button>
+          </div>
+        </form>
+
+        <div class="day-grid">
+          {% for day in day_rows %}
+            <div class="day-card {% if day.closed_day %}closed{% endif %}">
+              <div>
+                <div class="day-name">{{ day.weekday_name }}</div>
+                <div class="day-date">{{ day.date }}</div>
+              </div>
+
+              {% if day.closed_day %}
+                <span class="pill warn">مغلق</span>
+                <div class="day-note">
+                  {{ day.closed_day.reason_title }}<br>
+                  <span class="micro">يُحسب مكتملًا ولا يتطلب إدخال زيارة.</span>
+                </div>
+                <form method="post" class="mini-form" data-confirm="سيتم فتح هذا اليوم وإلغاء إغلاقه، وسيصبح متاحًا لإدخال زيارة. هل تريد المتابعة؟">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="open_day">
+                  <input type="hidden" name="closed_day_id" value="{{ day.closed_day.id }}">
+                  <button class="btn soft" type="submit">فتح اليوم</button>
+                </form>
+              {% else %}
+                <span class="pill ok">متاح</span>
+                <div class="day-note">يمكن للمشرف إدخال زيارة لهذا اليوم.</div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty">اختر أسبوعًا أولًا لإدارة الأيام المغلقة.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  
+
+<details class="advanced" id="advanced-settings">
+    <summary class="advanced-summary">
+      <div>
+        <h2 class="title">إعداد العام الدراسي والفصول وتوليد الأسابيع</h2>
+        <div class="sub">قسم إعداد متقدم يُستخدم عند بداية العام أو عند إضافة فصل جديد، وليس للتشغيل اليومي.</div>
+      </div>
+      <div class="actions">
+        <span class="pill primary">إعداد متقدم</span>
+        <span class="pill">فتح / إغلاق</span>
+      </div>
+    </summary>
+
+    <div class="advanced-body">
+      <div class="notice">
+        تنبيه تشغيلي: للعام الحالي إذا كانت الأسابيع موجودة مسبقًا فلا تستخدم توليد الأسابيع؛ استخدم بطاقة <b>ربط الأسابيع الحالية بالفصل</b>. أما إنشاء عام كامل وتوليد الأسابيع فيُستخدم غالبًا للعام القادم فقط.
+      </div>
+      <div class="sub-card">
+        <div class="head tight">
+          <div>
+            <h2 class="title">إنشاء خطة عام دراسي جديد</h2>
+            <div class="sub">ينشئ العام والفصلين، مع إمكانية توليد 19 أسبوعًا لكل فصل تلقائيًا.</div>
+          </div>
+        </div>
+        <form class="card-pad" method="post" data-confirm="هذا الإجراء ينشئ/يحدّث عامًا دراسيًا وفصلين وقد يولد أسابيع جديدة. لا تستخدمه للعام الحالي إذا كانت الأسابيع موجودة مسبقًا. هل تريد المتابعة؟">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create_full_year">
+          <div class="form-grid">
+            <div class="field">
+              <label>اسم العام الدراسي</label>
+              <input class="input" type="text" name="year_name" placeholder="مثال: 1448هـ" required>
+            </div>
+            <div class="field">
+              <label>بداية العام</label>
+              <input class="input" type="date" name="year_starts_at">
+            </div>
+            <div class="field">
+              <label>نهاية العام</label>
+              <input class="input" type="date" name="year_ends_at">
+            </div>
+            <div class="field">
+              <label>عدد الأسابيع لكل فصل</label>
+              <input class="input" type="number" name="weeks_count" value="19" min="1" max="25">
+            </div>
+            <div class="field">
+              <label>بداية الفصل الأول</label>
+              <input class="input" type="date" name="semester1_start" required>
+            </div>
+            <div class="field">
+              <label>بداية الفصل الثاني</label>
+              <input class="input" type="date" name="semester2_start" required>
+            </div>
+            <div class="field">
+              <label>أول رقم أسبوع داخلي</label>
+              <input class="input" type="number" name="first_week_no" min="1" placeholder="يترك فارغًا للتلقائي">
+            </div>
+            <div class="field">
+              <label>خيارات</label>
+              <label class="check"><input type="checkbox" name="generate_weeks" value="1" checked> توليد الأسابيع تلقائيًا</label>
+            </div>
+            <div class="field">
+              <label>الحالة</label>
+              <label class="check"><input type="checkbox" name="make_current" value="1"> تعيينه كعام حالي</label>
+            </div>
+            <div class="actions">
+              <button class="btn primary" type="submit">إنشاء العام والفصلين</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="section-grid">
+        <div class="sub-card">
+          <div class="head tight">
+            <div>
+              <h2 class="title">الأعوام الدراسية</h2>
+              <div class="sub">أضف العام أو عيّن العام الحالي الذي ستبنى عليه الفصول.</div>
+            </div>
+          </div>
+          <div class="card-pad">
+            <form method="post" class="form-grid three" style="margin-bottom:10px">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="create_year">
+              <div class="field"><label>اسم العام</label><input class="input" name="name" placeholder="1448هـ" required></div>
+              <div class="field"><label>بداية العام</label><input class="input" type="date" name="starts_at"></div>
+              <div class="field"><label>نهاية العام</label><input class="input" type="date" name="ends_at"></div>
+              <label class="check"><input type="checkbox" name="is_current" value="1"> عام حالي</label>
+              <div class="actions"><button class="btn soft" type="submit">إضافة العام</button></div>
+            </form>
+
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>العام</th><th>الفترة</th><th>الحالة</th><th>إجراء</th></tr></thead>
+                <tbody>
+                  {% for year in years %}
+                    <tr>
+                      <td><b>{{ year.name }}</b></td>
+                      <td>{{ year.starts_at|default:"—" }} — {{ year.ends_at|default:"—" }}</td>
+                      <td>
+                        {% if year.is_current %}<span class="pill ok">حالي</span>{% endif %}
+                        {% if year.is_active %}<span class="pill primary">نشط</span>{% else %}<span class="pill danger">غير نشط</span>{% endif %}
+                      </td>
+                      <td>
+                        <a class="btn" href="?year={{ year.id }}">عرض</a>
+                        {% if not year.is_current %}
+                          <form class="mini-form" method="post" data-confirm="سيتم تعيين هذا العام كعام حالي وإلغاء تعيين باقي الأعوام. هل تريد المتابعة؟">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="set_current_year">
+                            <input type="hidden" name="year_id" value="{{ year.id }}">
+                            <button class="btn soft" type="submit">تعيين كحالي</button>
+                          </form>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="4" class="empty">لم تتم إضافة أعوام دراسية بعد.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="sub-card">
+          <div class="head tight">
+            <div>
+              <h2 class="title">الفصول الدراسية</h2>
+              <div class="sub">الفصل الدراسي الواحد عبارة عن 19 أسبوعًا افتراضيًا.</div>
+            </div>
+          </div>
+          <div class="card-pad">
+            {% if selected_year %}
+              <form method="post" class="form-grid two" style="margin-bottom:10px">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create_semester">
+                <input type="hidden" name="year_id" value="{{ selected_year.id }}">
+                <div class="field">
+                  <label>الفصل</label>
+                  <select class="select" name="number">
+                    {% for value,label in semester_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+                  </select>
+                </div>
+                <div class="field"><label>بداية الفصل</label><input class="input" type="date" name="starts_at" required></div>
+                <div class="field"><label>نهاية الفصل</label><input class="input" type="date" name="ends_at"></div>
+                <div class="field"><label>عدد الأسابيع</label><input class="input" type="number" name="weeks_count" value="19" min="1" max="25"></div>
+                <label class="check"><input type="checkbox" name="is_current" value="1"> فصل حالي</label>
+                <label class="check"><input type="checkbox" name="is_open" value="1"> مفتوح</label>
+                <div class="actions"><button class="btn soft" type="submit">حفظ الفصل</button></div>
+              </form>
+            {% else %}
+              <div class="empty">أضف عامًا دراسيًا أولًا.</div>
+            {% endif %}
+
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>الفصل</th><th>الفترة</th><th>الأسابيع</th><th>الحالة</th><th>إجراء</th></tr></thead>
+                <tbody>
+                  {% for semester in semesters %}
+                    <tr>
+                      <td><b>{{ semester.title }}</b></td>
+                      <td>{{ semester.starts_at }} — {{ semester.ends_at|default:"—" }}</td>
+                      <td>{{ semester.weeks_count }}</td>
+                      <td>
+                        {% if semester.is_current %}<span class="pill ok">حالي</span>{% endif %}
+                        {% if semester.is_open %}<span class="pill primary">مفتوح</span>{% else %}<span class="pill warn">مغلق</span>{% endif %}
+                      </td>
+                      <td>
+                        <a class="btn" href="?year={{ semester.academic_year_id }}&semester={{ semester.id }}">عرض</a>
+                        {% if not semester.is_current %}
+                          <form class="mini-form" method="post" data-confirm="سيتم تعيين هذا الفصل كفصل حالي وإلغاء تعيين باقي الفصول. هل تريد المتابعة؟">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="set_current_semester">
+                            <input type="hidden" name="semester_id" value="{{ semester.id }}">
+                            <button class="btn soft" type="submit">تعيين كحالي</button>
+                          </form>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% empty %}
+                    <tr><td colspan="5" class="empty">لا توجد فصول لهذا العام.</td></tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-card">
+        <div class="head tight">
+          <div>
+            <h2 class="title">توليد أسابيع الفصل</h2>
+            <div class="sub">يتم توليد أسابيع الفصل من تاريخ أول أحد، ثم يمكن اختيار الأسبوع الحالي من القسم العلوي.</div>
+          </div>
+        </div>
+        <div class="card-pad">
+          {% if selected_semester %}
+            <form method="post" class="form-grid" data-confirm="سيتم توليد/تحديث أسابيع هذا الفصل. للعام الحالي ذي الأسابيع الموجودة مسبقًا استخدم ربط الأسابيع الحالية بدل التوليد. هل تريد المتابعة؟">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="generate_semester_weeks">
+              <input type="hidden" name="semester_id" value="{{ selected_semester.id }}">
+              <div class="field"><label>الفصل المحدد</label><input class="input" value="{{ selected_semester }}" readonly></div>
+              <div class="field"><label>تاريخ أول أحد</label><input class="input" type="date" name="start_sunday" value="{{ selected_semester.starts_at|date:'Y-m-d' }}" required></div>
+              <div class="field"><label>عدد الأسابيع</label><input class="input" type="number" name="weeks_count" value="{{ selected_semester.weeks_count }}" min="1" max="25"></div>
+              <div class="field"><label>أول رقم أسبوع داخلي</label><input class="input" type="number" name="first_week_no" min="1" placeholder="تلقائي عند تركه فارغًا"></div>
+              <div class="actions"><button class="btn primary" type="submit">توليد/تحديث أسابيع الفصل</button></div>
+            </form>
+          {% else %}
+            <div class="empty">اختر فصلًا دراسيًا لتوليد الأسابيع.</div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="sub-card">
+        <div class="head tight">
+          <div>
+            <h2 class="title">ربط الأسابيع الحالية بالفصل</h2>
+            <div class="sub">يُستخدم عند وجود أسابيع منشأة مسبقًا، مثل العام الحالي. لا ينشئ أسابيع جديدة ولا يحذف الخطط.</div>
+          </div>
+        </div>
+        <div class="card-pad">
+          {% if selected_semester %}
+            <div class="notice ok" style="margin-bottom:10px">
+              هذا هو الخيار المناسب للعام الحالي: يربط الأسابيع المنشأة مسبقًا بالفصل المحدد دون إنشاء جديد أو حذف أي خطط واعتمادات.
+            </div>
+            <form method="post" class="form-grid" data-confirm="سيتم ربط الأسابيع الموجودة مسبقًا بهذا الفصل دون إنشاء أسابيع جديدة ودون حذف الخطط. تأكد من نطاق البداية والنهاية قبل المتابعة.">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="link_existing_weeks">
+              <input type="hidden" name="semester_id" value="{{ selected_semester.id }}">
+              <div class="field"><label>الفصل المحدد</label><input class="input" value="{{ selected_semester }}" readonly></div>
+              <div class="field"><label>من الأسبوع</label><input class="input" type="number" name="from_week_no" value="{{ min_existing_week_no|default:'1' }}" min="1" max="60" required></div>
+              <div class="field"><label>إلى الأسبوع</label><input class="input" type="number" name="to_week_no" value="{% if max_existing_week_no %}{{ max_existing_week_no }}{% else %}{{ selected_semester.weeks_count|default:'19' }}{% endif %}" min="1" max="60" required></div>
+              <div class="field"><label>أول رقم داخل الفصل</label><input class="input" type="number" name="first_semester_week_no" value="1" min="1" max="25" required></div>
+              <div class="actions"><button class="btn primary" type="submit">ربط الأسابيع الحالية بالفصل</button></div>
+            </form>
+          {% else %}
+            <div class="empty">اختر فصلًا دراسيًا أولًا.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <div class="micro" style="padding:8px 2px;text-align:left">© منصة خطة الزيارات — جميع الحقوق محفوظة</div>
+</section>
+<script>
+  document.addEventListener('submit', function (event) {
+    const form = event.target;
+    if (!form || !form.dataset) return;
+    const message = form.dataset.confirm;
+    if (message && !window.confirm(message)) {
+      event.preventDefault();
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,261 @@
+{% extends "visits/base.html" %}
+{% load static %}
+
+{% block title %}أرشيف خططي السابقة{% endblock %}
+{% block page_messages %}{% endblock %}
+{% block hero %}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .prev-page{
+    --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
+    --card:#fff;
+    --soft:#f7f9f8;
+    --txt:var(--vp-text);
+    --mut:var(--vp-text-soft);
+    --mut2:var(--vp-text-faint);
+    --line:var(--vp-line);
+    --line2:var(--vp-line-2);
+    --ok:var(--vp-ok-text);
+    --ok-bg:var(--vp-ok-bg);
+    --ok-br:var(--vp-ok-border);
+    --warn:var(--vp-warn-text);
+    --warn-bg:var(--vp-warn-bg);
+    --warn-br:var(--vp-warn-border);
+    --primary:var(--vp-primary);
+    --primary-soft:var(--vp-primary-soft);
+    --primary-soft-br:var(--vp-primary-soft-border);
+    font-family:var(--ff);
+    direction:rtl;
+    color:var(--txt);
+  }
+  .prev-page *{box-sizing:border-box;font-family:var(--ff)!important}
+  .prev-page .wrap{max-width:1180px;margin:0 auto;display:grid;gap:12px}
+  .prev-card{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--vp-shadow);overflow:hidden}
+  .prev-head{padding:13px 15px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,#fff,#fbfcfb);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .prev-title{margin:0;font-size:18px;font-weight:600;line-height:1.6;color:var(--txt)}
+  .prev-sub{font-size:11.5px;color:var(--mut);line-height:1.8;margin-top:2px;max-width:820px}
+  .prev-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .btn{min-height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--txt);font-size:11px;font-weight:500;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;white-space:nowrap}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.soft{background:var(--primary-soft);border-color:var(--primary-soft-br);color:var(--primary)}
+  .btn:disabled,.btn.disabled{opacity:.45;pointer-events:none}
+
+  .filter-card{border-bottom:1px solid var(--line);background:#fff}
+  .filter-summary{display:none;padding:10px 13px;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;color:var(--primary);font-size:12px;font-weight:600;list-style:none}
+  .filter-summary::-webkit-details-marker{display:none}
+  .filter-summary .count{color:var(--mut);font-size:10.8px;font-weight:500}
+  .filters{padding:11px 13px;display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;align-items:end;background:#fff}
+  .field label{display:block;font-size:10.5px;color:var(--mut);margin-bottom:5px}
+  .select{width:100%;height:36px;border-radius:12px;border:1px solid var(--line);background:#fff;padding:0 10px;font-size:11px;color:var(--txt);outline:none}
+
+  .results-head{padding:10px 13px;border-bottom:1px solid var(--line);background:#fafcfb;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;color:var(--mut);font-size:11px}
+  .results-title{color:var(--txt);font-size:12px;font-weight:600}
+  .plans-list{padding:10px 12px 12px;display:grid;gap:9px;background:#fff}
+  .plan-item{border:1px solid var(--line);border-radius:17px;background:#fff;box-shadow:0 5px 14px rgba(22,36,29,.026);padding:11px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start}
+  .plan-main{min-width:0;display:grid;gap:5px}
+  .week-title{font-size:13px;font-weight:600;color:var(--txt);line-height:1.7;margin:0}
+  .week-sub{font-size:10.8px;color:var(--mut);line-height:1.8;margin:0}
+  .plan-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:2px}
+  .plan-side{display:grid;gap:7px;justify-items:end;align-content:start;min-width:170px}
+  .pill{min-height:26px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:10.5px;font-weight:500;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;color:var(--txt)}
+  .pill.ok{background:var(--ok-bg);border-color:var(--ok-br);color:var(--ok)}
+  .pill.warn{background:var(--warn-bg);border-color:var(--warn-br);color:var(--warn)}
+  .pill.info{background:var(--primary-soft);border-color:var(--primary-soft-br);color:var(--primary)}
+  .muted{color:var(--mut2)}
+
+  .empty-state{padding:18px 14px;background:#fff}
+  .empty-box{max-width:650px;margin:0 auto;border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,#fff,#fbfcfb);padding:18px 16px;display:grid;gap:8px;text-align:center;box-shadow:0 4px 12px rgba(22,36,29,.025)}
+  .empty-icon{width:40px;height:40px;margin:0 auto 2px;border-radius:15px;display:grid;place-items:center;border:1px solid var(--primary-soft-br);background:var(--primary-soft);color:var(--primary);font-size:18px}
+  .empty-title{color:var(--txt);font-size:13.2px;font-weight:600;line-height:1.8}
+  .empty-text{color:var(--mut);font-size:11.5px;font-weight:400;line-height:1.9}
+  .empty-actions{margin-top:5px;display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap}
+
+  .pager{padding:11px 13px;background:#fafcfb;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;color:var(--mut);font-size:11px}
+
+  @media(max-width:1024px){
+    .prev-page .wrap{max-width:100%}
+    .filters{grid-template-columns:1fr 1fr}
+    .filters .prev-actions{grid-column:1 / -1;justify-content:flex-start}
+    .plan-item{grid-template-columns:1fr}
+    .plan-side{min-width:0;justify-items:start;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;width:100%}
+  }
+
+  @media(max-width:760px){
+    .prev-page .wrap{gap:10px}
+    .prev-card{border-radius:18px}
+    .prev-head{padding:12px;align-items:stretch;gap:9px}
+    .prev-title{font-size:16px}
+    .prev-sub{font-size:11px;line-height:1.75}
+    .prev-actions{width:100%;gap:7px}
+    .prev-actions .btn,.empty-actions .btn{flex:1 1 auto;min-width:0}
+
+    .filter-card{border-bottom:1px solid var(--line)}
+    .filter-summary{display:flex}
+    .filter-card:not([open]) .filters{display:none}
+    .filters{grid-template-columns:1fr;padding:10px 12px 12px;gap:9px}
+    .filters .prev-actions{grid-column:auto;display:grid;grid-template-columns:1fr 1fr;width:100%}
+    .select{height:41px;border-radius:14px;font-size:12px}
+    .field label{font-size:10.8px}
+
+    .results-head{padding:10px 12px}
+    .plans-list{padding:10px;gap:10px}
+    .plan-item{border-radius:17px;padding:11px;gap:10px}
+    .week-title{font-size:12.8px}
+    .week-sub{font-size:10.8px}
+    .plan-meta{gap:5px}
+    .plan-side{display:grid;grid-template-columns:1fr;gap:8px}
+    .plan-side .prev-actions{display:grid;grid-template-columns:1fr 1fr;width:100%}
+    .pill{min-height:27px;font-size:10.6px}
+    .btn{min-height:36px;font-size:10.9px;padding:0 10px}
+
+    .empty-state{padding:12px;background:#fff}
+    .empty-box{max-width:none;padding:16px 13px;border-radius:17px}
+    .empty-actions{display:grid;grid-template-columns:1fr;width:100%}
+
+    .pager{margin-top:0;border-radius:0;padding:10px;display:grid;grid-template-columns:1fr;justify-items:center;text-align:center}
+    .pager .prev-actions{justify-content:center;width:100%;display:grid;grid-template-columns:1fr 1fr}
+  }
+
+  @media(max-width:420px){
+    .prev-head{padding:11px}
+    .prev-title{font-size:15.2px}
+    .btn{min-height:35px;font-size:10.7px}
+    .week-title{font-size:12.4px}
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="prev-page">
+  <div class="wrap">
+    <div class="prev-card">
+      <div class="prev-head">
+        <div>
+          <h1 class="prev-title">أرشيف خططي السابقة</h1>
+          <div class="prev-sub">عرض الخطط السابقة للاطلاع والتصدير فقط، ولا يمكن تعديل أي خطة سابقة إلا بطلب فك اعتماد وموافقة الإدارة.</div>
+        </div>
+        <div class="prev-actions">
+          <a class="btn soft" href="{% url 'visits:supervisor_dashboard' %}">بوابة المشرف</a>
+          <a class="btn primary" href="{% url 'visits:plan' %}">خطة الأسبوع الحالي</a>
+        </div>
+      </div>
+
+      <details class="filter-card" open>
+        <summary class="filter-summary">
+          <span>تصفية الخطط السابقة</span>
+          <span class="count">الإجمالي: {{ page_obj.paginator.count }}</span>
+        </summary>
+        <form class="filters" method="get">
+          <div class="field">
+            <label>العام الدراسي</label>
+            <select class="select" name="year">
+              <option value="0">كل الأعوام</option>
+              {% for y in years %}
+                <option value="{{ y.academic_year_id }}" {% if year_id == y.academic_year_id %}selected{% endif %}>{{ y.academic_year__name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label>الفصل الدراسي</label>
+            <select class="select" name="semester">
+              <option value="0">كل الفصول</option>
+              {% for s in semesters %}
+                <option value="{{ s.semester_id }}" {% if semester_id == s.semester_id %}selected{% endif %}>{{ s.semester__academic_year__name }} — {{ s.semester__title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label>حالة الخطة</label>
+            <select class="select" name="status">
+              <option value="all" {% if status == 'all' %}selected{% endif %}>كل الحالات</option>
+              <option value="draft" {% if status == 'draft' %}selected{% endif %}>مسودة</option>
+              <option value="approved" {% if status == 'approved' %}selected{% endif %}>معتمدة</option>
+              <option value="unlock" {% if status == 'unlock' %}selected{% endif %}>طلب فك اعتماد</option>
+              <option value="unlocked" {% if status == 'unlocked' %}selected{% endif %}>مفكوكة للتعديل</option>
+            </select>
+          </div>
+          <div class="prev-actions">
+            <button class="btn primary" type="submit">تطبيق</button>
+            <a class="btn" href="{% url 'visits:supervisor_previous_plans' %}">إعادة ضبط</a>
+          </div>
+        </form>
+      </details>
+
+      <div class="results-head">
+        <div class="results-title">نتائج الخطط السابقة</div>
+        <div>المعروض: {{ rows|length }} من {{ page_obj.paginator.count }}</div>
+      </div>
+
+      {% if rows %}
+        <div class="plans-list">
+          {% for r in rows %}
+            <article class="plan-item">
+              <div class="plan-main">
+                <h3 class="week-title">{{ r.week_label }}</h3>
+                <p class="week-sub">
+                  الفترة: {{ r.week.start_sunday|date:"Y-m-d" }} إلى {{ r.week.end_thursday|date:"Y-m-d" }}
+                  <span class="muted">— رقم الأسبوع الأساسي: {{ r.week.week_no }}</span>
+                </p>
+
+                <div class="plan-meta">
+                  {% if r.plan.status == 'approved' %}
+                    <span class="pill ok">{{ r.status_label }}</span>
+                  {% elif r.plan.status == 'unlock' %}
+                    <span class="pill warn">{{ r.status_label }}</span>
+                  {% else %}
+                    <span class="pill info">{{ r.status_label }}</span>
+                  {% endif %}
+
+                  <span class="pill {% if r.counts.filled_required_count >= r.counts.required_count %}ok{% else %}warn{% endif %}">
+                    الاكتمال: {{ r.counts.filled_required_count }}/{{ r.counts.required_count }} أيام عمل
+                  </span>
+                  <span class="pill info">الأيام المغلقة: {{ r.counts.closed_count }}</span>
+                </div>
+              </div>
+
+              <div class="plan-side">
+                <div class="prev-actions">
+                  <a class="btn soft" href="{% url 'visits:supervisor_previous_plan_detail' r.plan.id %}">عرض الخطة</a>
+                  <a class="btn" href="{% url 'visits:plan_export' %}?week={{ r.week.week_no }}">Excel</a>
+                </div>
+              </div>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-box">
+            <div class="empty-icon">📁</div>
+            <div class="empty-title">لا توجد خطط سابقة حتى الآن.</div>
+            <div class="empty-text">
+              عند انتقال النظام للأسبوع التالي ستظهر هنا خطط الأسابيع السابقة للاطلاع والتصدير فقط. يمكنك تغيير الفلاتر أعلاه أو الرجوع إلى خطة الأسبوع الحالي.
+            </div>
+            <div class="empty-actions">
+              <a class="btn primary" href="{% url 'visits:plan' %}">خطة الأسبوع الحالي</a>
+              <a class="btn soft" href="{% url 'visits:supervisor_dashboard' %}">بوابة المشرف</a>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="pager">
+        <div>صفحة {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</div>
+        <div class="prev-actions">
+          {% if page_obj.has_previous %}
+            <a class="btn" href="?page={{ page_obj.previous_page_number }}&status={{ status }}&year={{ year_id }}&semester={{ semester_id }}">السابق</a>
+          {% else %}
+            <span class="btn disabled">السابق</span>
+          {% endif %}
+          {% if page_obj.has_next %}
+            <a class="btn" href="?page={{ page_obj.next_page_number }}&status={{ status }}&year={{ year_id }}&semester={{ semester_id }}">التالي</a>
+          {% else %}
+            <span class="btn disabled">التالي</span>
+          {% endif %}
+        </div>
+        <div>الإجمالي: {{ page_obj.paginator.count }}</div>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}

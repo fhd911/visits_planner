@@ -1,0 +1,143 @@
+{% extends "visits/base.html" %}
+
+{% block title %}استيراد قادة المدارس{% endblock %}
+{% block header_title %}استيراد قادة المدارس{% endblock %}
+{% block header_subtitle %}ربط مديري ومديرات المدارس بالمدارس الموجودة في النظام اعتمادًا على الرقم الوزاري.{% endblock %}
+
+{% block content %}
+<style>
+  .principal-import-page{display:grid;gap:12px;}
+  .principal-import-card{background:#fff;border:1px solid var(--vp-line,#dde5e0);border-radius:20px;padding:16px;box-shadow:var(--vp-shadow-soft,0 6px 16px rgba(22,36,29,.035));}
+  .principal-import-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .principal-import-title h2{margin:0;color:var(--vp-primary,#1f4b3a);font-size:17px;font-weight:600;line-height:1.7;}
+  .principal-import-title p{margin:3px 0 0;color:var(--vp-text-soft,#67776d);font-size:12.5px;line-height:1.9;}
+  .principal-import-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .principal-btn{display:inline-flex;align-items:center;justify-content:center;min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--vp-line,#dde5e0);background:#fff;color:var(--vp-text,#1f2c25);font-family:inherit;font-size:12.5px;font-weight:500;cursor:pointer;text-decoration:none;}
+  .principal-btn.primary{background:var(--vp-primary,#1f4b3a);border-color:var(--vp-primary,#1f4b3a);color:#fff;}
+  .principal-btn.soft{background:var(--vp-primary-soft,#f3f7f4);border-color:var(--vp-primary-soft-border,#dce7e0);color:var(--vp-primary,#1f4b3a);}
+  .principal-form{display:grid;gap:12px;margin-top:14px;}
+  .principal-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .principal-field{display:grid;gap:6px;}
+  .principal-field.full{grid-column:1/-1;}
+  .principal-field label{color:var(--vp-text-soft,#67776d);font-size:12px;line-height:1.7;}
+  .principal-input{width:100%;min-height:40px;border:1px solid var(--vp-line,#dde5e0);border-radius:14px;background:#fff;padding:0 12px;font-family:inherit;color:var(--vp-text,#1f2c25);}
+  .principal-check{display:flex;align-items:flex-start;gap:8px;border:1px solid var(--vp-line,#dde5e0);border-radius:14px;padding:10px 12px;background:#fbfcfb;color:var(--vp-text,#1f2c25);font-size:12.2px;line-height:1.8;}
+  .principal-check input{margin-top:6px;accent-color:var(--vp-primary,#1f4b3a);}
+  .principal-stats{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;}
+  .principal-stat{border:1px solid var(--vp-line,#dde5e0);border-radius:16px;padding:11px 12px;background:#fbfcfb;display:grid;gap:4px;min-height:76px;}
+  .principal-stat .label{font-size:11px;color:var(--vp-text-soft,#67776d);}
+  .principal-stat .value{font-size:22px;color:var(--vp-primary,#1f4b3a);font-weight:600;line-height:1;}
+  .principal-issues{overflow-x:auto;border:1px solid var(--vp-line,#dde5e0);border-radius:16px;background:#fff;}
+  .principal-table{width:100%;border-collapse:collapse;min-width:780px;}
+  .principal-table th,.principal-table td{border-bottom:1px solid var(--vp-line-2,#e8eeea);padding:10px 9px;font-size:12px;text-align:right;vertical-align:top;}
+  .principal-table th{background:#f8fbfa;color:var(--vp-primary,#1f4b3a);font-weight:600;white-space:nowrap;}
+  .principal-note{padding:11px 12px;border-radius:15px;border:1px solid var(--vp-info-border,#dbe6df);background:var(--vp-info-bg,#f4f7f5);color:var(--vp-info-text,#35584a);font-size:12.2px;line-height:1.9;}
+  .principal-missing{color:var(--vp-danger-text,#9f3129);font-size:12.5px;line-height:1.9;}
+  @media(max-width:900px){.principal-form-grid,.principal-stats{grid-template-columns:1fr 1fr;}.principal-import-actions{display:grid;grid-template-columns:1fr;width:100%;}.principal-btn{width:100%;}}
+  @media(max-width:560px){.principal-form-grid,.principal-stats{grid-template-columns:1fr;}.principal-import-card{padding:13px;border-radius:17px;}}
+</style>
+
+<section class="principal-import-page">
+  <div class="principal-import-card">
+    <div class="principal-import-head">
+      <div class="principal-import-title">
+        <h2>استيراد بيانات قادة المدارس</h2>
+        <p>يتم الربط بالمدارس الموجودة في النظام عن طريق الرقم الوزاري، وتظهر التعارضات لمراجعتها قبل الاعتماد.</p>
+      </div>
+      <div class="principal-import-actions">
+        <a class="principal-btn soft" href="{% url 'visits:admin_principals_template' %}">تحميل قالب</a>
+        <a class="principal-btn" href="{% url 'visits:admin_principals_export' %}">تصدير البيانات الحالية</a>
+      </div>
+    </div>
+
+    <form class="principal-form" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="principal-form-grid">
+        <div class="principal-field full">
+          <label>ملف Excel</label>
+          <input class="principal-input" type="file" name="file" accept=".xlsx" required>
+        </div>
+
+        <label class="principal-check">
+          <input type="checkbox" name="dry_run" value="1" {% if dry_run %}checked{% endif %}>
+          <span><b>معاينة فقط</b><br>يفحص الملف ويعرض النتائج دون حفظ أي بيانات.</span>
+        </label>
+
+        <label class="principal-check">
+          <input type="checkbox" name="create_missing_schools" value="1" {% if create_missing_schools %}checked{% endif %}>
+          <span><b>إنشاء المدارس غير الموجودة</b><br>يفضل تركه غير مفعل حتى تتم مراجعة المدارس غير المطابقة.</span>
+        </label>
+
+        <label class="principal-check">
+          <input type="checkbox" name="update_empty_school_sector" value="1" {% if update_empty_school_sector %}checked{% endif %}>
+          <span><b>تحديث قطاع المدرسة عند الفراغ</b><br>يأخذ القطاع من عمود القطاع التعليمي، ولا يغيّر أي قطاع موجود مسبقًا.</span>
+        </label>
+      </div>
+
+      <div class="principal-import-actions">
+        <button class="principal-btn primary" type="submit">تنفيذ الاستيراد</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="principal-note">
+    الأعمدة المتوقعة: القطاع التعليمي، الجنس، المرحلة، حالة فارس، اسم المدرسة، الرقم الوزاري، الاسم الرباعي، السجل المدني، التخصص، المؤهل، الرتبة، العمل الحالي. عند تفعيل تحديث القطاع، يتم تعبئة قطاع المدرسة من الملف فقط إذا كان قطاعها فارغًا.
+  </div>
+
+  {% if missing_headers %}
+    <div class="principal-import-card principal-missing">
+      <b>أعمدة مفقودة:</b>
+      {% for h in missing_headers %}<span>{{ h }}{% if not forloop.last %}، {% endif %}</span>{% endfor %}
+    </div>
+  {% endif %}
+
+  {% if result %}
+    <div class="principal-stats">
+      <div class="principal-stat"><div class="label">إجمالي السجلات</div><div class="value">{{ result.total_rows }}</div></div>
+      <div class="principal-stat"><div class="label">مطابقة بالمعاينة</div><div class="value">{{ result.dry_matched }}</div></div>
+      <div class="principal-stat"><div class="label">جديد</div><div class="value">{{ result.created }}</div></div>
+      <div class="principal-stat"><div class="label">تحديث</div><div class="value">{{ result.updated }}</div></div>
+      <div class="principal-stat">
+        <div class="label">{% if dry_run %}قطاعات ستُحدّث{% else %}قطاعات حُدّثت{% endif %}</div>
+        <div class="value">{% if dry_run %}{{ result.sectors_would_update }}{% else %}{{ result.sectors_updated }}{% endif %}</div>
+      </div>
+      <div class="principal-stat"><div class="label">تحتاج مراجعة</div><div class="value">{{ result.skipped }}</div></div>
+    </div>
+
+    <div class="principal-import-card">
+      <div class="principal-import-title">
+        <h2>نتيجة المعالجة</h2>
+        <p>المعروض حتى 300 ملاحظة. إجمالي الملاحظات: {{ issues_count|default:0 }}</p>
+      </div>
+      <div class="principal-issues" style="margin-top:10px;">
+        <table class="principal-table">
+          <thead>
+            <tr>
+              <th>السطر</th>
+              <th>الرقم الوزاري</th>
+              <th>المدرسة</th>
+              <th>القائد/ة</th>
+              <th>نوع الملاحظة</th>
+              <th>التفصيل</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in issues %}
+              <tr>
+                <td>{{ item.row_no }}</td>
+                <td>{{ item.stat_code|default:'—' }}</td>
+                <td>{{ item.school_name|default:'—' }}</td>
+                <td>{{ item.principal_name|default:'—' }}</td>
+                <td>{{ item.issue_type }}</td>
+                <td>{{ item.message }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="6">لا توجد ملاحظات، ويمكن تنفيذ الاستيراد بعد إلغاء خيار المعاينة.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

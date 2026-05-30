@@ -411,12 +411,13 @@
     white-space:nowrap;
   }
 
-  .school-page thead th:nth-child(1){ width:10%; }  /* الرقم الإحصائي */
-  .school-page thead th:nth-child(2){ width:37%; }  /* المدرسة + القطاع */
-  .school-page thead th:nth-child(3){ width:7%; }   /* الجنس */
-  .school-page thead th:nth-child(4){ width:28%; }  /* المشرف المسند */
-  .school-page thead th:nth-child(5){ width:8%; }   /* الحالة */
-  .school-page thead th:nth-child(6){ width:10%; }  /* الإجراءات */
+  .school-page thead th:nth-child(1){ width:9%; }   /* الرقم الإحصائي */
+  .school-page thead th:nth-child(2){ width:29%; }  /* المدرسة + القطاع */
+  .school-page thead th:nth-child(3){ width:10%; }  /* المرحلة */
+  .school-page thead th:nth-child(4){ width:7%; }   /* الجنس */
+  .school-page thead th:nth-child(5){ width:27%; }  /* المشرف المسند */
+  .school-page thead th:nth-child(6){ width:8%; }   /* الحالة */
+  .school-page thead th:nth-child(7){ width:10%; }  /* الإجراءات */
 
   .school-page tbody tr{
     height:48px;
@@ -552,6 +553,24 @@
     color:var(--danger);
   }
 
+
+  .school-page .stage-name{
+    color:var(--txt);
+    font-size:11.2px;
+    line-height:1.65;
+    font-weight:var(--fw-strong);
+    display:block;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .school-page .stage-empty{
+    color:var(--mut2);
+    font-size:11px;
+    font-weight:var(--fw-normal);
+  }
+
   .school-page .empty{
     padding:20px;
     color:var(--mut);
@@ -569,19 +588,22 @@
   .school-page th:nth-child(1),
   .school-page td:nth-child(3),
   .school-page th:nth-child(3),
-  .school-page td:nth-child(5),
-  .school-page th:nth-child(5),
+  .school-page td:nth-child(4),
+  .school-page th:nth-child(4),
   .school-page td:nth-child(6),
-  .school-page th:nth-child(6){
+  .school-page th:nth-child(6),
+  .school-page td:nth-child(7),
+  .school-page th:nth-child(7){
     text-align:center;
   }
 
   .school-page td:nth-child(2),
-  .school-page td:nth-child(4){
+  .school-page td:nth-child(5){
     overflow:hidden;
   }
 
   .school-page .school-name,
+  .school-page .stage-name,
   .school-page .supervisor-name{
     display:block;
     overflow:hidden;
@@ -814,7 +836,7 @@
 
     <div class="summary-card">
       <div class="summary-note">
-        إدارة بيانات المدارس داخل النظام، مع إظهار المشرف المسند لكل مدرسة عند توفره، وربط الصفحة باختصارات الاستيراد والتصدير دون ازدحام داخل الصفوف.
+        إدارة بيانات المدارس داخل النظام، مع إظهار المرحلة والمشرف المسند لكل مدرسة عند توفرهما، وربط الصفحة باختصارات الاستيراد والتصدير دون ازدحام داخل الصفوف.
       </div>
 
       <div class="summary-right">
@@ -996,6 +1018,7 @@
             <tr>
               <th>الرقم الإحصائي</th>
               <th>المدرسة</th>
+              <th>المرحلة</th>
               <th>الجنس</th>
               <th>المشرف المسند</th>
               <th>الحالة</th>
@@ -1010,9 +1033,6 @@
                 <td>
                   <div class="school-name">{{ school.name }}</div>
                   <div class="sub">
-                    {% if school.principal %}
-                      المدير: {{ school.principal.full_name }} —
-                    {% endif %}
                     القطاع:
                     {% if school.sector %}
                       {{ school.sector.name }}
@@ -1020,6 +1040,14 @@
                       —
                     {% endif %}
                   </div>
+                </td>
+
+                <td>
+                  {% if school.principal and school.principal.stage %}
+                    <span class="stage-name">{{ school.principal.stage }}</span>
+                  {% else %}
+                    <span class="stage-empty">—</span>
+                  {% endif %}
                 </td>
 
                 <td>
@@ -1078,7 +1106,7 @@
               </tr>
             {% empty %}
               <tr>
-                <td colspan="6" class="empty">لا توجد مدارس مطابقة.</td>
+                <td colspan="7" class="empty">لا توجد مدارس مطابقة.</td>
               </tr>
             {% endfor %}
           </tbody>

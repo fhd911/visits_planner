@@ -9,38 +9,29 @@
 <style>
   .sup-page{
     --ff:"Cairo","Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,Arial,sans-serif;
-
     --fw-title:600;
     --fw-strong:500;
     --fw-normal:400;
-
     --card:#ffffff;
     --soft:#f7f9f8;
-
     --txt:var(--vp-text);
     --mut:var(--vp-text-soft);
     --mut2:var(--vp-text-faint);
-
     --line:var(--vp-line);
     --line2:var(--vp-line-2);
     --line-strong:var(--vp-line-strong);
-
     --ok:var(--vp-ok-text);
     --ok-bg:var(--vp-ok-bg);
     --ok-br:var(--vp-ok-border);
-
     --warn:var(--vp-warn-text);
     --warn-bg:var(--vp-warn-bg);
     --warn-br:var(--vp-warn-border);
-
     --primary:var(--vp-primary);
     --primary-2:var(--vp-primary-2);
     --primary-soft:var(--vp-primary-soft);
     --primary-soft-br:var(--vp-primary-soft-border);
-
     --shadow:0 8px 20px rgba(22,36,29,.038);
     --shadow2:0 4px 12px rgba(22,36,29,.028);
-
     font-family:var(--ff);
     direction:rtl;
     color:var(--txt);
@@ -61,9 +52,9 @@
   }
 
   .sup-page .summary-card,
-  .sup-page .kpi,
   .sup-page .panel-card,
-  .sup-page .notice-card{
+  .sup-page .plan-hero,
+  .sup-page .quick-link{
     background:var(--card);
     border:1px solid var(--line);
     border-radius:20px;
@@ -109,21 +100,22 @@
     flex-wrap:wrap;
   }
 
-  .sup-page .chip{
+  .sup-page .chip,
+  .sup-page .status-pill{
     display:inline-flex;
     align-items:center;
-    gap:8px;
-    min-height:30px;
-    padding:5px 10px;
+    justify-content:center;
+    gap:7px;
+    min-height:28px;
+    padding:4px 10px;
     border-radius:999px;
-    background:var(--soft);
     border:1px solid var(--line);
+    background:var(--soft);
     color:var(--mut);
-    font-size:10.8px;
+    font-size:10.7px;
     font-weight:var(--fw-strong);
     white-space:nowrap;
     text-decoration:none;
-    transition:.16s ease;
   }
 
   .sup-page a.chip:hover{
@@ -137,14 +129,23 @@
     font-weight:var(--fw-title);
   }
 
-  .sup-page .chip.warn{
+  .sup-page .chip.warn,
+  .sup-page .status-pill.warn{
     background:var(--warn-bg);
     border-color:var(--warn-br);
     color:var(--warn);
   }
 
-  .sup-page .chip.warn b{
-    color:var(--warn);
+  .sup-page .status-pill.ok{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+  }
+
+  .sup-page .status-pill.info{
+    background:var(--primary-soft);
+    border-color:var(--primary-soft-br);
+    color:var(--primary);
   }
 
   .sup-page .dot{
@@ -166,78 +167,186 @@
     box-shadow:0 0 0 4px rgba(183,121,31,.10);
   }
 
-  .sup-page .kpis{
-    display:grid;
-    grid-template-columns:repeat(5, minmax(0, 1fr));
-    gap:8px;
+  .sup-page .plan-hero{
+    overflow:hidden;
+    background:linear-gradient(180deg, #ffffff 0%, #fbfcfb 100%);
   }
 
-  .sup-page .kpi{
-    box-shadow:var(--shadow2);
-    padding:11px 12px;
+  .sup-page .plan-head{
+    padding:12px 14px;
+    border-bottom:1px solid var(--line);
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap:8px;
-    min-height:66px;
-    border-radius:17px;
+    gap:10px;
+    flex-wrap:wrap;
+    background:linear-gradient(180deg, #fcfdfc, #f8fbf9);
   }
 
-  .sup-page .kpi.alert{
-    background:linear-gradient(180deg, #fffdf7, #fffaf0);
-    border-color:var(--warn-br);
-  }
-
-  .sup-page .kpi-meta{
+  .sup-page .plan-title-wrap{
     display:grid;
     gap:2px;
-    min-width:0;
+    min-width:240px;
   }
 
-  .sup-page .kpi-label{
-    font-size:10.7px;
-    font-weight:var(--fw-normal);
+  .sup-page .plan-title{
+    margin:0;
+    color:var(--txt);
+    font-size:13.2px;
+    font-weight:var(--fw-title);
+    line-height:1.6;
+  }
+
+  .sup-page .plan-sub{
+    margin:0;
     color:var(--mut);
+    font-size:10.7px;
+    line-height:1.75;
+    font-weight:var(--fw-normal);
+  }
+
+  .sup-page .plan-body{
+    padding:12px;
+    display:grid;
+    gap:10px;
+  }
+
+
+  .sup-page .current-plan-card{
+    border:1px solid var(--line);
+    border-radius:18px;
+    background:linear-gradient(180deg, #ffffff 0%, #fbfcfb 100%);
+    box-shadow:var(--shadow2);
+    padding:11px 12px;
+  }
+
+  .sup-page .current-plan-main{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .sup-page .current-week-block{
+    min-width:min(360px,100%);
+    flex:1 1 280px;
+  }
+
+  .sup-page .current-week-label{
+    display:none;
+  }
+
+  .sup-page .current-week-title{
+    color:var(--txt);
+    font-size:12.6px;
+    font-weight:var(--fw-title);
     line-height:1.7;
   }
 
-  .sup-page .kpi-value{
-    font-size:18px;
-    font-weight:var(--fw-title);
-    color:var(--txt);
-    line-height:1.2;
-    white-space:nowrap;
+  .sup-page .current-plan-badges{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:6px;
+    flex-wrap:wrap;
+    flex:0 1 auto;
   }
 
-  .sup-page .kpi.alert .kpi-value{
-    color:var(--warn);
+  .sup-page .current-plan-action,
+  .sup-page .current-action-copy,
+  .sup-page .current-action-title,
+  .sup-page .current-action-sub{
+    display:none;
   }
 
-  .sup-page .kpi-icon{
-    width:34px;
-    height:34px;
-    border-radius:12px;
+  .sup-page .plan-status-grid{
     display:grid;
-    place-items:center;
+    grid-template-columns:repeat(5, minmax(0,1fr));
+    gap:8px;
+  }
+
+  .sup-page .plan-stat{
+    min-height:70px;
     border:1px solid var(--line);
-    background:var(--soft);
-    color:var(--primary);
-    font-size:13px;
-    font-weight:var(--fw-title);
-    flex:0 0 auto;
-  }
-
-  .sup-page .kpi.alert .kpi-icon{
-    background:var(--warn-bg);
-    border-color:var(--warn-br);
-    color:var(--warn);
-  }
-
-  .sup-page .main-grid{
+    border-radius:16px;
+    background:#fff;
+    padding:10px 11px;
     display:grid;
-    grid-template-columns:minmax(0, 1.12fr) minmax(330px, .88fr);
-    gap:12px;
-    align-items:start;
+    gap:5px;
+    align-content:center;
+    box-shadow:var(--shadow2);
+  }
+
+  .sup-page .plan-stat-label{
+    color:var(--mut);
+    font-size:10.5px;
+    font-weight:var(--fw-normal);
+    line-height:1.65;
+  }
+
+  .sup-page .plan-stat-value{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:6px;
+    flex-wrap:wrap;
+  }
+
+  .sup-page .plan-callout{
+    border:1px solid var(--primary-soft-br);
+    border-radius:16px;
+    background:var(--primary-soft);
+    padding:10px 11px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+
+  .sup-page .plan-callout-text{
+    display:grid;
+    gap:2px;
+    min-width:220px;
+  }
+
+  .sup-page .plan-callout-title{
+    color:var(--primary);
+    font-size:11.6px;
+    font-weight:var(--fw-title);
+    line-height:1.7;
+  }
+
+  .sup-page .plan-callout-sub{
+    color:var(--mut);
+    font-size:10.5px;
+    line-height:1.75;
+    font-weight:var(--fw-normal);
+  }
+
+  .sup-page .btn-main{
+    min-height:34px;
+    padding:0 13px;
+    border-radius:999px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    border:1px solid var(--primary);
+    background:var(--primary);
+    color:#fff;
+    font-size:10.8px;
+    font-weight:var(--fw-title);
+    white-space:nowrap;
+    text-decoration:none;
+    transition:.16s ease;
+  }
+
+  .sup-page .btn-main:hover{
+    background:var(--primary-2);
+    border-color:var(--primary-2);
+    transform:translateY(-1px);
+    text-decoration:none;
   }
 
   .sup-page .panel-card{
@@ -277,15 +386,13 @@
 
   .sup-page .quick-grid{
     display:grid;
-    grid-template-columns:repeat(2, minmax(0, 1fr));
+    grid-template-columns:repeat(4, minmax(0, 1fr));
     gap:8px;
   }
 
   .sup-page .quick-link{
     min-height:82px;
-    border:1px solid var(--line);
-    border-radius:16px;
-    background:#fff;
+    box-shadow:var(--shadow2);
     padding:10px 11px;
     display:grid;
     grid-template-columns:34px minmax(0,1fr);
@@ -345,6 +452,38 @@
     line-height:1.75;
   }
 
+  .sup-page .quick-actions{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex-wrap:wrap;
+    margin-top:4px;
+  }
+
+  .sup-page .mini-action{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:26px;
+    padding:0 9px;
+    border-radius:999px;
+    border:1px solid var(--primary-soft-br);
+    background:var(--primary-soft);
+    color:var(--primary);
+    font-size:10.2px;
+    font-weight:var(--fw-strong);
+    text-decoration:none;
+    transition:.14s ease;
+    white-space:nowrap;
+  }
+
+  .sup-page .mini-action:hover{
+    transform:translateY(-1px);
+    background:#fcfdfc;
+    border-color:#c4d0c9;
+    text-decoration:none;
+  }
+
   .sup-page .quick-count{
     display:inline-flex;
     align-items:center;
@@ -361,122 +500,30 @@
     font-weight:var(--fw-title);
   }
 
-  .sup-page .status-list{
-    display:grid;
-    gap:8px;
-  }
-
-  .sup-page .info-item,
-  .sup-page .status-box,
-  .sup-page .status-note{
-    border:1px solid var(--line);
-    border-radius:15px;
-    background:#fff;
-    padding:10px 11px;
-  }
-
-  .sup-page .info-item{
-    display:grid;
-    gap:4px;
-  }
-
-  .sup-page .info-label{
-    font-size:10.6px;
-    color:var(--mut2);
-    font-weight:var(--fw-strong);
-  }
-
-  .sup-page .info-value{
-    font-size:11.8px;
-    color:var(--txt);
-    font-weight:var(--fw-title);
-    line-height:1.75;
-    word-break:break-word;
-  }
-
-  .sup-page .status-box{
-    display:grid;
-    gap:8px;
-  }
-
-  .sup-page .status-row{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    flex-wrap:wrap;
-  }
-
-  .sup-page .status-name{
-    font-size:11.1px;
-    color:var(--mut);
-    font-weight:var(--fw-strong);
-  }
-
-  .sup-page .status-pill{
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    min-height:26px;
-    padding:0 9px;
-    border-radius:999px;
-    border:1px solid transparent;
-    font-size:10.6px;
-    font-weight:var(--fw-title);
-    white-space:nowrap;
-    text-decoration:none;
-  }
-
-  .sup-page .status-pill.ok{
-    background:var(--ok-bg);
-    border-color:var(--ok-br);
-    color:var(--ok);
-  }
-
-  .sup-page .status-pill.warn{
-    background:var(--warn-bg);
-    border-color:var(--warn-br);
-    color:var(--warn);
-  }
-
-  .sup-page .status-pill.info{
-    background:var(--primary-soft);
-    border-color:var(--primary-soft-br);
-    color:var(--primary);
-  }
-
-  .sup-page .status-note{
-    background:var(--warn-bg);
-    border-color:var(--warn-br);
-    color:var(--warn);
-    font-size:11px;
-    font-weight:var(--fw-normal);
-    line-height:1.85;
-    text-decoration:none;
-    display:block;
-  }
-
-  .sup-page .status-note:hover{
-    text-decoration:none;
-  }
-
   @media (max-width: 1120px){
-    .sup-page .kpis{
+    .sup-page .plan-status-grid{
       grid-template-columns:repeat(3, minmax(0, 1fr));
     }
 
-    .sup-page .main-grid{
-      grid-template-columns:1fr;
+    .sup-page .quick-grid{
+      grid-template-columns:repeat(2, minmax(0, 1fr));
     }
   }
 
   @media (max-width: 720px){
-    .sup-page .kpis,
+    .sup-page .plan-status-grid,
     .sup-page .quick-grid{
       grid-template-columns:1fr;
     }
 
-    .sup-page .summary-card{
+    .sup-page .summary-card,
+    .sup-page .plan-head,
+    .sup-page .plan-callout{
+      align-items:flex-start;
+    }
+
+    .sup-page .summary-card,
+    .sup-page .plan-body{
       padding:12px;
     }
 
@@ -495,218 +542,146 @@
       <div class="summary-main">
         <h1 class="summary-title">بوابة المشرف</h1>
         <div class="summary-note">
-          ملخص تنفيذي سريع للوضع الحالي مع وصول مباشر إلى الخطة الأسبوعية، الإشعارات، الملاحظات الرقابية، وخدمات التصدير.
+          ملخص سريع للوضع الحالي مع وصول مباشر إلى الخطة الأسبوعية، الإشعارات، والتصدير.
         </div>
       </div>
 
       <div class="summary-right">
         <span class="chip"><span class="dot ok"></span> المشرف: <b>{{ sup.full_name }}</b></span>
         <span class="chip"><span class="dot"></span> الهوية: <b>{{ sup.national_id }}</b></span>
-        <a class="chip {% if control_followup_count and control_followup_count > 0 %}warn{% endif %}" href="{% url 'visits:supervisor_control_followups' %}">
-          <span class="dot {% if control_followup_count and control_followup_count > 0 %}warn{% endif %}"></span>
-          الملاحظات الرقابية: <b>{{ control_followup_count|default:"0" }}</b>
-        </a>
+        {% if control_followup_count and control_followup_count > 0 %}
+          <a class="chip warn" href="{% url 'visits:supervisor_control_followups' %}">
+            <span class="dot warn"></span>
+            ملاحظات رقابية: <b>{{ control_followup_count }}</b>
+          </a>
+        {% endif %}
       </div>
     </div>
 
-    <div class="kpis">
-      <article class="kpi">
-        <div class="kpi-meta">
-          <div class="kpi-label">الأسبوع الحالي</div>
-          <div class="kpi-value">{{ current_week|default:week|default:"—" }}</div>
+    <section class="plan-hero">
+      <div class="plan-head">
+        <div class="plan-title-wrap">
+          <h2 class="plan-title">وضع الخطة الحالية</h2>
+          <p class="plan-sub">الأسبوع والحالة والإجراء في سطر مختصر.</p>
         </div>
-        <div class="kpi-icon">📅</div>
-      </article>
 
-      <article class="kpi">
-        <div class="kpi-meta">
-          <div class="kpi-label">المدارس المسندة</div>
-          <div class="kpi-value">{{ assignment_count|default:"0" }}</div>
-        </div>
-        <div class="kpi-icon">🏫</div>
-      </article>
+      </div>
 
-      <article class="kpi">
-        <div class="kpi-meta">
-          <div class="kpi-label">الإشعارات غير المقروءة</div>
-          <div class="kpi-value">{{ unread_count|default:"0" }}</div>
-        </div>
-        <div class="kpi-icon">🔔</div>
-      </article>
+      <div class="plan-body">
+        <div class="current-plan-card">
+          <div class="current-plan-main">
+            <div class="current-week-block">
+              <div class="current-week-title">
+                {{ current_week_label|default:current_week|default:week|default:"—" }}
+              </div>
+            </div>
 
-      <article class="kpi {% if control_followup_count and control_followup_count > 0 %}alert{% endif %}">
-        <div class="kpi-meta">
-          <div class="kpi-label">الملاحظات الرقابية</div>
-          <div class="kpi-value">{{ control_followup_count|default:"0" }}</div>
-        </div>
-        <div class="kpi-icon">🧭</div>
-      </article>
+            <div class="current-plan-badges">
+              {% if current_plan_status_css == "approved" %}
+                <span class="status-pill ok">{{ current_plan_status_label|default:"معتمدة" }}</span>
+              {% elif current_plan_status_css == "ready" %}
+                <span class="status-pill ok">{{ current_plan_status_label|default:"جاهزة للاعتماد" }}</span>
+              {% elif current_plan_status_css == "not-started" or current_plan_status_css == "unlock" %}
+                <span class="status-pill warn">{{ current_plan_status_label|default:"لم يبدأ" }}</span>
+              {% elif current_plan_status_css == "draft" %}
+                <span class="status-pill info">{{ current_plan_status_label|default:"مسودة" }}</span>
+              {% else %}
+                <span class="status-pill info">{{ current_plan_status_label|default:"غير محددة" }}</span>
+              {% endif %}
 
-      <article class="kpi">
-        <div class="kpi-meta">
-          <div class="kpi-label">البريد الإلكتروني</div>
-          <div class="kpi-value">{% if supervisor_email %}جاهز{% else %}غير مضاف{% endif %}</div>
-        </div>
-        <div class="kpi-icon">📧</div>
-      </article>
-    </div>
+              {% if current_plan_missing_count and current_plan_missing_count > 0 %}
+                <span class="status-pill warn">{{ current_plan_completion_label|default:"0 / 5 أيام عمل" }}</span>
+              {% else %}
+                <span class="status-pill ok">{{ current_plan_completion_label|default:"0 / 5 أيام عمل" }}</span>
+              {% endif %}
 
-    <div class="main-grid">
-      <section class="panel-card">
-        <div class="panel-head">
-          <div>
-            <h2 class="panel-title">الإجراءات السريعة</h2>
-            <div class="panel-sub">اختصارات مباشرة لأهم الصفحات التي يستخدمها المشرف.</div>
+              {% if current_plan_closed_count and current_plan_closed_count > 0 %}
+                <span class="status-pill warn">مغلق: {{ current_plan_closed_count }}</span>
+              {% endif %}
+            </div>
+
+            <a class="btn-main" href="{% url 'visits:plan' %}?week={{ current_week|default:week }}">
+              {% if current_plan_missing_count and current_plan_missing_count > 0 %}استكمال الخطة{% else %}مراجعة الخطة{% endif %}
+            </a>
           </div>
         </div>
+      </div>
+    </section>
 
-        <div class="panel-body">
-          <div class="quick-grid">
-            <a class="quick-link" href="{% url 'visits:plan' %}?week={{ current_week|default:week }}">
-              <div class="quick-link-icon">📝</div>
-              <div class="quick-link-content">
-                <div class="quick-link-title">الخطة الأسبوعية</div>
-                <div class="quick-link-sub">فتح الخطة الحالية ومتابعة الحفظ أو الاعتماد.</div>
-              </div>
-            </a>
+    <section class="panel-card">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">الإجراءات السريعة</h2>
+          <div class="panel-sub">اختصارات مباشرة لأهم الصفحات التي يستخدمها المشرف.</div>
+        </div>
+      </div>
 
-            <a class="quick-link" href="{% url 'visits:notifications' %}?week={{ current_week|default:week }}">
-              <div class="quick-link-icon">🔔</div>
-              <div class="quick-link-content">
-                <div class="quick-link-title">الإشعارات</div>
-                <div class="quick-link-sub">استعراض التنبيهات والإشعارات المرتبطة بالخطة.</div>
-              </div>
-            </a>
+      <div class="panel-body">
+        <div class="quick-grid">
+          <a class="quick-link" href="{% url 'visits:plan' %}?week={{ current_week|default:week }}">
+            <div class="quick-link-icon">📝</div>
+            <div class="quick-link-content">
+              <div class="quick-link-title">الخطة الأسبوعية</div>
+              <div class="quick-link-sub">فتح الخطة الحالية ومتابعة الحفظ أو الاعتماد.</div>
+            </div>
+          </a>
 
-            <a class="quick-link {% if control_followup_count and control_followup_count > 0 %}alert{% endif %}" href="{% url 'visits:supervisor_control_followups' %}">
+          <a class="quick-link" href="{% url 'visits:supervisor_previous_plans' %}">
+            <div class="quick-link-icon">🗂️</div>
+            <div class="quick-link-content">
+              <div class="quick-link-title">خططي السابقة</div>
+              <div class="quick-link-sub">عرض الخطط السابقة للاطلاع والتصدير فقط دون تعديل.</div>
+            </div>
+          </a>
+
+          <a class="quick-link" href="{% url 'visits:notifications' %}?week={{ current_week|default:week }}">
+            <div class="quick-link-icon">🔔</div>
+            <div class="quick-link-content">
+              <div class="quick-link-title">الإشعارات {% if unread_count and unread_count > 0 %}<span class="quick-count">{{ unread_count }}</span>{% endif %}</div>
+              <div class="quick-link-sub">استعراض التنبيهات والإشعارات المرتبطة بالخطة.</div>
+            </div>
+          </a>
+
+          {% if control_followup_count and control_followup_count > 0 %}
+            <a class="quick-link alert" href="{% url 'visits:supervisor_control_followups' %}">
               <div class="quick-link-icon">🧭</div>
               <div class="quick-link-content">
-                <div class="quick-link-title">
-                  الملاحظات الرقابية
-                  {% if control_followup_count and control_followup_count > 0 %}
-                    <span class="quick-count">{{ control_followup_count }}</span>
-                  {% endif %}
-                </div>
+                <div class="quick-link-title">الملاحظات الرقابية <span class="quick-count">{{ control_followup_count }}</span></div>
                 <div class="quick-link-sub">عرض الملاحظات المطلوب الإفادة عنها ومتابعة حالة المعالجة.</div>
               </div>
             </a>
+          {% endif %}
 
-            <a class="quick-link" href="{% url 'visits:supervisor_email_settings' %}?next={{ request.get_full_path|urlencode }}">
-              <div class="quick-link-icon">📧</div>
-              <div class="quick-link-content">
-                <div class="quick-link-title">إعداد البريد الإلكتروني</div>
-                <div class="quick-link-sub">إضافة البريد الإلكتروني أو تعديله وتفعيل التنبيهات.</div>
-              </div>
-            </a>
-
-            <a class="quick-link" href="{% url 'visits:print_assignment_letter' %}">
-              <div class="quick-link-icon">🖨️</div>
-              <div class="quick-link-content">
-                <div class="quick-link-title">خطاب الإسناد</div>
-                <div class="quick-link-sub">عرض وطباعة خطاب الإسناد الخاص بك.</div>
-              </div>
-            </a>
-
-            <a class="quick-link" href="{% url 'visits:plan_export_planned_schools' %}?week={{ current_week|default:week }}">
-              <div class="quick-link-icon">📗</div>
-              <div class="quick-link-content">
-                <div class="quick-link-title">تصدير المدارس المدرجة</div>
-                <div class="quick-link-sub">المدارس المدرجة في الخطط.</div>
-              </div>
-            </a>
-
-            <a class="quick-link" href="{% url 'visits:plan_export_unplanned_schools' %}?week={{ current_week|default:week }}">
-              <div class="quick-link-icon">📙</div>
-              <div class="quick-link-content">
-                <div class="quick-link-title">تصدير المدارس غير المدرجة</div>
-                <div class="quick-link-sub">المدارس غير المدرجة في الخطط.</div>
-              </div>
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <section class="panel-card">
-        <div class="panel-head">
-          <div>
-            <h2 class="panel-title">ملخص الحالة الحالية</h2>
-            <div class="panel-sub">عرض مختصر للبيانات الأساسية والحالة التنفيذية الحالية.</div>
-          </div>
-        </div>
-
-        <div class="panel-body">
-          <div class="status-list">
-            <div class="info-item">
-              <div class="info-label">اسم المشرف</div>
-              <div class="info-value">{{ sup.full_name }}</div>
+          <a class="quick-link" href="{% url 'visits:supervisor_email_preferences' %}">
+            <div class="quick-link-icon">📧</div>
+            <div class="quick-link-content">
+              <div class="quick-link-title">تفضيلات البريد والتنبيهات</div>
+              <div class="quick-link-sub">تحديد رسائل الاعتماد والإرجاع وفك الاعتماد والتذكيرات التي تصلك بالبريد.</div>
             </div>
+          </a>
 
-            <div class="info-item">
-              <div class="info-label">رقم الهوية</div>
-              <div class="info-value">{{ sup.national_id }}</div>
+          <a class="quick-link" href="{% url 'visits:print_assignment_letter' %}">
+            <div class="quick-link-icon">🖨️</div>
+            <div class="quick-link-content">
+              <div class="quick-link-title">خطاب الإسناد</div>
+              <div class="quick-link-sub">عرض وطباعة خطاب الإسناد الخاص بك.</div>
             </div>
+          </a>
 
-            <div class="status-box">
-              <div class="status-row">
-                <div class="status-name">الأسبوع الحالي</div>
-                <span class="status-pill info">{{ current_week|default:week|default:"—" }}</span>
-              </div>
-
-              <div class="status-row">
-                <div class="status-name">التنبيهات البريدية</div>
-                {% if supervisor_email and email_notifications_enabled %}
-                  <span class="status-pill ok">مفعلة</span>
-                {% elif supervisor_email %}
-                  <span class="status-pill warn">غير مفعلة</span>
-                {% else %}
-                  <span class="status-pill info">لا يوجد بريد</span>
-                {% endif %}
-              </div>
-
-              <div class="status-row">
-                <div class="status-name">الإشعارات غير المقروءة</div>
-                {% if unread_count and unread_count > 0 %}
-                  <span class="status-pill warn">{{ unread_count }}</span>
-                {% else %}
-                  <span class="status-pill ok">0</span>
-                {% endif %}
-              </div>
-
-              <div class="status-row">
-                <div class="status-name">الملاحظات الرقابية النشطة</div>
-                {% if control_followup_count and control_followup_count > 0 %}
-                  <a class="status-pill warn" href="{% url 'visits:supervisor_control_followups' %}">{{ control_followup_count }}</a>
-                {% else %}
-                  <span class="status-pill ok">0</span>
-                {% endif %}
-              </div>
-
-              <div class="status-row">
-                <div class="status-name">عدد المدارس المسندة</div>
-                <span class="status-pill info">{{ assignment_count|default:"0" }}</span>
+          <div class="quick-link export-card">
+            <div class="quick-link-icon">📊</div>
+            <div class="quick-link-content">
+              <div class="quick-link-title">تصدير المدارس</div>
+              <div class="quick-link-sub">تصدير المدارس المدرجة وغير المدرجة في الخطة.</div>
+              <div class="quick-actions">
+                <a class="mini-action" href="{% url 'visits:plan_export_planned_schools' %}?week={{ current_week|default:week }}">المدرجة</a>
+                <a class="mini-action" href="{% url 'visits:plan_export_unplanned_schools' %}?week={{ current_week|default:week }}">غير المدرجة</a>
               </div>
             </div>
-
-            {% if control_followup_count and control_followup_count > 0 %}
-              <a class="status-note" href="{% url 'visits:supervisor_control_followups' %}">
-                لديك {{ control_followup_count }} ملاحظة رقابية تحتاج متابعة أو إفادة. اضغط هنا لاستعراضها والرد عليها.
-              </a>
-            {% endif %}
-
-            {% if supervisor_email %}
-              <div class="info-item">
-                <div class="info-label">البريد الإلكتروني المسجل</div>
-                <div class="info-value">{{ supervisor_email }}</div>
-              </div>
-            {% else %}
-              <div class="status-note">
-                لا يوجد بريد إلكتروني مسجل حاليًا. يوصى بإضافته لتفعيل التنبيهات والإشعارات المرتبطة بالخطة.
-              </div>
-            {% endif %}
           </div>
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
 
   </div>
 </section>

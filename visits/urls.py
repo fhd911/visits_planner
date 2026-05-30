@@ -6,6 +6,7 @@ from django.contrib import messages
 from . import views
 from . import views_import
 from . import views_assignment_review
+from . import views_academic_plan
 
 
 
@@ -169,11 +170,14 @@ urlpatterns = [
     path("email-settings/verify/", views.supervisor_email_verify_view, name="supervisor_email_verify"),
     path("email-settings/resend-otp/", views.supervisor_email_resend_otp_view, name="supervisor_email_resend_otp"),
     path("email-settings/toggle/", views.toggle_email_notifications_view, name="toggle_email_notifications"),
+    path("email-preferences/", views.supervisor_email_preferences_view, name="supervisor_email_preferences"),
 
     path("print-assignment-letter/", views.print_assignment_letter_view, name="print_assignment_letter"),
     path("weekly-letter/", views.current_week_letter_redirect_view, name="current_week_letter"),
 
     path("plan/", views.plan_view, name="plan"),
+    path("plans/previous/", views.supervisor_previous_plans_view, name="supervisor_previous_plans"),
+    path("plans/previous/<int:plan_id>/", views.supervisor_previous_plan_detail_view, name="supervisor_previous_plan_detail"),
     path("plan/export/", views.export_plan_excel, name="plan_export"),
     path(
         "plan/export/planned-schools/",
@@ -212,6 +216,8 @@ urlpatterns = [
     # الإدارة - لوحة الخطط
     # =========================================================
     path("manager/dashboard/", views.admin_dashboard_view, name="admin_dashboard"),
+    path("manager/email-reminders/incomplete/", views.admin_send_incomplete_email_reminders_view, name="admin_send_incomplete_email_reminders"),
+    path("manager/academic-plan/", views_academic_plan.admin_academic_plan_view, name="admin_academic_plan"),
     path("manager/reports/", _view_or("admin_reports_view", _fallback_admin_reports_view), name="admin_reports"),
     path(
         "manager/reports/control/<str:report_type>/",
@@ -303,9 +309,33 @@ urlpatterns = [
         name="admin_update_maintenance_message",
     ),
 
+
+    path(
+        "manager/maintenance/week-gate/",
+        views.admin_update_plan_week_gate_view,
+        name="admin_update_plan_week_gate",
+    ),
+    path(
+        "manager/maintenance/closed-day/save/",
+        views.admin_save_closed_day_view,
+        name="admin_save_closed_day",
+    ),
+    path(
+        "manager/maintenance/closed-day/<int:closed_day_id>/toggle/",
+        views.admin_toggle_closed_day_view,
+        name="admin_toggle_closed_day",
+    ),
+
     # =========================================================
     # الإدارة - المدارس
     # =========================================================
+    path("manager/principals/", views.admin_principal_list_view, name="admin_principal_list"),
+    path(
+        "manager/principals/<int:principal_id>/edit/",
+        views.admin_principal_edit_view,
+        name="admin_principal_edit",
+    ),
+
     path("manager/schools/", views.admin_school_list_view, name="admin_school_list"),
     path("manager/schools/save/", views.admin_school_save_view, name="admin_school_save"),
     path(
@@ -462,6 +492,23 @@ urlpatterns = [
     # =========================================================
     path("manager/import/", views_import.manager_import_view, name="admin_import"),
     path("manager/import/rejected.xlsx", views_import.download_rejected_view, name="download_rejected"),
+
+    # استيراد بيانات قادة المدارس
+    path(
+        "manager/import/principals/",
+        views.admin_principals_import_view,
+        name="admin_principals_import",
+    ),
+    path(
+        "manager/import/principals/template/",
+        views.admin_principals_template_view,
+        name="admin_principals_template",
+    ),
+    path(
+        "manager/import/principals/export.xlsx",
+        views.admin_principals_export_view,
+        name="admin_principals_export",
+    ),
 
     # استيراد المدارس وإسنادها للمشرفين
     path(
