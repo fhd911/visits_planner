@@ -1647,6 +1647,50 @@ def _build_chart_counts(week_obj: PlanWeek) -> dict:
     }
 
 
+
+# =============================================================================
+# Export label helpers
+# =============================================================================
+def _visit_type_export_label(value: object) -> str:
+    """يعيد تسمية نوع الزيارة بشكل آمن عند التصدير.
+
+    بعض دوال تصدير Excel تستدعي هذه الدالة بالقيمة الخام لحقل visit_type،
+    لذلك يجب أن تكون موجودة قبل دوال بناء ملفات Excel.
+    """
+    raw = "" if value is None else str(value).strip()
+    if not raw:
+        return "—"
+
+    # أولاً: حاول القراءة من choices في الموديل حتى يبقى التصدير متوافقًا
+    # مع أي تسميات مستقبلية داخل PlanDay.
+    try:
+        field = PlanDay._meta.get_field("visit_type")
+        choices = dict(getattr(field, "choices", []) or [])
+        label = choices.get(raw)
+        if label:
+            return str(label)
+    except Exception:
+        pass
+
+    visit_in = getattr(PlanDay, "VISIT_IN", "in")
+    visit_remote = getattr(PlanDay, "VISIT_REMOTE", "remote")
+    visit_none = getattr(PlanDay, "VISIT_NONE", "none")
+
+    labels = {
+        str(visit_in): "حضوري",
+        "in": "حضوري",
+        "حضوري": "حضوري",
+        str(visit_remote): "عن بُعد",
+        "remote": "عن بُعد",
+        "عن بعد": "عن بُعد",
+        "عن بُعد": "عن بُعد",
+        str(visit_none): "بدون زيارة",
+        "none": "بدون زيارة",
+        "no_visit": "بدون زيارة",
+        "بدون زيارة": "بدون زيارة",
+    }
+    return labels.get(raw, raw or "—")
+
 # =============================================================================
 # Excel helpers
 # =============================================================================
