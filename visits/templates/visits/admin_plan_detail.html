@@ -748,6 +748,177 @@
     font-weight:var(--fw-normal);
   }
 
+
+
+  .detail-page .missing-admin-panel{
+    border-color:var(--warn-br);
+    background:linear-gradient(180deg,#fffdf8,#ffffff);
+  }
+
+  .detail-page .missing-admin-head{
+    padding:10px 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    flex-wrap:wrap;
+    border-bottom:1px solid var(--warn-br);
+    background:linear-gradient(180deg,#fffdf8,#fffaf1);
+  }
+
+  .detail-page .missing-admin-title{
+    margin:0;
+    color:var(--warn);
+    font-size:12.2px;
+    line-height:1.7;
+    font-weight:var(--fw-title);
+  }
+
+  .detail-page .missing-admin-sub{
+    color:var(--mut);
+    font-size:10.6px;
+    line-height:1.7;
+    font-weight:var(--fw-normal);
+  }
+
+  .detail-page .missing-admin-body{
+    padding:10px 12px 12px;
+    display:grid;
+    gap:9px;
+  }
+
+  .detail-page .missing-admin-row{
+    border:1px solid var(--line);
+    border-radius:15px;
+    background:#fff;
+    padding:10px;
+    display:grid;
+    grid-template-columns:minmax(130px,.4fr) minmax(260px,1fr);
+    gap:10px;
+    align-items:start;
+  }
+
+  .detail-page .missing-admin-day{
+    display:grid;
+    gap:3px;
+  }
+
+  .detail-page .missing-admin-day b{
+    color:var(--txt);
+    font-size:12px;
+    line-height:1.6;
+    font-weight:var(--fw-title);
+  }
+
+  .detail-page .missing-admin-day span{
+    color:var(--mut);
+    font-size:10.4px;
+    line-height:1.5;
+    font-weight:var(--fw-normal);
+  }
+
+  .detail-page .missing-admin-form{
+    display:grid;
+    grid-template-columns:180px minmax(220px,1fr) auto;
+    gap:7px;
+    align-items:center;
+    margin:0;
+  }
+
+  .detail-page .missing-admin-form select,
+  .detail-page .missing-admin-form input{
+    height:34px;
+    border-radius:12px;
+    border:1px solid var(--line);
+    background:#fff;
+    padding:0 10px;
+    color:var(--txt);
+    font-size:11px;
+    font-weight:var(--fw-normal);
+    outline:none;
+  }
+
+  .detail-page .missing-admin-form input:focus,
+  .detail-page .missing-admin-form select:focus{
+    border-color:#c7d6ce;
+    box-shadow:0 0 0 4px rgba(47,98,80,.06);
+  }
+
+  .detail-page .missing-admin-form .exec-btn{
+    height:34px;
+  }
+
+  .detail-page .missing-admin-tools{
+    display:flex;
+    gap:6px;
+    align-items:center;
+    flex-wrap:wrap;
+  }
+
+  .detail-page .missing-admin-tools form{ margin:0; }
+
+  @media(max-width:980px){
+    .detail-page .missing-admin-row,
+    .detail-page .missing-admin-form{
+      grid-template-columns:1fr;
+    }
+  }
+
+
+  /* معالجة النواقص داخل بطاقة اليوم الناقص مباشرة */
+  .detail-page .inline-admin-complete{
+    margin-top:8px;
+    padding:8px;
+    border:1px solid var(--warn-br);
+    background:linear-gradient(180deg,#fffdf8,#fffaf1);
+    border-radius:12px;
+    display:grid;
+    gap:6px;
+  }
+
+  .detail-page .inline-admin-complete-title{
+    color:var(--warn);
+    font-size:10.6px;
+    line-height:1.6;
+    font-weight:var(--fw-title);
+  }
+
+  .detail-page .inline-admin-complete select,
+  .detail-page .inline-admin-complete input{
+    width:100%;
+    height:30px;
+    border-radius:10px;
+    border:1px solid var(--line);
+    background:#fff;
+    padding:0 8px;
+    color:var(--txt);
+    font-size:10.5px;
+    font-weight:var(--fw-normal);
+    outline:none;
+  }
+
+  .detail-page .inline-admin-complete select:focus,
+  .detail-page .inline-admin-complete input:focus{
+    border-color:#c7d6ce;
+    box-shadow:0 0 0 3px rgba(47,98,80,.06);
+  }
+
+  .detail-page .inline-admin-complete button{
+    width:100%;
+    height:30px;
+    border-radius:999px;
+    border:1px solid var(--warn-br);
+    background:var(--warn-bg);
+    color:var(--warn);
+    font-size:10.5px;
+    font-weight:var(--fw-title);
+    cursor:pointer;
+  }
+
+  .detail-page .inline-admin-complete button:hover{
+    background:#fff6e7;
+  }
+
 </style>
 
 {% endblock %}
@@ -854,6 +1025,9 @@
         {% endif %}
       </div>
 
+
+      {# معالجة النواقص أصبحت داخل بطاقة اليوم الناقص مباشرة لتكون أوضح للإدارة #}
+
       <div class="grid">
 
         <div class="panel details-panel">
@@ -915,6 +1089,33 @@
                         {% endif %}
                       {% else %}
                         <div class="week-mini-school muted">لا توجد بيانات</div>
+
+                        {% if plan.status != plan.STATUS_APPROVED %}
+                          <form class="inline-admin-complete"
+                                method="post"
+                                action="{% url 'visits:admin_plan_admin_complete_missing_day' plan.id wd %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+
+                            <div class="inline-admin-complete-title">
+                              معالجة هذا اليوم إداريًا
+                            </div>
+
+                            <select name="admin_reason" required aria-label="سبب المعالجة">
+                              <option value="">سبب المعالجة</option>
+                              <option value="other">لم يستكمل المشرف اليوم</option>
+                              <option value="office">تكليف / ارتباط إداري</option>
+                              <option value="training">برنامج تدريبي</option>
+                              <option value="official_holiday">يوم مغلق / إجراء إداري</option>
+                            </select>
+
+                            <input name="admin_note"
+                                   required
+                                   placeholder="ملاحظة الإدارة...">
+
+                            <button type="submit">معالجة إدارية</button>
+                          </form>
+                        {% endif %}
                       {% endif %}
                     </div>
 

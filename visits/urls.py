@@ -263,6 +263,7 @@ urlpatterns = [
         name="admin_export_week_visit_summary",
     ),
     path("manager/plan-export/<int:plan_id>/", views.admin_plan_export_excel, name="admin_plan_export_excel"),
+    path("manager/plan/<int:plan_id>/missing-day/<int:weekday>/admin-complete/", views.admin_plan_admin_complete_missing_day_view, name="admin_plan_admin_complete_missing_day"),
     path("manager/plan-approve/<int:plan_id>/", views.admin_plan_approve_view, name="admin_plan_approve"),
     path("manager/plan-draft/<int:plan_id>/", views.admin_plan_back_to_draft_view, name="admin_plan_back_to_draft"),
 

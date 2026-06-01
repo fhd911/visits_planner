@@ -1321,6 +1321,20 @@
     color:var(--ok);
   }
 
+  .admin-page .a-btn.approved-lock{
+    background:var(--ok-bg);
+    border-color:var(--ok-br);
+    color:var(--ok);
+    cursor:default;
+    opacity:.78;
+    pointer-events:none;
+  }
+
+  .admin-page .a-btn.approved-lock:hover{
+    transform:none;
+    background:var(--ok-bg);
+  }
+
   .admin-page .a-btn.draft{
     background:var(--warn-bg);
     border-color:var(--warn-br);
@@ -3043,8 +3057,19 @@
     const isUnlock = (statusCode === "unlock") || (statusCss === "unlock");
 
     if(approveBtn){
-      approveBtn.disabled = isApproved ? true : !(filledNow === 5);
-      approveBtn.textContent = "✅ اعتماد";
+      if(isApproved){
+        approveBtn.disabled = true;
+        approveBtn.textContent = "معتمدة ✅";
+        approveBtn.classList.remove("approve");
+        approveBtn.classList.add("approved-lock");
+        approveBtn.removeAttribute("data-action");
+        approveBtn.removeAttribute("data-url");
+      } else {
+        approveBtn.disabled = !(filledNow === 5);
+        approveBtn.textContent = "✅ اعتماد";
+        approveBtn.classList.remove("approved-lock");
+        approveBtn.classList.add("approve");
+      }
     }
 
     if(draftBtn){
@@ -3153,14 +3178,15 @@
 
     try{
       const data = await postAction(url, payload);
+
+      lockRowButtons(row, false);
+      restoreButton(btn);
       updateRowFromJson(data);
 
       if(planId && typeof data.admin_note !== "undefined"){
         updateNoteBox(planId, data.admin_note || "");
       }
 
-      lockRowButtons(row, false);
-      restoreButton(btn);
       showToast(data.message || "تم ✅");
     } catch(err){
       lockRowButtons(row, false);

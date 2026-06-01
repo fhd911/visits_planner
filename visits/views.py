@@ -1434,6 +1434,73 @@ def _plan_filled_count(plan: Plan) -> int:
     return total
 
 
+
+
+def _admin_missing_day_reason_choices() -> list[tuple[str, str]]:
+    """أسباب معالجة اليوم الناقص إداريًا قبل الاعتماد."""
+    return [
+        ("supervisor_not_completed", "لم يستكمل المشرف اليوم"),
+        ("administrative_assignment", "تكليف / ارتباط إداري"),
+        ("study_suspended", "تعليق دراسة"),
+        ("official_closed", "يوم مغلق"),
+        ("other", "سبب آخر"),
+    ]
+
+
+def _admin_missing_day_reason_label(value: str) -> str:
+    reasons = dict(_admin_missing_day_reason_choices())
+    return reasons.get((value or "").strip(), reasons["other"])
+
+
+def _admin_completion_no_visit_reason() -> str:
+    """يرجع قيمة آمنة لحقل no_visit_reason دون افتراض وجود Choice جديد في المودل."""
+    candidates = [
+        "administrative_processing",
+        "admin_processing",
+        "supervisor_not_completed",
+        getattr(PlanDay, "REASON_OTHER", "other"),
+        "other",
+    ]
+    try:
+        field = PlanDay._meta.get_field("no_visit_reason")
+        choices = list(getattr(field, "choices", []) or [])
+        allowed = {str(value) for value, _label in choices}
+        for value in candidates:
+            if str(value) in allowed:
+                return str(value)
+    except Exception:
+        pass
+    return str(getattr(PlanDay, "REASON_OTHER", "other"))
+
+
+def _plan_missing_days_for_admin(plan: Plan) -> list[dict[str, Any]]:
+    """الأيام غير المكتملة التي تحتاج معالجة قبل اعتماد الخطة."""
+    days_map = {d.weekday: d for d in plan.days.all()}
+    closed_map = _closed_days_map_for_week(getattr(plan, "week", None))
+    day_dates = _build_day_dates_from_week(plan.week) if getattr(plan, "week_id", None) else {}
+
+    rows: list[dict[str, Any]] = []
+    for wd, wd_name in WEEKDAYS:
+        closed_day = closed_map.get(wd)
+        if closed_day and getattr(closed_day, "count_as_completed", True):
+            continue
+
+        day = days_map.get(wd)
+        if _day_is_filled(day):
+            continue
+
+        rows.append(
+            {
+                "weekday": wd,
+                "weekday_name": wd_name,
+                "date": day_dates.get(wd),
+                "day": day,
+                "reason_choices": _admin_missing_day_reason_choices(),
+            }
+        )
+    return rows
+
+
 def _plan_visit_counts(plan: Plan) -> dict[str, int]:
     assigned_school_ids = set(
         Assignment.objects.filter(
@@ -3904,6 +3971,8 @@ def supervisor_visit_status_view(request: HttpRequest) -> HttpResponse:
             "assigned_count": visit_counts["assigned_count"],
             "visited_count": visit_counts["visited_count"],
             "remaining_count": visit_counts["remaining_count"],
+            "admin_missing_days": admin_missing_days,
+            "admin_missing_reason_choices": _admin_missing_day_reason_choices(),
             "notifications": notifications,
             "unread_count": unread_count,
         },
@@ -5823,7 +5892,8 @@ def admin_plan_detail_view(request: HttpRequest, plan_id: int) -> HttpResponse:
     _inject_week_no(plan)
 
     day_map = {d.weekday: d for d in plan.days.all().select_related("school")}
-    filled = sum(1 for wd, _ in WEEKDAYS if _day_is_filled(day_map.get(wd)))
+    filled = _plan_filled_count(plan)
+    admin_missing_days = _plan_missing_days_for_admin(plan)
     day_dates = _build_day_dates_from_week(plan.week)
     visit_counts = _plan_visit_counts(plan)
 
@@ -6939,6 +7009,85 @@ def admin_send_incomplete_email_reminders_view(request: HttpRequest) -> HttpResp
 # =============================================================================
 # Admin actions
 # =============================================================================
+
+@admin_only_view
+@require_POST
+def admin_plan_admin_complete_missing_day_view(request: HttpRequest, plan_id: int, weekday: int) -> HttpResponse:
+    """معالجة يوم ناقص إداريًا حتى تصبح الخطة قابلة للاعتماد بعد توثيق السبب."""
+    plan = get_object_or_404(
+        Plan.objects.select_related("supervisor", "week").prefetch_related("days", "days__school"),
+        id=plan_id,
+    )
+    _inject_week_no(plan)
+
+    return_url = (request.POST.get("next") or request.GET.get("next") or "").strip()
+    if not return_url:
+        return_url = _admin_plan_detail_url(plan.id, week_no=plan.week.week_no)
+
+    if weekday not in dict(WEEKDAYS):
+        messages.error(request, "اليوم المحدد غير صحيح.")
+        return redirect(return_url)
+
+    closed_map = _closed_days_map_for_week(plan.week)
+    closed_day = closed_map.get(weekday)
+    if closed_day and getattr(closed_day, "count_as_completed", True):
+        messages.info(request, "هذا اليوم مغلق ومحتسب ضمن اكتمال الخطة ولا يحتاج معالجة إضافية.")
+        return redirect(return_url)
+
+    current_day = PlanDay.objects.filter(plan=plan, weekday=weekday).first()
+    if _day_is_filled(current_day):
+        messages.info(request, "هذا اليوم مكتمل مسبقًا ولا يحتاج معالجة.")
+        return redirect(return_url)
+
+    reason_code = (request.POST.get("admin_reason") or "supervisor_not_completed").strip()
+    reason_label = _admin_missing_day_reason_label(reason_code)
+    admin_note = (request.POST.get("admin_note") or "").strip()
+
+    if not admin_note:
+        messages.warning(request, "ملاحظة الإدارة إلزامية عند معالجة اليوم الناقص.")
+        return redirect(return_url)
+
+    weekday_name = WEEKDAY_MAP.get(weekday, str(weekday))
+    note = f"معالجة إدارية: {reason_label} — {admin_note}"
+    none_value = getattr(PlanDay, "VISIT_NONE", "none")
+
+    PlanDay.objects.update_or_create(
+        plan=plan,
+        weekday=weekday,
+        defaults={
+            "visit_type": none_value,
+            "school_id": None,
+            "no_visit_reason": _admin_completion_no_visit_reason(),
+            "note": note,
+            "visited": False,
+            "visited_at": None,
+            "visit_note": None,
+        },
+    )
+
+    plan.saved_at = timezone.now()
+    update_fields = ["saved_at"]
+    if _model_has_field(Plan, "admin_note"):
+        plan.admin_note = f"تمت معالجة نقص يوم {weekday_name} إداريًا: {reason_label}"
+        update_fields.append("admin_note")
+    plan.save(update_fields=update_fields)
+
+    _notify_supervisor(
+        supervisor=plan.supervisor,
+        plan=plan,
+        notif_type=SupervisorNotification.TYPE_ADMIN_ALERT,
+        title="تمت معالجة يوم ناقص في خطتك",
+        message=f"تمت معالجة يوم {weekday_name} إداريًا في خطة الأسبوع {plan.week.week_no}: {reason_label}.",
+    )
+
+    if _plan_is_fully_filled(plan):
+        messages.success(request, f"تمت معالجة يوم {weekday_name}، وأصبحت الخطة مكتملة وقابلة للاعتماد.")
+    else:
+        messages.success(request, f"تمت معالجة يوم {weekday_name}. لا تزال هناك أيام ناقصة أخرى تحتاج معالجة.")
+
+    return redirect(return_url)
+
+
 @admin_only_view
 @require_POST
 def admin_plan_approve_view(request: HttpRequest, plan_id: int) -> HttpResponse:
